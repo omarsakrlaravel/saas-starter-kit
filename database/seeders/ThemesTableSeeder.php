@@ -4,7 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 
-class PermissionsTableSeeder extends Seeder
+class ThemesTableSeeder extends Seeder
 {
 
     /**
@@ -16,14 +16,16 @@ class PermissionsTableSeeder extends Seeder
     {
         
 
-        \DB::table('permissions')->delete();
+        \DB::table('themes')->delete();
         
-        \DB::table('permissions')->insert(array (
+        \DB::table('themes')->insert(array (
             0 => 
             array (
                 'id' => 1,
-                'guard_name' => 'admin',
-                'name' => 'View Admin'
+                'name' => 'Tallstack Theme',
+                'folder' => 'tallstack',
+                'active' => 1,
+                'version' => 1.0
             )
         ));
         
