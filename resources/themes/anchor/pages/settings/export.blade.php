@@ -5,7 +5,7 @@
     use Wave\ActivityLog;
     use Wave\ApiKey;
     
-    middleware('auth');
+    middleware(['auth', 'verified']);
     name('settings.export');
 
 	new class extends Component

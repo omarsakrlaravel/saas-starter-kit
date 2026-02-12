@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Carbon;
 use Wave\ActivityLog;
 
-middleware('auth');
+middleware(['auth', 'verified']);
 name('settings.sessions');
 
 new class extends Component

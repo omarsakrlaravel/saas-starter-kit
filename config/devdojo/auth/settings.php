@@ -9,7 +9,7 @@ return [
     'registration_show_password_same_screen' => true,
     'registration_include_name_field' => false,
     'registration_include_password_confirmation_field' => false,
-    'registration_require_email_verification' => false,
+    'registration_require_email_verification' => true,
     'enable_branding' => true,
     'dev_mode' => false,
     'enable_2fa' => true, // Enable or disable 2FA functionality globally

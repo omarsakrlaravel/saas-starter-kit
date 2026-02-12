@@ -11,6 +11,8 @@ it('responds with 200 for all routes', function (string $route) {
 
 test('responds with 200 for all auth routes', function ($url) {
     $user = \App\Models\User::find(1);
+    $user->email_verified_at = now();
+    $user->save();
 
     $this->actingAs($user);
 

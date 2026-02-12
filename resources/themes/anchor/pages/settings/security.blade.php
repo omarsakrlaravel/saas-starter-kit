@@ -14,7 +14,7 @@
     use Devdojo\Auth\Actions\TwoFactorAuth\GenerateQrCodeAndSecretKey;
     use Wave\ActivityLog;
 
-    middleware('auth');
+    middleware(['auth', 'verified']);
     name('settings.security');
 
 	new class extends Component implements HasForms
