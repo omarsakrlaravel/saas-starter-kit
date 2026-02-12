@@ -36,6 +36,7 @@
         "alebatistella/duskapiconf": "^1.2",
         "fakerphp/faker": "^1.23",
         "filament/upgrade": "^4.0",
+        "laravel/boost": "^2.1",
         "laravel/dusk": "^8.2",
         "laravel/pint": "^1.26",
         "mockery/mockery": "^1.6",

@@ -11,11 +11,10 @@
     use Filament\Notifications\Notification;
     use Filament\Tables;
     use Filament\Tables\Table;
-    use Filament\Tables\Actions\Action;
+    use Filament\Actions\Action;
     use Filament\Tables\Columns\TextColumn;
     use Filament\Actions\DeleteAction;
     use Filament\Actions\EditAction;
-    use Filament\Actions\ViewAction;
 
     use Illuminate\Support\Str;
     use Wave\ApiKey;
@@ -80,14 +79,18 @@
                     TextColumn::make('created_at')->label('Created'),
                 ])
                 ->actions([
-                    ViewAction::make()
-                        ->slideOver()
-                        ->modalWidth('md')
-                        ->form([
-                            TextInput::make('name'),
-                            TextInput::make('key')
-                            // ...
-                        ]),
+                    Action::make('copy')
+                        ->label('Copy')
+                        ->icon('heroicon-o-document-duplicate')
+                        ->color('gray')
+                        ->action(function ($record) {
+                            $this->js("window.navigator.clipboard.writeText('{$record->key}')");
+
+                            Notification::make()
+                                ->title('API key copied to clipboard')
+                                ->success()
+                                ->send();
+                        }),
                     EditAction::make()
                         ->slideOver()
                         ->modalWidth('md')
