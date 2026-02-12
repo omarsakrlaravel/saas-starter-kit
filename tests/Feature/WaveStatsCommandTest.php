@@ -10,17 +10,6 @@ beforeEach(function () {
     $this->artisan('migrate:fresh');
     $this->seed();
 
-    // Create test roles
-    $this->basicRole = \Spatie\Permission\Models\Role::firstOrCreate(
-        ['name' => 'test_basic'],
-        ['guard_name' => 'web']
-    );
-
-    $this->premiumRole = \Spatie\Permission\Models\Role::firstOrCreate(
-        ['name' => 'test_premium'],
-        ['guard_name' => 'web']
-    );
-
     // Create plans
     $this->basicPlan = Plan::create([
         'name' => 'Basic Plan',
@@ -30,7 +19,6 @@ beforeEach(function () {
         'yearly_price' => '99.99',
         'monthly_price_id' => 'price_basic_monthly',
         'yearly_price_id' => 'price_basic_yearly',
-        'role_id' => $this->basicRole->id,
         'active' => 1,
         'sort_order' => 1,
     ]);
@@ -43,7 +31,6 @@ beforeEach(function () {
         'yearly_price' => '299.99',
         'monthly_price_id' => 'price_premium_monthly',
         'yearly_price_id' => 'price_premium_yearly',
-        'role_id' => $this->premiumRole->id,
         'active' => 1,
         'sort_order' => 2,
     ]);
@@ -60,7 +47,7 @@ it('calculates MRR correctly for monthly subscriptions', function () {
     for ($i = 0; $i < 3; $i++) {
         $user = User::factory()->create(['verified' => 1]);
         Subscription::create([
-            'billable_type' => User::class,
+            'billable_type' => 'user',
             'billable_id' => $user->id,
             'plan_id' => $this->basicPlan->id,
             'vendor_slug' => 'stripe',
@@ -83,7 +70,7 @@ it('calculates MRR correctly for yearly subscriptions', function () {
     for ($i = 0; $i < 2; $i++) {
         $user = User::factory()->create(['verified' => 1]);
         Subscription::create([
-            'billable_type' => User::class,
+            'billable_type' => 'user',
             'billable_id' => $user->id,
             'plan_id' => $this->premiumPlan->id,
             'vendor_slug' => 'stripe',
@@ -106,7 +93,7 @@ it('calculates MRR correctly for mixed subscriptions', function () {
     for ($i = 0; $i < 2; $i++) {
         $user = User::factory()->create(['verified' => 1]);
         Subscription::create([
-            'billable_type' => User::class,
+            'billable_type' => 'user',
             'billable_id' => $user->id,
             'plan_id' => $this->basicPlan->id,
             'vendor_slug' => 'stripe',
@@ -121,7 +108,7 @@ it('calculates MRR correctly for mixed subscriptions', function () {
     // Create 1 yearly premium subscription
     $user = User::factory()->create(['verified' => 1]);
     Subscription::create([
-        'billable_type' => User::class,
+        'billable_type' => 'user',
         'billable_id' => $user->id,
         'plan_id' => $this->premiumPlan->id,
         'vendor_slug' => 'stripe',
@@ -143,7 +130,7 @@ it('counts active subscriptions correctly', function () {
     for ($i = 0; $i < 5; $i++) {
         $user = User::factory()->create(['verified' => 1]);
         Subscription::create([
-            'billable_type' => User::class,
+            'billable_type' => 'user',
             'billable_id' => $user->id,
             'plan_id' => $this->basicPlan->id,
             'vendor_slug' => 'stripe',
@@ -159,7 +146,7 @@ it('counts active subscriptions correctly', function () {
     for ($i = 0; $i < 2; $i++) {
         $user = User::factory()->create(['verified' => 1]);
         Subscription::create([
-            'billable_type' => User::class,
+            'billable_type' => 'user',
             'billable_id' => $user->id,
             'plan_id' => $this->premiumPlan->id,
             'vendor_slug' => 'stripe',
@@ -194,7 +181,7 @@ it('calculates ARR correctly', function () {
     // Create monthly subscription
     $user = User::factory()->create(['verified' => 1]);
     Subscription::create([
-        'billable_type' => User::class,
+        'billable_type' => 'user',
         'billable_id' => $user->id,
         'plan_id' => $this->basicPlan->id,
         'vendor_slug' => 'stripe',
@@ -222,7 +209,7 @@ it('displays plan breakdown correctly', function () {
     for ($i = 0; $i < 3; $i++) {
         $user = User::factory()->create(['verified' => 1]);
         Subscription::create([
-            'billable_type' => User::class,
+            'billable_type' => 'user',
             'billable_id' => $user->id,
             'plan_id' => $this->basicPlan->id,
             'vendor_slug' => 'stripe',
@@ -238,7 +225,7 @@ it('displays plan breakdown correctly', function () {
     for ($i = 0; $i < 2; $i++) {
         $user = User::factory()->create(['verified' => 1]);
         Subscription::create([
-            'billable_type' => User::class,
+            'billable_type' => 'user',
             'billable_id' => $user->id,
             'plan_id' => $this->premiumPlan->id,
             'vendor_slug' => 'stripe',
@@ -278,7 +265,7 @@ it('ignores inactive subscriptions in MRR calculation', function () {
     // Create active subscription
     $activeUser = User::factory()->create(['verified' => 1]);
     Subscription::create([
-        'billable_type' => User::class,
+        'billable_type' => 'user',
         'billable_id' => $activeUser->id,
         'plan_id' => $this->basicPlan->id,
         'vendor_slug' => 'stripe',
@@ -292,7 +279,7 @@ it('ignores inactive subscriptions in MRR calculation', function () {
     // Create cancelled subscription
     $cancelledUser = User::factory()->create(['verified' => 1]);
     Subscription::create([
-        'billable_type' => User::class,
+        'billable_type' => 'user',
         'billable_id' => $cancelledUser->id,
         'plan_id' => $this->premiumPlan->id,
         'vendor_slug' => 'stripe',
@@ -313,7 +300,7 @@ it('handles subscriptions without plans gracefully', function () {
     // Create subscription with valid plan
     $user = User::factory()->create(['verified' => 1]);
     Subscription::create([
-        'billable_type' => User::class,
+        'billable_type' => 'user',
         'billable_id' => $user->id,
         'plan_id' => $this->basicPlan->id,
         'vendor_slug' => 'stripe',

@@ -139,9 +139,6 @@ class Checkout extends Component
                 return;
             }
 
-            auth()->user()->syncRoles([]);
-            auth()->user()->assignRole($plan->role->name);
-
             Subscription::create([
                 'billable_type' => 'user',
                 'billable_id' => auth()->user()->id,
@@ -192,7 +189,6 @@ class Checkout extends Component
             $subscription->plan_id = $plan->id;
             $subscription->cycle = $this->billing_cycle_selected;
             $subscription->save();
-            $subscription->user->switchPlans($plan);
 
             return redirect()->to('/settings/subscription')->with(['update' => true]);
         }

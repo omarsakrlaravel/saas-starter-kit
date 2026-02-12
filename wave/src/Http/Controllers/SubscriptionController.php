@@ -11,7 +11,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Spatie\Permission\Models\Role;
 use Wave\Http\Controllers\Auth\RegisterController;
 use Wave\Plan;
 use Wave\Subscription;
@@ -75,10 +74,7 @@ class SubscriptionController extends Controller
                 $localSubscription->status = 'cancelled';
                 $localSubscription->save();
 
-                // Update user's role to default registered role (same as Subscription::cancel())
                 $user = User::find($localSubscription->user_id);
-                $user->syncRoles([]);
-                $user->assignRole(config('wave.default_user_role', 'registered'));
                 $user->clearUserCache();
 
                 return redirect()->back()->with(['message' => 'Your subscription has been successfully canceled.', 'message_type' => 'success']);
@@ -153,10 +149,6 @@ class SubscriptionController extends Controller
                 }
 
                 $plan = Plan::where('plan_id', $transaction->items[0]->price->id)->first();
-
-                // Update user role based on plan
-                $user->role_id = $plan->role_id;
-                $user->save();
 
                 // Create or update subscription details
                 $subscriptionRecord = Subscription::create([
@@ -237,11 +229,6 @@ class SubscriptionController extends Controller
                 $body = $response->json();
 
                 if (isset($body['data']) && $body['data']['status'] == 'active') {
-                    // Update the user role associated with the updated plan
-                    $request->user()->forceFill([
-                        'role_id' => $plan->role_id,
-                    ])->save();
-
                     // Update the subscription with the updated plan in the local database
                     $request->user()->subscription->update([
                         'plan_id' => $request->plan_id,

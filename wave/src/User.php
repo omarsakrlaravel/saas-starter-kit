@@ -37,7 +37,6 @@ class User extends AuthUser implements FilamentUser, HasAvatar, JWTSubject
         'username',
         'avatar',
         'password',
-        'role_id',
         'verification_code',
         'verified',
         'trial_ends_at',
@@ -146,12 +145,6 @@ class User extends AuthUser implements FilamentUser, HasAvatar, JWTSubject
     public function subscription(): HasOne
     {
         return $this->hasOne(Subscription::class, 'billable_id')->where('status', 'active')->orderByDesc('created_at');
-    }
-
-    public function switchPlans(Plan $plan)
-    {
-        $this->syncRoles([]);
-        $this->assignRole($plan->role->name);
     }
 
     public function invoices()

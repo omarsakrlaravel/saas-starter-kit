@@ -4,10 +4,8 @@ namespace Wave;
 
 use Exception;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Cache;
-use Spatie\Permission\Models\Role;
 
 class Plan extends Model
 {
@@ -17,11 +15,6 @@ class Plan extends Model
         'limits' => 'array',
         'features' => 'array',
     ];
-
-    public function role(): BelongsTo
-    {
-        return $this->belongsTo(Role::class);
-    }
 
     public function subscriptions(): HasMany
     {
@@ -37,14 +30,14 @@ class Plan extends Model
         if (app()->bound('cache')) {
             try {
                 return Cache::remember('wave_active_plans', 1800, function () {
-                    return self::where('active', 1)->orderBy('sort_order')->orderBy('id')->with('role')->get();
+                    return self::where('active', 1)->orderBy('sort_order')->orderBy('id')->get();
                 });
             } catch (Exception $e) {
                 // Fallback to direct query if cache fails
             }
         }
 
-        return self::where('active', 1)->orderBy('sort_order')->orderBy('id')->with('role')->get();
+        return self::where('active', 1)->orderBy('sort_order')->orderBy('id')->get();
     }
 
     /**
@@ -56,14 +49,14 @@ class Plan extends Model
         if (app()->bound('cache')) {
             try {
                 return Cache::remember("wave_plan_{$name}", 1800, function () use ($name) {
-                    return self::where('name', $name)->with('role')->first();
+                    return self::where('name', $name)->first();
                 });
             } catch (Exception $e) {
                 // Fallback to direct query if cache fails
             }
         }
 
-        return self::where('name', $name)->with('role')->first();
+        return self::where('name', $name)->first();
     }
 
     /**

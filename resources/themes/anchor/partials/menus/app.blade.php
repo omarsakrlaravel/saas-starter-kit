@@ -87,7 +87,11 @@
                     <div class="py-1">
 
                         <div class="block px-4 py-1">
-                            <span class="inline-block px-2 my-1 -ml-1 text-xs font-medium leading-5 rounded text-zinc-600 bg-zinc-200">{{ auth()->user()->roles->first()->name }}</span>
+                            @admin
+                                <span class="inline-block px-2 my-1 -ml-1 text-xs font-medium leading-5 rounded text-zinc-600 bg-zinc-200">admin</span>
+                            @elseif(auth()->user()->subscriber())
+                                <span class="inline-block px-2 my-1 -ml-1 text-xs font-medium leading-5 rounded text-zinc-600 bg-zinc-200">{{ auth()->user()->plan()->name }}</span>
+                            @endadmin
                         </div>
                         @trial
                             <a href="{{ route('wave.settings', 'plans') }}" wire:navigate class="block px-4 py-2 text-sm leading-5 text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 focus:outline-none focus:bg-zinc-100 focus:text-zinc-900">Upgrade My Account</a>

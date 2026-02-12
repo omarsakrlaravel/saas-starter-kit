@@ -25,18 +25,8 @@ beforeEach(function () {
     $this->user = User::factory()->create();
     $this->actingAs($this->user);
 
-    // Create test roles
-    $this->freeRole = Role::firstOrCreate(
-        ['name' => 'free'],
-        ['guard_name' => 'web']
-    );
-
-    $this->proRole = Role::firstOrCreate(
-        ['name' => 'pro'],
-        ['guard_name' => 'web']
-    );
-
-    $this->adminRole = Role::firstOrCreate(
+    // Ensure admin role exists for bypass tests
+    Role::firstOrCreate(
         ['name' => 'admin'],
         ['guard_name' => 'web']
     );
@@ -48,7 +38,6 @@ beforeEach(function () {
         'features' => ['Basic features'],
         'monthly_price' => '0.00',
         'active' => true,
-        'role_id' => $this->freeRole->id,
         'limits' => [
             'api_keys' => 1,
         ],
@@ -60,7 +49,6 @@ beforeEach(function () {
         'features' => ['All features'],
         'monthly_price' => '10.00',
         'active' => true,
-        'role_id' => $this->proRole->id,
         'limits' => [
             'api_keys' => 10,
         ],
@@ -72,7 +60,6 @@ beforeEach(function () {
         'features' => ['Unlimited everything'],
         'monthly_price' => '100.00',
         'active' => true,
-        'role_id' => $this->proRole->id,
         'limits' => [
             'api_keys' => -1,
         ],
@@ -367,7 +354,6 @@ test('zero limit disables feature', function () {
         'features' => ['Limited features'],
         'monthly_price' => '0.00',
         'active' => true,
-        'role_id' => $this->freeRole->id,
         'limits' => [
             'api_keys' => 0,
         ],

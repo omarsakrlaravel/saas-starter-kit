@@ -75,8 +75,7 @@ class UserResource extends Resource
                                     ->multiple()
                                     ->relationship('roles', 'name')
                                     ->preload()
-                                    ->searchable()
-                                    ->required(),
+                                    ->searchable(),
                                 Toggle::make('verified'),
                                 DateTimePicker::make('email_verified_at'),
                                 DateTimePicker::make('trial_ends_at'),

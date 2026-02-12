@@ -11,7 +11,6 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\KeyValue;
-use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -23,7 +22,6 @@ use Filament\Schemas\Schema;
 use Filament\Tables\Columns\BooleanColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use Spatie\Permission\Models\Role;
 use Wave\Plan;
 
 class PlanResource extends Resource
@@ -102,7 +100,7 @@ class PlanResource extends Resource
                 Group::make()
                     ->schema([
                         Section::make('Plan Status')
-                            ->description('Status, role, and sort order')
+                            ->description('Status and sort order')
                             ->schema([
                                 Toggle::make('active')
                                     ->required(),
@@ -112,11 +110,6 @@ class PlanResource extends Resource
                                     ->integer()
                                     ->default(0)
                                     ->minValue(0)
-                                    ->required(),
-                                Select::make('role_id')
-                                    ->label('Role')
-                                    ->options(Role::all()->pluck('name', 'id'))
-                                    ->searchable()
                                     ->required(),
                             ]),
                     ])
@@ -131,9 +124,6 @@ class PlanResource extends Resource
                 TextColumn::make('name')
                     ->searchable(),
                 TextColumn::make('sort_order')
-                    ->numeric()
-                    ->sortable(),
-                TextColumn::make('role_id')
                     ->numeric()
                     ->sortable(),
                 BooleanColumn::make('active')

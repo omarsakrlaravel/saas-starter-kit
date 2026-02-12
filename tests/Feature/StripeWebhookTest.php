@@ -4,8 +4,7 @@
  * Stripe Webhook Business Logic Tests
  *
  * These tests verify the database state changes and business logic
- * that occur during Stripe webhook processing, focusing specifically
- * on the TODO at line 60 of StripeWebhook.php: testing plan switching.
+ * that occur during Stripe webhook processing.
  *
  * Note: These tests focus on unit-testing the business logic rather than
  * attempting to mock Stripe SDK classes, which is complex and fragile.
@@ -14,24 +13,12 @@
 
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
-use Spatie\Permission\Models\Role;
 use Wave\Plan;
 use Wave\Subscription;
 
 beforeEach(function () {
     $this->artisan('migrate:fresh');
     $this->seed();
-
-    // Create test roles
-    $this->premiumRole = Role::firstOrCreate(
-        ['name' => 'test_premium'],
-        ['guard_name' => 'web']
-    );
-
-    $this->enterpriseRole = Role::firstOrCreate(
-        ['name' => 'test_enterprise'],
-        ['guard_name' => 'web']
-    );
 
     // Create test plans
     $this->premiumPlan = Plan::create([
@@ -43,7 +30,6 @@ beforeEach(function () {
         'monthly_price' => '9.99',
         'yearly_price' => '99.99',
         'active' => true,
-        'role_id' => $this->premiumRole->id,
     ]);
 
     $this->enterprisePlan = Plan::create([
@@ -55,19 +41,15 @@ beforeEach(function () {
         'monthly_price' => '29.99',
         'yearly_price' => '299.99',
         'active' => true,
-        'role_id' => $this->enterpriseRole->id,
     ]);
 
     $this->user = User::factory()->create();
 });
 
-test('plan switching updates user role correctly', function () {
-    // This addresses the TODO at line 60 of StripeWebhook.php
-    // Testing: $subscription->user->switchPlans($updatedPlan);
-
+test('plan switching updates subscription record correctly', function () {
     // Setup: Create subscription with premium plan
     $subscription = Subscription::create([
-        'billable_type' => User::class,
+        'billable_type' => 'user',
         'billable_id' => $this->user->id,
         'plan_id' => $this->premiumPlan->id,
         'vendor_slug' => 'stripe',
@@ -78,33 +60,25 @@ test('plan switching updates user role correctly', function () {
         'seats' => 1,
     ]);
 
-    // Assign initial role
-    $this->user->assignRole($this->premiumRole->name);
-    $this->user->refresh();
-
     // Verify initial state
-    expect($this->user->hasRole('test_premium'))->toBeTrue();
     expect($subscription->plan_id)->toBe($this->premiumPlan->id);
 
     // Act: Simulate the plan switch that happens in the webhook
-    $this->user->switchPlans($this->enterprisePlan);
     $subscription->plan_id = $this->enterprisePlan->id;
     $subscription->cycle = 'year';
     $subscription->save();
 
-    // Assert: Verify role was switched correctly
-    $this->user->refresh();
+    // Assert: Verify subscription was updated correctly
     $subscription->refresh();
 
-    expect($this->user->hasRole('test_enterprise'))->toBeTrue()
-        ->and($this->user->hasRole('test_premium'))->toBeFalse()
-        ->and($subscription->plan_id)->toBe($this->enterprisePlan->id)
-        ->and($subscription->cycle)->toBe('year');
+    expect($subscription->plan_id)->toBe($this->enterprisePlan->id)
+        ->and($subscription->cycle)->toBe('year')
+        ->and($this->user->fresh()->plan()->id)->toBe($this->enterprisePlan->id);
 })->group('stripe', 'billing');
 
 test('subscription cancellation sets ends_at date', function () {
     $subscription = Subscription::create([
-        'billable_type' => User::class,
+        'billable_type' => 'user',
         'billable_id' => $this->user->id,
         'plan_id' => $this->premiumPlan->id,
         'vendor_slug' => 'stripe',
@@ -114,8 +88,6 @@ test('subscription cancellation sets ends_at date', function () {
         'status' => 'active',
         'seats' => 1,
     ]);
-
-    $this->user->assignRole($this->premiumRole->name);
 
     // Simulate cancellation with future end date
     $cancelAt = now()->addMonth();
@@ -130,7 +102,7 @@ test('subscription cancellation sets ends_at date', function () {
 
 test('subscription deletion marks subscription as cancelled', function () {
     $subscription = Subscription::create([
-        'billable_type' => User::class,
+        'billable_type' => 'user',
         'billable_id' => $this->user->id,
         'plan_id' => $this->premiumPlan->id,
         'vendor_slug' => 'stripe',
@@ -149,13 +121,9 @@ test('subscription deletion marks subscription as cancelled', function () {
     expect($subscription->status)->toBe('cancelled');
 })->group('stripe', 'billing');
 
-test('new subscription assigns correct role to user', function () {
-    // Simulate checkout completion
-    $this->user->syncRoles([]);
-    $this->user->assignRole($this->premiumPlan->role->name);
-
+test('new subscription creates active record', function () {
     $subscription = Subscription::create([
-        'billable_type' => User::class,
+        'billable_type' => 'user',
         'billable_id' => $this->user->id,
         'plan_id' => $this->premiumPlan->id,
         'vendor_slug' => 'stripe',
@@ -166,9 +134,11 @@ test('new subscription assigns correct role to user', function () {
         'seats' => 1,
     ]);
 
+    $this->user->clearUserCache();
     $this->user->refresh();
 
-    expect($this->user->hasRole('test_premium'))->toBeTrue()
+    expect($this->user->subscriber())->toBeTrue()
+        ->and($this->user->plan()->id)->toBe($this->premiumPlan->id)
         ->and($subscription->vendor_slug)->toBe('stripe')
         ->and($subscription->status)->toBe('active');
 })->group('stripe', 'billing');
@@ -189,7 +159,7 @@ test('cache prevents duplicate checkout session processing', function () {
 
 test('subscription cycle can be updated from monthly to yearly', function () {
     $subscription = Subscription::create([
-        'billable_type' => User::class,
+        'billable_type' => 'user',
         'billable_id' => $this->user->id,
         'plan_id' => $this->premiumPlan->id,
         'vendor_slug' => 'stripe',
@@ -213,7 +183,7 @@ test('subscription cycle can be updated from monthly to yearly', function () {
 
 test('removing cancellation date reactivates subscription', function () {
     $subscription = Subscription::create([
-        'billable_type' => User::class,
+        'billable_type' => 'user',
         'billable_id' => $this->user->id,
         'plan_id' => $this->premiumPlan->id,
         'vendor_slug' => 'stripe',
@@ -237,7 +207,7 @@ test('removing cancellation date reactivates subscription', function () {
 
 test('multiple subscriptions can exist for same user', function () {
     $subscription1 = Subscription::create([
-        'billable_type' => User::class,
+        'billable_type' => 'user',
         'billable_id' => $this->user->id,
         'plan_id' => $this->premiumPlan->id,
         'vendor_slug' => 'stripe',
@@ -249,7 +219,7 @@ test('multiple subscriptions can exist for same user', function () {
     ]);
 
     $subscription2 = Subscription::create([
-        'billable_type' => User::class,
+        'billable_type' => 'user',
         'billable_id' => $this->user->id,
         'plan_id' => $this->enterprisePlan->id,
         'vendor_slug' => 'stripe',

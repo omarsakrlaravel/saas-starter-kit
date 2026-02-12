@@ -57,9 +57,6 @@ class StripeWebhook extends Controller
                 $plan_price_column = ($subscriptionCycle == 'year') ? 'yearly_price_id' : 'monthly_price_id';
                 $updatedPlan = Plan::where($plan_price_column, $stripeSubscription->plan->id)->first();
 
-                // TODO: Test that this works
-                $subscription->user->switchPlans($updatedPlan);
-
                 $subscription->cycle = $subscriptionCycle;
                 $subscription->plan_id = $updatedPlan->id;
 
@@ -121,10 +118,6 @@ class StripeWebhook extends Controller
             $billing_cycle = $checkout_session->metadata->billing_cycle;
 
             $user = User::find($billable_id);
-
-            $plan = Plan::find($plan_id);
-            $user->syncRoles([]);
-            $user->assignRole($plan->role->name);
 
             Subscription::create([
                 'billable_type' => $billable_type,

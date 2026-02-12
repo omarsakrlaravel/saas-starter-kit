@@ -7,13 +7,12 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules\Password;
-use Spatie\Permission\Models\Role;
 
 class CreateUser extends Command
 {
     protected $signature = 'app:create-user';
 
-    protected $description = 'Create a new user with role assignment';
+    protected $description = 'Create a new user with optional admin access';
 
     public function handle(): int
     {
@@ -53,19 +52,13 @@ class CreateUser extends Command
             'verified' => 1,
         ]);
 
-        // Get roles and let user select
-        $roles = Role::all()->pluck('name')->toArray();
-        $selectedRole = $this->choice(
-            'Select a role for the user',
-            $roles,
-            0
-        );
-
-        $user->syncRoles([]);
-        // Assign selected role to the user
-        $user->assignRole($selectedRole);
-
-        $this->info("User created successfully with role: {$selectedRole}");
+        // Ask about admin access
+        if ($this->confirm('Should this user have admin access?', false)) {
+            $user->assignRole('admin');
+            $this->info('User created successfully with admin access.');
+        } else {
+            $this->info('User created successfully.');
+        }
 
         return 0;
     }

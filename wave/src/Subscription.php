@@ -59,9 +59,6 @@ class Subscription extends Model
     {
         $this->status = 'cancelled';
         $this->save();
-
-        $this->user->syncRoles([]);
-        $this->user->assignRole(config('wave.default_user_role', 'registered'));
     }
 
     /**

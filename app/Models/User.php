@@ -56,16 +56,5 @@ class User extends WaveUser
             }
         });
 
-        // Listen for the created event of the model
-        static::created(function ($user) {
-            // Remove all roles
-            $user->syncRoles([]);
-
-            // Assign the default role if it exists
-            $defaultRole = config('wave.default_user_role', 'registered');
-            if (\Spatie\Permission\Models\Role::where('name', $defaultRole)->where('guard_name', 'web')->exists()) {
-                $user->assignRole($defaultRole);
-            }
-        });
     }
 }
