@@ -11,7 +11,6 @@ it('allows user to update notification preferences', function () {
         'email_notifications' => false,
         'marketing_emails' => false,
         'product_updates' => true,
-        'blog_notifications' => true,
         'security_alerts' => true,
     ];
 
@@ -36,7 +35,6 @@ it('security alerts preference is always enabled', function () {
         'email_notifications' => true,
         'marketing_emails' => true,
         'product_updates' => true,
-        'blog_notifications' => false,
         'security_alerts' => false, // Attempt to disable
     ];
 
@@ -71,7 +69,6 @@ it('can update individual preference settings', function () {
         'email_notifications' => true,
         'marketing_emails' => true,
         'product_updates' => true,
-        'blog_notifications' => false,
         'security_alerts' => true,
     ];
 
@@ -98,7 +95,6 @@ it('notification preferences can be stored as json', function () {
         'email_notifications' => true,
         'marketing_emails' => false,
         'product_updates' => true,
-        'blog_notifications' => true,
         'security_alerts' => true,
     ];
 
@@ -110,8 +106,6 @@ it('notification preferences can be stored as json', function () {
 
     expect($freshUser->notification_preferences)->toBeArray();
     expect($freshUser->notification_preferences['marketing_emails'])->toBe(false);
-    expect($freshUser->notification_preferences['blog_notifications'])->toBe(true);
-
     // Restore
     $user->notification_preferences = $originalPreferences;
     $user->save();
@@ -135,7 +129,6 @@ it('multiple users can have different notification preferences', function () {
         'email_notifications' => true,
         'marketing_emails' => false,
         'product_updates' => true,
-        'blog_notifications' => false,
         'security_alerts' => true,
     ];
     $user1->save();
@@ -144,7 +137,6 @@ it('multiple users can have different notification preferences', function () {
         'email_notifications' => false,
         'marketing_emails' => true,
         'product_updates' => false,
-        'blog_notifications' => true,
         'security_alerts' => true,
     ];
     $user2->save();
@@ -172,7 +164,6 @@ it('can retrieve notification preferences for checking before sending notificati
         'email_notifications' => false,
         'marketing_emails' => false,
         'product_updates' => true,
-        'blog_notifications' => false,
         'security_alerts' => true,
     ];
     $user->save();

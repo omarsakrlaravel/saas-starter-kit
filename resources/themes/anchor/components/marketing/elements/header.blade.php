@@ -124,16 +124,6 @@
                                     </div>
                                     <div class="w-auto divide-y divide-zinc-100">
                                         <a href="#_" onclick="event.preventDefault(); new FilamentNotification().title('Modify this button in your theme folder').icon('heroicon-o-pencil-square').iconColor('info').send()" class="block text-sm p-7 hover:bg-neutral-100">
-                                            <span class="block mb-1 font-medium text-black">Posts and Pages</span>
-                                            <span class="block font-light leading-5 opacity-50">Easily write blog articles and create pages for your application</span>
-                                        </a>
-                                        <a href="#_" onclick="event.preventDefault(); new FilamentNotification().title('Modify this button in your theme folder').icon('heroicon-o-pencil-square').iconColor('info').send()" class="block text-sm p-7 hover:bg-neutral-100">
-                                            <span class="block mb-1 font-medium text-black">Themes</span>
-                                            <span class="block leading-5 opacity-50">Kick-start your app with a pre-built theme or create your own</span>
-                                        </a>
-                                    </div>
-                                    <div class="w-auto divide-y divide-zinc-100">
-                                        <a href="#_" onclick="event.preventDefault(); new FilamentNotification().title('Modify this button in your theme folder').icon('heroicon-o-pencil-square').iconColor('info').send()" class="block text-sm p-7 hover:bg-neutral-100">
                                             <span class="block mb-1 font-medium text-black">Settings and More</span>
                                             <span class="block leading-5 opacity-50">Easily create and update app settings. And so much more</span>
                                         </a>

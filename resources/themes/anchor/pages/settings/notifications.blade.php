@@ -39,10 +39,6 @@
                         ->label('Product Updates')
                         ->helperText('Receive updates about new features and improvements')
                         ->default(true),
-                    Toggle::make('blog_notifications')
-                        ->label('Blog Post Notifications')
-                        ->helperText('Get notified when new blog posts are published')
-                        ->default(false),
                     Toggle::make('security_alerts')
                         ->label('Security Alerts')
                         ->helperText('Important security notifications (always enabled)')
@@ -76,7 +72,6 @@
                 'email_notifications' => true,
                 'marketing_emails' => true,
                 'product_updates' => true,
-                'blog_notifications' => false,
                 'security_alerts' => true,
             ];
         }

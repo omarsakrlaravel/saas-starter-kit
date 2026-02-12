@@ -42,11 +42,6 @@ return [
         'image' => '/themes/tailwind/images/announcements.png',
     ],
     (object) [
-        'title' => 'Blog',
-        'description' => 'Equipped with a fully-functional blog. Write posts related to your product to gain free SEO traffic.',
-        'image' => '/themes/tailwind/images/blog.png',
-    ],
-    (object) [
         'title' => 'Fully Functional API',
         'description' => 'Ready-to-consume API for your application. Create API tokens with role specific permissions.',
         'image' => '/themes/tailwind/images/api.png',
@@ -55,10 +50,5 @@ return [
         'title' => 'Filament Admin',
         'description' => 'Wave utilizes Filament to provide a beautiful admin panel.',
         'image' => '/themes/tailwind/images/admin.png',
-    ],
-    (object) [
-        'title' => 'Themes',
-        'description' => 'Fully configurable themes. Choose from a few starter themes to begin configuring to make it your own.',
-        'image' => '/themes/tailwind/images/themes.png',
     ],
 ];
