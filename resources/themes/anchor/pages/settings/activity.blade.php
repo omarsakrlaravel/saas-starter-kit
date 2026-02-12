@@ -51,6 +51,8 @@ new class extends Component
     public function getActivityIcon($action)
     {
         return match(true) {
+            str_contains($action, 'two_factor') => 'phosphor-shield-check-duotone',
+            str_contains($action, 'session') => 'phosphor-devices-duotone',
             str_contains($action, 'password') => 'phosphor-lock-duotone',
             str_contains($action, 'email') => 'phosphor-envelope-duotone',
             str_contains($action, 'api') => 'phosphor-code-duotone',
@@ -66,6 +68,8 @@ new class extends Component
     {
         return match(true) {
             str_contains($action, 'delete') => 'text-red-600 dark:text-red-400',
+            str_contains($action, 'two_factor') => 'text-blue-600 dark:text-blue-400',
+            str_contains($action, 'session') => 'text-orange-600 dark:text-orange-400',
             str_contains($action, 'password') || str_contains($action, 'security') => 'text-orange-600 dark:text-orange-400',
             str_contains($action, 'login') => 'text-green-600 dark:text-green-400',
             default => 'text-blue-600 dark:text-blue-400',

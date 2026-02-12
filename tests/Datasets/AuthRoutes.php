@@ -8,6 +8,7 @@ dataset('authroutes', function () {
         '/notifications',
         '/settings/profile',
         '/settings/security',
+        '/settings/sessions',
         '/settings/api',
         '/settings/subscription',
         '/settings/invoices',
@@ -21,7 +22,6 @@ dataset('authroutes', function () {
         '/admin/permissions/create',
         '/admin/plans',
         '/admin/plans/1/edit',
-        '/admin/media',
         '/admin/changelogs',
         '/admin/changelogs/3/edit',
     ];
