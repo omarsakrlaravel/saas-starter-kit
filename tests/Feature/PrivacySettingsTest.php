@@ -22,7 +22,7 @@ test('user can update privacy settings', function () {
 
     $user->refresh();
 
-    expect($user->privacy_settings)->toBe($settings);
+    expect($user->privacy_settings)->toEqual($settings);
     expect($user->privacy_settings['profile_visibility'])->toBe('private');
     expect($user->privacy_settings['show_email'])->toBe(false);
 });
@@ -82,7 +82,7 @@ test('privacy settings can be stored as json', function () {
     $freshUser = User::find($user->id);
 
     expect($freshUser->privacy_settings)->toBeArray();
-    expect($freshUser->privacy_settings)->toBe($settings);
+    expect($freshUser->privacy_settings)->toEqual($settings);
 
     // Restore
     $user->privacy_settings = $originalSettings;

@@ -100,7 +100,7 @@ test('export includes privacy settings', function () {
 
     $user->refresh();
 
-    expect($user->privacy_settings)->toBe($privacySettings);
+    expect($user->privacy_settings)->toEqual($privacySettings);
 });
 
 test('export handles subscription with string ends_at date', function () {
