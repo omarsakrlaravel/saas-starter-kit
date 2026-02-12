@@ -47,6 +47,8 @@ new class extends Component
             ->title('Other browser sessions logged out')
             ->success()
             ->send();
+
+        $this->dispatch('sessions-logged-out');
     }
 
     private function getSessions(): array
@@ -157,24 +159,61 @@ new class extends Component
                                 <p class="text-sm text-zinc-500 dark:text-zinc-400 mb-6">No active sessions found.</p>
                             @endif
 
-                            <div class="space-y-3 pt-4 border-t border-zinc-200 dark:border-zinc-700">
-                                <div>
-                                    <label for="session-password" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Confirm Password</label>
-                                    <input
-                                        type="password"
-                                        id="session-password"
-                                        wire:model="password"
-                                        class="w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-zinc-800 border-zinc-300 dark:border-zinc-600 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        placeholder="Enter your password"
-                                    >
-                                    @error('password')
-                                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
-                                    @enderror
-                                </div>
-
-                                <x-button type="button" wire:click="logoutOtherSessions">
+                            <div class="pt-4 border-t border-zinc-200 dark:border-zinc-700"
+                                x-data="{ open: false }"
+                                x-on:sessions-logged-out.window="open = false; $wire.password = ''"
+                                x-on:keydown.escape.window="if (open) { open = false; $wire.password = ''; $wire.$refresh(); }"
+                            >
+                                <x-button type="button" x-on:click="open = true">
                                     Log Out Other Sessions
                                 </x-button>
+
+                                {{-- Confirmation Modal --}}
+                                <template x-teleport="body">
+                                    <div x-show="open" class="fixed inset-0 z-50 overflow-y-auto" x-cloak>
+                                        {{-- Backdrop --}}
+                                        <div x-show="open"
+                                            x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+                                            x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+                                            class="fixed inset-0 bg-black/50"
+                                            x-on:click="open = false; $wire.password = ''; $wire.$refresh();"
+                                        ></div>
+
+                                        {{-- Dialog --}}
+                                        <div class="flex min-h-full items-center justify-center p-4">
+                                            <div x-show="open" x-trap.noscroll="open"
+                                                x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
+                                                x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
+                                                class="relative w-full max-w-md rounded-xl bg-white dark:bg-zinc-900 p-6 shadow-xl"
+                                            >
+                                                <h3 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Confirm Password</h3>
+                                                <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">Please enter your password to confirm you would like to log out of your other browser sessions.</p>
+
+                                                <div class="mt-4">
+                                                    <input
+                                                        type="password"
+                                                        wire:model="password"
+                                                        class="w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-zinc-800 border-zinc-300 dark:border-zinc-600 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                        placeholder="Enter your password"
+                                                        x-on:keydown.enter="$wire.logoutOtherSessions()"
+                                                    >
+                                                    @error('password')
+                                                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                                                    @enderror
+                                                </div>
+
+                                                <div class="mt-6 flex justify-end gap-3">
+                                                    <x-button type="button" color="secondary" x-on:click="open = false; $wire.password = ''; $wire.$refresh();">
+                                                        Cancel
+                                                    </x-button>
+                                                    <x-button type="button" wire:click="logoutOtherSessions">
+                                                        Log Out Other Sessions
+                                                    </x-button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
                             </div>
                         </x-card>
                     @endif

@@ -120,6 +120,8 @@
             $this->twoFactorEnabled = true;
 
             ActivityLog::log('two_factor_setup_started', 'Two-factor authentication setup initiated');
+
+            $this->dispatch('two-factor-password-confirmed');
         }
 
         public function confirmTwoFactor(): void
@@ -179,6 +181,8 @@
             $this->twoFactorPassword = '';
             $this->recoveryCodes = json_decode(decrypt(auth()->user()->two_factor_recovery_codes), true);
             $this->showingRecoveryCodes = true;
+
+            $this->dispatch('two-factor-password-confirmed');
         }
 
         public function hideRecoveryCodes(): void
@@ -217,6 +221,8 @@
                 ->body('Your old recovery codes have been invalidated.')
                 ->success()
                 ->send();
+
+            $this->dispatch('two-factor-password-confirmed');
         }
 
         public function disableTwoFactor(): void
@@ -246,6 +252,8 @@
                 ->title('Two-factor authentication disabled')
                 ->warning()
                 ->send();
+
+            $this->dispatch('two-factor-password-confirmed');
         }
 
 	}
@@ -306,34 +314,72 @@
                                     </div>
                                 @endif
 
-                                <div class="space-y-3">
-                                    <div>
-                                        <label for="2fa-password" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Confirm Password</label>
-                                        <input
-                                            type="password"
-                                            id="2fa-password"
-                                            wire:model="twoFactorPassword"
-                                            class="w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-zinc-800 border-zinc-300 dark:border-zinc-600 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            placeholder="Enter your password"
-                                        >
-                                        @error('twoFactorPassword')
-                                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
-                                        @enderror
-                                    </div>
-
+                                <div x-data="{ open: false, action: '' }"
+                                    x-on:two-factor-password-confirmed.window="open = false; action = ''; $wire.twoFactorPassword = ''"
+                                    x-on:keydown.escape.window="if (open) { open = false; action = ''; $wire.twoFactorPassword = ''; $wire.$refresh(); }"
+                                >
                                     <div class="flex flex-wrap gap-2">
                                         @if(!$showingRecoveryCodes)
-                                            <x-button type="button" wire:click="showRecoveryCodes" size="sm" color="gray">
+                                            <x-button type="button" size="sm" color="gray" x-on:click="action = 'showRecoveryCodes'; open = true">
                                                 Show Recovery Codes
                                             </x-button>
                                         @endif
-                                        <x-button type="button" wire:click="regenerateRecoveryCodes" size="sm" color="gray">
+                                        <x-button type="button" size="sm" color="gray" x-on:click="action = 'regenerateRecoveryCodes'; open = true">
                                             Regenerate Codes
                                         </x-button>
-                                        <x-button type="button" wire:click="disableTwoFactor" size="sm" color="danger">
+                                        <x-button type="button" size="sm" color="danger" x-on:click="action = 'disableTwoFactor'; open = true">
                                             Disable 2FA
                                         </x-button>
                                     </div>
+
+                                    <template x-teleport="body">
+                                        <div x-show="open" class="fixed inset-0 z-50 overflow-y-auto" x-cloak>
+                                            <div x-show="open"
+                                                x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+                                                x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+                                                class="fixed inset-0 bg-black/50"
+                                                x-on:click="open = false; action = ''; $wire.twoFactorPassword = ''; $wire.$refresh();"
+                                            ></div>
+
+                                            <div class="flex min-h-full items-center justify-center p-4">
+                                                <div x-show="open" x-trap.noscroll="open"
+                                                    x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
+                                                    x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
+                                                    class="relative w-full max-w-md rounded-xl bg-white dark:bg-zinc-900 p-6 shadow-xl"
+                                                >
+                                                    <h3 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Confirm Password</h3>
+                                                    <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">Please enter your password to continue.</p>
+
+                                                    <div class="mt-4">
+                                                        <input
+                                                            type="password"
+                                                            wire:model="twoFactorPassword"
+                                                            class="w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-zinc-800 border-zinc-300 dark:border-zinc-600 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                            placeholder="Enter your password"
+                                                            x-on:keydown.enter="$wire[action]()"
+                                                        >
+                                                        @error('twoFactorPassword')
+                                                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                                                        @enderror
+                                                    </div>
+
+                                                    <div class="mt-6 flex justify-end gap-3">
+                                                        <x-button type="button" color="secondary" x-on:click="open = false; action = ''; $wire.twoFactorPassword = ''; $wire.$refresh();">
+                                                            Cancel
+                                                        </x-button>
+                                                        <x-button type="button"
+                                                            x-on:click="$wire[action]()"
+                                                            x-bind:class="action === 'disableTwoFactor' ? '!bg-red-600 hover:!bg-red-500' : ''"
+                                                        >
+                                                            <span x-show="action === 'showRecoveryCodes'">Show Codes</span>
+                                                            <span x-show="action === 'regenerateRecoveryCodes'">Regenerate</span>
+                                                            <span x-show="action === 'disableTwoFactor'">Disable 2FA</span>
+                                                        </x-button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
                                 </div>
 
                             @elseif($twoFactorEnabled)
@@ -386,24 +432,57 @@
                                     </div>
                                 </div>
 
-                                <div class="space-y-3">
-                                    <div>
-                                        <label for="enable-2fa-password" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Confirm Password</label>
-                                        <input
-                                            type="password"
-                                            id="enable-2fa-password"
-                                            wire:model="twoFactorPassword"
-                                            class="w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-zinc-800 border-zinc-300 dark:border-zinc-600 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            placeholder="Enter your password"
-                                        >
-                                        @error('twoFactorPassword')
-                                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
-                                        @enderror
-                                    </div>
-
-                                    <x-button type="button" wire:click="enableTwoFactor">
+                                <div x-data="{ open: false }"
+                                    x-on:two-factor-password-confirmed.window="open = false; $wire.twoFactorPassword = ''"
+                                    x-on:keydown.escape.window="if (open) { open = false; $wire.twoFactorPassword = ''; $wire.$refresh(); }"
+                                >
+                                    <x-button type="button" x-on:click="open = true">
                                         Enable Two-Factor Authentication
                                     </x-button>
+
+                                    <template x-teleport="body">
+                                        <div x-show="open" class="fixed inset-0 z-50 overflow-y-auto" x-cloak>
+                                            <div x-show="open"
+                                                x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+                                                x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+                                                class="fixed inset-0 bg-black/50"
+                                                x-on:click="open = false; $wire.twoFactorPassword = ''; $wire.$refresh();"
+                                            ></div>
+
+                                            <div class="flex min-h-full items-center justify-center p-4">
+                                                <div x-show="open" x-trap.noscroll="open"
+                                                    x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
+                                                    x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
+                                                    class="relative w-full max-w-md rounded-xl bg-white dark:bg-zinc-900 p-6 shadow-xl"
+                                                >
+                                                    <h3 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Confirm Password</h3>
+                                                    <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">Please enter your password to enable two-factor authentication.</p>
+
+                                                    <div class="mt-4">
+                                                        <input
+                                                            type="password"
+                                                            wire:model="twoFactorPassword"
+                                                            class="w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-zinc-800 border-zinc-300 dark:border-zinc-600 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                            placeholder="Enter your password"
+                                                            x-on:keydown.enter="$wire.enableTwoFactor()"
+                                                        >
+                                                        @error('twoFactorPassword')
+                                                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                                                        @enderror
+                                                    </div>
+
+                                                    <div class="mt-6 flex justify-end gap-3">
+                                                        <x-button type="button" color="secondary" x-on:click="open = false; $wire.twoFactorPassword = ''; $wire.$refresh();">
+                                                            Cancel
+                                                        </x-button>
+                                                        <x-button type="button" wire:click="enableTwoFactor">
+                                                            Enable
+                                                        </x-button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
                                 </div>
                             @endif
                         </div>
