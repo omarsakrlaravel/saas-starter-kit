@@ -35,4 +35,13 @@ return [
         'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
     ],
 
+    'settings' => [
+        'site.title' => env('SITE_TITLE', 'Wave'),
+        'site.description' => env('SITE_DESCRIPTION', 'The Software as a Service Starter Kit built with Laravel'),
+        'site.google_analytics_tracking_id' => env('GOOGLE_ANALYTICS_ID'),
+        'site.favicon' => '/wave/favicon.png',
+        'site.favicon_dark' => '/wave/favicon-dark.png',
+        'digital-ocean.enabled' => false,
+    ],
+
 ];

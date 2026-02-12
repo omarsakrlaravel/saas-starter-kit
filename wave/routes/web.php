@@ -4,7 +4,7 @@ use App\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Route;
 use Wave\Actions\Reset;
-use Wave\Page;
+
 
 Route::impersonate();
 
@@ -27,14 +27,11 @@ Route::group(['middleware' => 'auth'], function () {
 
     /********** Checkout/Billing Routes ***********/
     Route::post('cancel', '\Wave\Http\Controllers\SubscriptionController@cancel')->name('wave.cancel');
-    Route::view('checkout/welcome', 'theme::welcome');
 
     Route::post('subscribe', '\Wave\Http\Controllers\SubscriptionController@subscribe')->name('wave.subscribe');
     Route::post('switch-plans', '\Wave\Http\Controllers\SubscriptionController@switchPlans')->name('wave.switch-plans');
 });
 
-Route::get('wave/theme/image/{theme_name}', '\Wave\Http\Controllers\ThemeImageController@show');
-Route::get('wave/plugin/image/{plugin_name}', '\Wave\Http\Controllers\PluginImageController@show');
 Route::redirect('admin/login', '/auth/login');
 
 // Reset sqlite database - only in local environment
@@ -49,13 +46,6 @@ Route::get('stripe/portal', '\Wave\Http\Controllers\Billing\Stripe@redirect_to_c
 Route::redirect('billing', 'settings/subscription')->name('billing');
 
 try {
-    if (User::first()) {
-        /***** Dynamic Page Routes *****/
-        foreach (Page::all() as $page) {
-            Route::view($page->slug, 'theme::page', ['page' => $page->toArray()])->name($page->slug);
-        }
-    }
-
     // If no users are found, redirect to the installer or dummy page
     if (! User::first()) {
         Route::view('/', 'wave::welcome');

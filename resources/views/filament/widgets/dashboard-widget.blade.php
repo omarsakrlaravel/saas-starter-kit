@@ -21,7 +21,6 @@
             <div class="flex gap-x-3 items-center w-full">
                 <div class="flex-1">
                     <h2 class="grid flex-1 text-base font-semibold leading-6 text-gray-950 dark:text-white">Welcome to the Wave Admin</h2>
-                    <p class="text-sm text-gray-500 dark:text-gray-400"><span class="font-medium text-blue-600">Active Theme: </span>{{ \Wave\Theme::where('active', 1)->first()->name }}</p>
                 </div>
                 <x-filament::button color="gray" icon="heroicon-m-arrow-top-right-on-square" icon-alias="panels::widgets.account.logout-button" labeled-from="sm" tag="a" type="submit" href="/" target="_blank">
                     Visit your Site
@@ -52,30 +51,6 @@
                     </div>
                 </div>
                 <div class="mt-2 text-xs font-medium text-gray-500 truncate">Subscribers</div>
-            </x-filament::section>
-        </section>
-        <section class="flex flex-col gap-5 items-center w-full xl:flex-row">
-            <x-filament::section class="w-full">
-                <div class="flex gap-x-5 items-center">
-                    <div class="hidden lg:inline">
-                        <x-phosphor-pencil-line-duotone class="h-10 text-blue-600 fill-current" />
-                    </div>
-                    <div class="flex flex-col w-full">
-                        <div class="mt-1 text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-200">{{ \Wave\Post::count() }}</div>
-                    </div>
-                </div>
-                <div class="mt-2 text-xs font-medium text-gray-500 truncate">Total Post Articles</div>
-            </x-filament::section>
-            <x-filament::section class="w-full">
-                <div class="flex gap-x-5 items-center">
-                    <div class="flex-">
-                        <x-phosphor-file-text-duotone class="h-10 text-blue-600 fill-current" />
-                    </div>
-                    <div class="flex flex-col w-full">
-                        <div class="mt-1 text-xl font-semibold tracking-tight text-gray-900 dark:text-gray-200">{{ \Wave\Page::count() }}</div>
-                    </div>
-                </div>
-                <div class="mt-2 text-xs font-medium text-gray-500 truncate">Total Pages</div>
             </x-filament::section>
         </section>
     </section>

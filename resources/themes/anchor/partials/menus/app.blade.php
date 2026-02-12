@@ -33,14 +33,7 @@
                                     Watch videos to learn how to use Wave.
                                 </p>
                             </a>
-                            <a href="{{ route('blog') }}" wire:navigate class="block px-5 py-3 -m-3 space-y-1 rounded-xl transition duration-150 ease-in-out hover:bg-zinc-100">
-                                <p class="text-base font-medium leading-6 text-zinc-900">
-                                    From The Blog
-                                </p>
-                                <p class="text-xs leading-5 text-zinc-500">
-                                    View your application blog.
-                                </p>
-                            </a>
+
                         </div>
                     </div>
                 </div>

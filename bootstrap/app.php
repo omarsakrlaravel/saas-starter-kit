@@ -9,8 +9,6 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withProviders([
         \Lab404\Impersonate\ImpersonateServiceProvider::class,
         \Wave\WaveServiceProvider::class,
-        \DevDojo\Themes\ThemesServiceProvider::class,
-        \DevDojo\Themes\ThemesServiceProvider::class,
     ])
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
@@ -23,9 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectGuestsTo(fn () => route('login'));
         $middleware->redirectUsersTo(AppServiceProvider::HOME);
 
-        $middleware->encryptCookies(except: [
-            'theme',
-        ]);
+        $middleware->encryptCookies(except: []);
         $middleware->validateCsrfTokens(except: [
             '/webhook/paddle',
             '/webhook/stripe',

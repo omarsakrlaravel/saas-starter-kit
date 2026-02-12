@@ -3,7 +3,6 @@
 namespace Wave;
 
 use App\Models\Forms;
-use DevDojo\Themes\Models\Theme;
 use Exception;
 use Filament\Support\Colors\Color;
 use Filament\Support\Facades\FilamentColor;
@@ -14,8 +13,6 @@ use Illuminate\Foundation\Vite as BaseVite;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Validator;
@@ -27,7 +24,6 @@ use Laravel\Folio\Folio;
 use Livewire\Livewire;
 use Wave\Console\Commands\CancelExpiredSubscriptions;
 use Wave\Console\Commands\CleanOldActivityLogs;
-use Wave\Console\Commands\CreatePluginCommand;
 use Wave\Console\Commands\ProcessScheduledAccountDeletions;
 use Wave\Console\Commands\WaveStats;
 use Wave\Facades\Wave as WaveFacade;
@@ -35,11 +31,9 @@ use Wave\Http\Livewire\Billing\Checkout;
 use Wave\Http\Livewire\Billing\Update;
 use Wave\Http\Middleware\InstallMiddleware;
 use Wave\Http\Middleware\Subscribed;
-use Wave\Http\Middleware\ThemeDemoMiddleware;
 use Wave\Http\Middleware\TokenMiddleware;
 use Wave\Http\Middleware\VerifyPaddleWebhookSignature;
 use Wave\Overrides\Vite;
-use Wave\Plugins\PluginServiceProvider;
 
 class WaveServiceProvider extends ServiceProvider
 {
@@ -71,16 +65,12 @@ class WaveServiceProvider extends ServiceProvider
         }
 
         if (config('wave.demo')) {
-            $this->app->router->pushMiddlewareToGroup('web', ThemeDemoMiddleware::class);
             // Overwrite the Vite asset helper so we can use the demo folder as opposed to the build folder
             $this->app->singleton(BaseVite::class, function ($app) {
                 // Replace the default Vite instance with the custom one
                 return new Vite();
             });
         }
-
-        // Register the PluginServiceProvider
-        $this->app->register(PluginServiceProvider::class);
     }
 
     public function boot(Router $router, Dispatcher $event): void
@@ -96,7 +86,6 @@ class WaveServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(realpath(__DIR__.'/../database/migrations'));
         $this->loadBladeDirectives();
         $this->loadHelpers();
-        $this->setDefaultThemeColors();
 
         FilamentColor::register([
             'danger' => Color::Red,
@@ -121,12 +110,10 @@ class WaveServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 CancelExpiredSubscriptions::class,
-                CreatePluginCommand::class,
                 WaveStats::class,
                 CleanOldActivityLogs::class,
                 ProcessScheduledAccountDeletions::class,
             ]);
-            // $this->excludeInactiveThemes();
         }
 
         Relation::morphMap([
@@ -137,6 +124,10 @@ class WaveServiceProvider extends ServiceProvider
 
         $this->registerWaveFolioDirectory();
         $this->registerWaveComponentDirectory();
+
+        $this->registerThemeViewNamespace();
+        $this->registerThemeComponentDirectories();
+        $this->registerThemeFolioDirectory();
     }
 
     protected function loadHelpers(): void
@@ -267,66 +258,27 @@ class WaveServiceProvider extends ServiceProvider
         Livewire::component('billing.update', Update::class);
     }
 
-    protected function setDefaultThemeColors()
+    protected function registerThemeViewNamespace()
     {
-        if (config('wave.demo')) {
-            $color = '#000000'; // Default color
-
-            // Only use cache if available
-            if ($this->app->bound('cache') && $this->hasDBConnection()) {
-                try {
-                    $cacheKey = 'wave_theme_color_'.Cookie::get('theme', 'default');
-                    $color = Cache::remember($cacheKey, 3600, function () {
-                        $theme = $this->getActiveTheme();
-
-                        if (isset($theme->id)) {
-                            if (Cookie::get('theme')) {
-                                $theme_cookied = Theme::where('folder', '=', Cookie::get('theme'))->first();
-                                if (isset($theme_cookied->id)) {
-                                    $theme = $theme_cookied;
-                                }
-                            }
-
-                            return match ($theme->folder) {
-                                'anchor' => '#000000',
-                                'blank' => '#090909',
-                                'cove' => '#0069ff',
-                                'drift' => '#000000',
-                                'fusion' => '#0069ff',
-                                default => '#000000'
-                            };
-                        }
-
-                        return '#000000';
-                    });
-                } catch (Exception $e) {
-                    // Fallback to default color if cache or DB fails
-                    $color = '#000000';
-                }
-            }
-
-            Config::set('wave.primary_color', $color);
-        }
+        $this->loadViewsFrom(resource_path('themes/anchor'), 'theme');
     }
 
-    protected function getActiveTheme()
+    protected function registerThemeComponentDirectories()
     {
-        if ($this->app->bound('cache') && $this->hasDBConnection()) {
-            try {
-                return Cache::remember('wave_active_theme', 3600, function () {
-                    return \Wave\Theme::where('active', 1)->first();
-                });
-            } catch (Exception $e) {
-                // Fallback to direct DB query if cache fails
-                return \Wave\Theme::where('active', 1)->first();
-            }
-        }
+        Blade::anonymousComponentPath(resource_path('themes/anchor/components'));
+        Blade::anonymousComponentPath(resource_path('themes/anchor/components/elements'));
+    }
 
-        // Direct DB query when cache is not available
-        if ($this->hasDBConnection()) {
-            return \Wave\Theme::where('active', 1)->first();
+    protected function registerThemeFolioDirectory()
+    {
+        $path = resource_path('themes/anchor/pages');
+        if (File::exists($path)) {
+            Folio::path($path)->middleware([
+                '*' => [
+                    //
+                ],
+            ]);
         }
-
     }
 
     protected function hasDBConnection()

@@ -3,7 +3,6 @@
     use Livewire\Volt\Component;
     use function Laravel\Folio\{middleware, name};
     use Wave\ActivityLog;
-    use Wave\Post;
     use Wave\ApiKey;
     
     middleware('auth');
@@ -52,18 +51,6 @@
                         'key' => substr($key->key, 0, 10) . '...' . substr($key->key, -5), // Partially masked
                         'last_used_at' => $key->last_used_at ? $key->last_used_at->toDateTimeString() : null,
                         'created_at' => $key->created_at->toDateTimeString(),
-                    ];
-                })->toArray(),
-                'blog_posts' => Post::where('author_id', $user->id)->get()->map(function ($post) {
-                    return [
-                        'title' => $post->title,
-                        'slug' => $post->slug,
-                        'excerpt' => $post->excerpt,
-                        'status' => $post->status,
-                        'featured' => $post->featured,
-                        'category' => $post->category ? $post->category->name : null,
-                        'created_at' => $post->created_at->toDateTimeString(),
-                        'updated_at' => $post->updated_at->toDateTimeString(),
                     ];
                 })->toArray(),
             ];
@@ -133,7 +120,7 @@
                                 <ul class="mt-3 space-y-1 text-sm text-zinc-600 dark:text-zinc-400 list-disc list-inside">
                                     <li>Profile information and settings</li>
                                     <li>Activity logs and account history</li>
-                                    <li>Blog posts you've authored</li>
+
                                     <li>API keys (partially masked)</li>
                                     <li>Privacy and notification preferences</li>
                                     <li>Subscription information</li>

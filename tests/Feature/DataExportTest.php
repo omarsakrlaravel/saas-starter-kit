@@ -103,16 +103,6 @@ test('export includes privacy settings', function () {
     expect($user->privacy_settings)->toBe($privacySettings);
 });
 
-test('export includes blog posts authored by user', function () {
-    $user = User::where('email', 'admin@admin.com')->first();
-
-    $this->actingAs($user);
-
-    $posts = \Wave\Post::where('author_id', $user->id)->get();
-
-    expect($posts->count())->toBeGreaterThanOrEqual(0);
-});
-
 test('export handles subscription with string ends_at date', function () {
     $user = User::where('email', 'admin@admin.com')->first();
 
