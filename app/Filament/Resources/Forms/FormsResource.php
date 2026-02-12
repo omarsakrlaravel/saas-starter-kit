@@ -17,6 +17,8 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Set;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Group;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ToggleColumn;
@@ -36,38 +38,48 @@ class FormsResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema
+            ->columns(3)
             ->components([
-                TextInput::make('name')
-                    ->label('Name')
-                    ->required()
-                    ->live(debounce: 500)
-                    ->afterStateUpdated(fn (Set $set, ?string $state) => $set('slug', Str::slug($state)))
-                    ->maxLength(191),
-
-                TextInput::make('slug')
-                    ->label('Slug')
-                    ->required()
-                    ->unique(ignoreRecord: true)
-                    ->maxLength(191),
-
-                Repeater::make('fields')
+                Group::make()
                     ->schema([
-                        TextInput::make('label')->required(),
-                        Select::make('type')
-                            ->options(config('forms.types'))
-                            ->required(),
-                        TextInput::make('rules'),
-                        // Repeater::make('options')
-                        //         ->schema([
-                        //             TextInput::make('option')->required(),
-                        //         ])->columnSpanFull()
+                        Section::make('Form Details')
+                            ->description('Define the form name, slug, and fields')
+                            ->schema([
+                                TextInput::make('name')
+                                    ->label('Name')
+                                    ->required()
+                                    ->live(debounce: 500)
+                                    ->afterStateUpdated(fn (Set $set, ?string $state) => $set('slug', Str::slug($state)))
+                                    ->maxLength(191),
+                                TextInput::make('slug')
+                                    ->label('Slug')
+                                    ->required()
+                                    ->unique(ignoreRecord: true)
+                                    ->maxLength(191),
+                                Repeater::make('fields')
+                                    ->schema([
+                                        TextInput::make('label')->required(),
+                                        Select::make('type')
+                                            ->options(config('forms.types'))
+                                            ->required(),
+                                        TextInput::make('rules'),
+                                    ])
+                                    ->columns(3)
+                                    ->columnSpanFull(),
+                            ])
+                            ->columns(2),
                     ])
-                    ->columns(3)
-                    ->columnSpanFull(),
-
-                Toggle::make('is_active')
-                    ->label('Is Active')
-                    ->inline(false),
+                    ->columnSpan(2),
+                Group::make()
+                    ->schema([
+                        Section::make('Status')
+                            ->schema([
+                                Toggle::make('is_active')
+                                    ->label('Is Active')
+                                    ->inline(false),
+                            ]),
+                    ])
+                    ->columnSpan(1),
             ]);
     }
 

@@ -18,6 +18,8 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Group;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -35,36 +37,54 @@ class UserResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema
+            ->columns(3)
             ->components([
-                TextInput::make('name')
-                    ->required()
-                    ->maxLength(191),
-                TextInput::make('username')
-                    ->required()
-                    ->maxLength(191),
-                TextInput::make('email')
-                    ->email()
-                    ->required()
-                    ->maxLength(191),
-                FileUpload::make('avatar')
-                    ->required()
-                    ->image(),
-                DateTimePicker::make('email_verified_at'),
-                TextInput::make('password')
-                    ->password()
-                    ->dehydrateStateUsing(fn ($state) => Hash::make($state))
-                    ->dehydrated(fn ($state) => filled($state))
-                    ->required(fn (string $context): bool => $context === 'create'),
-                Select::make('roles')
-                    ->multiple()
-                    ->relationship('roles', 'name')
-                    ->preload()
-                    ->searchable()
-                    ->required(),
-                DateTimePicker::make('trial_ends_at'),
-                TextInput::make('verification_code')
-                    ->maxLength(191),
-                Toggle::make('verified'),
+                Group::make()
+                    ->schema([
+                        Section::make('User Details')
+                            ->description('Basic user account information')
+                            ->schema([
+                                TextInput::make('name')
+                                    ->required()
+                                    ->maxLength(191),
+                                TextInput::make('username')
+                                    ->required()
+                                    ->maxLength(191),
+                                TextInput::make('email')
+                                    ->email()
+                                    ->required()
+                                    ->maxLength(191),
+                                TextInput::make('password')
+                                    ->password()
+                                    ->dehydrateStateUsing(fn ($state) => Hash::make($state))
+                                    ->dehydrated(fn ($state) => filled($state))
+                                    ->required(fn (string $context): bool => $context === 'create'),
+                                FileUpload::make('avatar')
+                                    ->image()
+                                    ->columnSpanFull(),
+                            ])
+                            ->columns(2),
+                    ])
+                    ->columnSpan(2),
+                Group::make()
+                    ->schema([
+                        Section::make('Status & Access')
+                            ->description('Roles, verification, and trial settings')
+                            ->schema([
+                                Select::make('roles')
+                                    ->multiple()
+                                    ->relationship('roles', 'name')
+                                    ->preload()
+                                    ->searchable()
+                                    ->required(),
+                                Toggle::make('verified'),
+                                DateTimePicker::make('email_verified_at'),
+                                DateTimePicker::make('trial_ends_at'),
+                                TextInput::make('verification_code')
+                                    ->maxLength(191),
+                            ]),
+                    ])
+                    ->columnSpan(1),
             ]);
     }
 

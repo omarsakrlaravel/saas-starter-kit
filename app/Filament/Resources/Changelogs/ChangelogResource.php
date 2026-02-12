@@ -13,6 +13,7 @@ use Filament\Actions\EditAction;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -30,14 +31,19 @@ class ChangelogResource extends Resource
     {
         return $schema
             ->components([
-                TextInput::make('title')
-                    ->required()
-                    ->maxLength(191),
-                TextInput::make('description')
-                    ->required()
-                    ->maxLength(191),
-                RichEditor::make('body')
-                    ->required()
+                Section::make('Changelog Details')
+                    ->schema([
+                        TextInput::make('title')
+                            ->required()
+                            ->maxLength(191),
+                        TextInput::make('description')
+                            ->required()
+                            ->maxLength(191),
+                        RichEditor::make('body')
+                            ->required()
+                            ->columnSpanFull(),
+                    ])
+                    ->columns(2)
                     ->columnSpanFull(),
             ]);
     }

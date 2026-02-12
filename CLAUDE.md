@@ -61,8 +61,36 @@ Wave is a Laravel-based SaaS framework that provides essential features for buil
 
 #### Admin Panel
 - Filament-based admin interface
-- Resource management for users, posts, plans, etc.
+- Resource management for users, plans, etc.
 - Located in `app/Filament/`
+
+#### Filament Form Layout Convention
+All Filament resource forms must follow this layout:
+- **Always use Sections** to group form fields — never leave fields bare at the root level.
+- **2/3 + 1/3 two-column layout** for resources with multiple concerns: use `->columns(3)` on the schema, wrap each column's sections in a `Group` — left Group with `->columnSpan(2)` for main content, right Group with `->columnSpan(1)` for quick actions (status toggles, roles, publish controls, sort order, etc.). The Groups ensure sections stack vertically within their column instead of wrapping into rows.
+- **Simple resources** with only one logical group can use a single full-width Section with `->columnSpanFull()` (no column split needed).
+- Example pattern:
+```php
+return $schema
+    ->columns(3)
+    ->components([
+        Group::make()
+            ->schema([
+                Section::make('Main Content')
+                    ->schema([...])
+                    ->columns(2),
+                Section::make('More Content')
+                    ->schema([...]),
+            ])
+            ->columnSpan(2),
+        Group::make()
+            ->schema([
+                Section::make('Status & Actions')
+                    ->schema([...]),
+            ])
+            ->columnSpan(1),
+    ]);
+```
 
 ### Billing Integration
 - Supports both Stripe and Paddle

@@ -1,1 +1,1 @@
-<p class="text-white"><strong>Admin</strong></p>
+<p class="text-white"><strong>SaaS Starter Kit</strong></p>

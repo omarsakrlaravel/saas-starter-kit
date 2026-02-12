@@ -17,6 +17,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\BooleanColumn;
@@ -36,83 +37,90 @@ class PlanResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema
+            ->columns(3)
             ->components([
-                Section::make('Plan Details')
-                    ->description('Below are the basic details for each plan including name, description, and features')
+                Group::make()
                     ->schema([
-                        TextInput::make('name')
-                            ->required()
-                            ->maxLength(191)
-                            ->columnSpan(2),
-                        Textarea::make('description')
-                            ->columnSpan([
-                                'default' => 2,
-                                'lg' => 1,
+                        Section::make('Plan Details')
+                            ->description('Below are the basic details for each plan including name, description, and features')
+                            ->schema([
+                                TextInput::make('name')
+                                    ->required()
+                                    ->maxLength(191)
+                                    ->columnSpan(2),
+                                Textarea::make('description')
+                                    ->columnSpan([
+                                        'default' => 2,
+                                        'lg' => 1,
+                                    ]),
+                                TagsInput::make('features')
+                                    ->reorderable()
+                                    ->separator(',')
+                                    ->placeholder('New feature')
+                                    ->columnSpan([
+                                        'default' => 2,
+                                        'lg' => 1,
+                                    ]),
+                            ])
+                            ->columns(2),
+                        Section::make('Plan Pricing')
+                            ->description('Add the pricing details for your plans below')
+                            ->schema([
+                                TextInput::make('monthly_price_id')
+                                    ->label('Monthly Price ID')
+                                    ->hint('Stripe/Paddle ID')
+                                    ->maxLength(191),
+                                TextInput::make('monthly_price')
+                                    ->maxLength(191),
+                                TextInput::make('yearly_price_id')
+                                    ->label('Yearly Price ID')
+                                    ->hint('Stripe/Paddle ID')
+                                    ->maxLength(191),
+                                TextInput::make('yearly_price')
+                                    ->maxLength(191),
+                                TextInput::make('onetime_price_id')
+                                    ->label('One-time Price ID')
+                                    ->hint('Stripe/Paddle ID')
+                                    ->maxLength(191),
+                                TextInput::make('onetime_price')
+                                    ->maxLength(191),
+                            ])
+                            ->columns(2),
+                        Section::make('Feature Limits')
+                            ->description('Set usage limits for this plan. Leave empty for unlimited. Use -1 for explicitly unlimited, 0 to disable.')
+                            ->schema([
+                                KeyValue::make('limits')
+                                    ->keyLabel('Feature')
+                                    ->valueLabel('Limit')
+                                    ->keyPlaceholder('e.g., api_keys')
+                                    ->valuePlaceholder('e.g., 10')
+                                    ->reorderable()
+                                    ->columnSpanFull(),
                             ]),
-                        TagsInput::make('features')
-                            ->reorderable()
-                            ->separator(',')
-                            ->placeholder('New feature')
-                            ->columnSpan([
-                                'default' => 2,
-                                'lg' => 1,
+                    ])
+                    ->columnSpan(2),
+                Group::make()
+                    ->schema([
+                        Section::make('Plan Status')
+                            ->description('Status, role, and sort order')
+                            ->schema([
+                                Toggle::make('active')
+                                    ->required(),
+                                Toggle::make('default')
+                                    ->required(),
+                                TextInput::make('sort_order')
+                                    ->integer()
+                                    ->default(0)
+                                    ->minValue(0)
+                                    ->required(),
+                                Select::make('role_id')
+                                    ->label('Role')
+                                    ->options(Role::all()->pluck('name', 'id'))
+                                    ->searchable()
+                                    ->required(),
                             ]),
-                    ])->columns(2),
-                Section::make('Plan Pricing')
-                    ->description('Add the pricing details for your plans below')
-                    ->schema([
-                        TextInput::make('monthly_price_id')
-                            ->label('Monthly Price ID')
-                            ->hint('Stripe/Paddle ID')
-                            ->maxLength(191),
-                        TextInput::make('monthly_price')
-                            ->maxLength(191),
-                        TextInput::make('yearly_price_id')
-                            ->label('Yearly Price ID')
-                            ->hint('Stripe/Paddle ID')
-                            ->maxLength(191),
-                        TextInput::make('yearly_price')
-                            ->maxLength(191),
-                        TextInput::make('onetime_price_id')
-                            ->label('One-time Price ID')
-                            ->hint('Stripe/Paddle ID')
-                            ->maxLength(191),
-                        TextInput::make('onetime_price')
-                            ->maxLength(191),
-                    ])->columns(2),
-                Section::make('Plan Status')
-                    ->description('Make the plan default or active/inactive and set the sort order')
-                    ->schema([
-                        Toggle::make('active')
-                            ->required(),
-                        Toggle::make('default')
-                            ->required(),
-                        TextInput::make('sort_order')
-                            ->integer()
-                            ->default(0)
-                            ->minValue(0)
-                            ->required(),
-                    ])->columns(2),
-                Section::make('Feature Limits')
-                    ->description('Set usage limits for this plan. Leave empty for unlimited. Use -1 for explicitly unlimited, 0 to disable.')
-                    ->schema([
-                        KeyValue::make('limits')
-                            ->keyLabel('Feature')
-                            ->valueLabel('Limit')
-                            ->keyPlaceholder('e.g., api_keys')
-                            ->valuePlaceholder('e.g., 10')
-                            ->reorderable()
-                            ->columnSpanFull(),
-                    ]),
-                Section::make('Associated Role')
-                    ->description('When the user subscribes to this plan, what role should they be assigned?')
-                    ->schema([
-                        Select::make('role_id')
-                            ->label('Role')
-                            ->options(Role::all()->pluck('name', 'id'))
-                            ->searchable()
-                            ->required(),
-                    ]),
+                    ])
+                    ->columnSpan(1),
             ]);
     }
 

@@ -20,7 +20,7 @@
         <x-filament::section class="w-full">
             <div class="flex gap-x-3 items-center w-full">
                 <div class="flex-1">
-                    <h2 class="grid flex-1 text-base font-semibold leading-6 text-gray-950 dark:text-white">Welcome to the Wave Admin</h2>
+                    <h2 class="grid flex-1 text-base font-semibold leading-6 text-gray-950 dark:text-white">Welcome to SaaS Starter Kit</h2>
                 </div>
                 <x-filament::button color="gray" icon="heroicon-m-arrow-top-right-on-square" icon-alias="panels::widgets.account.logout-button" labeled-from="sm" tag="a" type="submit" href="/" target="_blank">
                     Visit your Site

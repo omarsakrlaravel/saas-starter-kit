@@ -12,6 +12,7 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -29,15 +30,20 @@ class RoleResource extends Resource
     {
         return $schema
             ->components([
-                TextInput::make('name')
-                    ->required()
-                    ->maxLength(191),
-                TextInput::make('guard_name')
-                    ->required()
-                    ->maxLength(191),
-                TextInput::make('description')
-                    ->required()
-                    ->maxLength(191)
+                Section::make('Role Details')
+                    ->schema([
+                        TextInput::make('name')
+                            ->required()
+                            ->maxLength(191),
+                        TextInput::make('guard_name')
+                            ->required()
+                            ->maxLength(191),
+                        TextInput::make('description')
+                            ->required()
+                            ->maxLength(191)
+                            ->columnSpanFull(),
+                    ])
+                    ->columns(2)
                     ->columnSpanFull(),
             ]);
     }

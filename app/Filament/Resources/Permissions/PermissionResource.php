@@ -11,6 +11,7 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -28,12 +29,17 @@ class PermissionResource extends Resource
     {
         return $schema
             ->components([
-                TextInput::make('name')
-                    ->required()
-                    ->maxLength(191),
-                TextInput::make('guard_name')
-                    ->required()
-                    ->maxLength(191),
+                Section::make('Permission Details')
+                    ->schema([
+                        TextInput::make('name')
+                            ->required()
+                            ->maxLength(191),
+                        TextInput::make('guard_name')
+                            ->required()
+                            ->maxLength(191),
+                    ])
+                    ->columns(2)
+                    ->columnSpanFull(),
             ]);
     }
 
