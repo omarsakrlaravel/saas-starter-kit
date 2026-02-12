@@ -1,50 +1,97 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Resources\Roles;
 
 use App\Filament\Resources\Roles\Pages\CreateRole;
 use App\Filament\Resources\Roles\Pages\EditRole;
 use App\Filament\Resources\Roles\Pages\ListRoles;
-use BackedEnum;
-use Filament\Actions\BulkActionGroup;
+use App\Filament\Resources\Roles\Pages\ViewRole;
+use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
+use BezhanSalleh\FilamentShield\Support\Utils;
+use BezhanSalleh\FilamentShield\Traits\HasShieldFormComponents;
+use BezhanSalleh\PluginEssentials\Concerns\Resource as Essentials;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Facades\Filament;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Panel;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\FontWeight;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use Spatie\Permission\Models\Role;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Unique;
+use UnitEnum;
 
 class RoleResource extends Resource
 {
-    protected static ?string $model = Role::class;
+    use Essentials\BelongsToParent;
+    use Essentials\BelongsToTenant;
+    use Essentials\HasGlobalSearch;
+    use Essentials\HasLabels;
+    use Essentials\HasNavigation;
+    use HasShieldFormComponents;
 
-    protected static BackedEnum|string|null $navigationIcon = 'phosphor-address-book-duotone';
+    protected static ?string $recordTitleAttribute = 'name';
 
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 4;
 
     public static function form(Schema $schema): Schema
     {
         return $schema
             ->components([
-                Section::make('Role Details')
+                Grid::make()
                     ->schema([
-                        TextInput::make('name')
-                            ->required()
-                            ->maxLength(191),
-                        TextInput::make('guard_name')
-                            ->required()
-                            ->maxLength(191),
-                        TextInput::make('description')
-                            ->required()
-                            ->maxLength(191)
+                        Section::make()
+                            ->schema([
+                                TextInput::make('name')
+                                    ->label(__('filament-shield::filament-shield.field.name'))
+                                    ->unique(
+                                        ignoreRecord: true, /** @phpstan-ignore-next-line */
+                                        modifyRuleUsing: fn (Unique $rule): Unique => Utils::isTenancyEnabled() ? $rule->where(Utils::getTenantModelForeignKey(), Filament::getTenant()?->id) : $rule
+                                    )
+                                    ->rules([Rule::notIn(['admin'])])
+                                    ->required()
+                                    ->maxLength(255),
+
+                                TextInput::make('guard_name')
+                                    ->label(__('filament-shield::filament-shield.field.guard_name'))
+                                    ->default(Utils::getFilamentAuthGuard())
+                                    ->nullable()
+                                    ->maxLength(255),
+
+                                TextInput::make('description')
+                                    ->maxLength(191)
+                                    ->columnSpanFull(),
+
+                                Select::make(config('permission.column_names.team_foreign_key'))
+                                    ->label(__('filament-shield::filament-shield.field.team'))
+                                    ->placeholder(__('filament-shield::filament-shield.field.team.placeholder'))
+                                    /** @phpstan-ignore-next-line */
+                                    ->default(Filament::getTenant()?->id)
+                                    ->options(fn (): array => in_array(Utils::getTenantModel(), [null, '', '0'], true) ? [] : Utils::getTenantModel()::pluck('name', 'id')->toArray())
+                                    ->visible(fn (): bool => static::shield()->isCentralApp() && Utils::isTenancyEnabled())
+                                    ->dehydrated(fn (): bool => static::shield()->isCentralApp() && Utils::isTenancyEnabled()),
+                                static::getSelectAllFormComponent(),
+
+                            ])
+                            ->columns([
+                                'sm' => 2,
+                                'lg' => 3,
+                            ])
                             ->columnSpanFull(),
                     ])
-                    ->columns(2)
                     ->columnSpanFull(),
+                static::getShieldFormComponents(),
             ]);
     }
 
@@ -53,17 +100,29 @@ class RoleResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('name')
+                    ->weight(FontWeight::Medium)
+                    ->label(__('filament-shield::filament-shield.column.name'))
+                    ->formatStateUsing(fn (string $state): string => Str::headline($state))
                     ->searchable(),
                 TextColumn::make('guard_name')
-                    ->searchable(),
-                TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->badge()
+                    ->color('warning')
+                    ->label(__('filament-shield::filament-shield.column.guard_name')),
+                TextColumn::make('team.name')
+                    ->default('Global')
+                    ->badge()
+                    ->color(fn (mixed $state): string => str($state)->contains('Global') ? 'gray' : 'primary')
+                    ->label(__('filament-shield::filament-shield.column.team'))
+                    ->searchable()
+                    ->visible(fn (): bool => static::shield()->isCentralApp() && Utils::isTenancyEnabled()),
+                TextColumn::make('permissions_count')
+                    ->badge()
+                    ->label(__('filament-shield::filament-shield.column.permissions'))
+                    ->counts('permissions')
+                    ->color('primary'),
                 TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->label(__('filament-shield::filament-shield.column.updated_at'))
+                    ->dateTime(),
             ])
             ->filters([
                 //
@@ -73,10 +132,14 @@ class RoleResource extends Resource
                 DeleteAction::make(),
             ])
             ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
+                DeleteBulkAction::make(),
             ]);
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->where('name', '!=', 'admin');
     }
 
     public static function getRelations(): array
@@ -91,7 +154,33 @@ class RoleResource extends Resource
         return [
             'index' => ListRoles::route('/'),
             'create' => CreateRole::route('/create'),
+            'view' => ViewRole::route('/{record}'),
             'edit' => EditRole::route('/{record}/edit'),
         ];
+    }
+
+    public static function getModel(): string
+    {
+        return Utils::getRoleModel();
+    }
+
+    public static function getSlug(?Panel $panel = null): string
+    {
+        return Utils::getResourceSlug();
+    }
+
+    public static function getCluster(): ?string
+    {
+        return Utils::getResourceCluster();
+    }
+
+    public static function getNavigationGroup(): string|UnitEnum|null
+    {
+        return null;
+    }
+
+    public static function getEssentialsPlugin(): ?FilamentShieldPlugin
+    {
+        return FilamentShieldPlugin::get();
     }
 }

@@ -1,20 +1,19 @@
 <?php
 
-namespace App\Filament\Resources\Users;
+namespace App\Filament\Resources\Members;
 
-use App\Filament\Resources\Users\Pages\CreateUser;
-use App\Filament\Resources\Users\Pages\EditUser;
-use App\Filament\Resources\Users\Pages\ListUsers;
+use App\Filament\Clusters\MembersManager;
+use App\Filament\Resources\Members\Pages\CreateMember;
+use App\Filament\Resources\Members\Pages\EditMember;
+use App\Filament\Resources\Members\Pages\ListMembers;
 use App\Models\User;
 use BackedEnum;
-use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\FileUpload;
-use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
@@ -27,18 +26,29 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Hash;
 
-class UserResource extends Resource
+class MemberResource extends Resource
 {
     protected static ?string $model = User::class;
 
-    protected static string|BackedEnum|null $navigationIcon = 'phosphor-user-duotone';
+    protected static string|BackedEnum|null $navigationIcon = 'phosphor-users-duotone';
 
-    protected static ?int $navigationSort = 2;
+    protected static ?string $cluster = MembersManager::class;
+
+    protected static ?int $navigationSort = 1;
+
+    protected static ?string $slug = 'members';
+
+    protected static ?string $navigationLabel = 'Members';
+
+    protected static ?string $modelLabel = 'Member';
+
+    protected static ?string $pluralModelLabel = 'Members';
 
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->whereDoesntHave('roles', fn (Builder $query) => $query->where('name', 'admin'));
+            ->whereHas('roles', fn (Builder $query) => $query->where('name', 'admin'))
+            ->where('id', '!=', auth()->id());
     }
 
     public static function form(Schema $schema): Schema
@@ -48,8 +58,8 @@ class UserResource extends Resource
             ->components([
                 Group::make()
                     ->schema([
-                        Section::make('User Details')
-                            ->description('Basic user account information')
+                        Section::make('Member Details')
+                            ->description('Basic member account information')
                             ->schema([
                                 TextInput::make('name')
                                     ->required()
@@ -68,6 +78,7 @@ class UserResource extends Resource
                                     ->required(fn (string $context): bool => $context === 'create'),
                                 FileUpload::make('avatar')
                                     ->image()
+                                    ->dehydrated(fn ($state) => filled($state))
                                     ->columnSpanFull(),
                             ])
                             ->columns(2),
@@ -75,19 +86,11 @@ class UserResource extends Resource
                     ->columnSpan(2),
                 Group::make()
                     ->schema([
-                        Section::make('Status & Access')
-                            ->description('Roles, verification, and trial settings')
+                        Section::make('Status')
+                            ->description('Verification settings')
                             ->schema([
-                                Select::make('roles')
-                                    ->multiple()
-                                    ->relationship('roles', 'name', fn (Builder $query) => $query->where('name', '!=', 'admin'))
-                                    ->preload()
-                                    ->searchable(),
                                 Toggle::make('verified'),
                                 DateTimePicker::make('email_verified_at'),
-                                DateTimePicker::make('trial_ends_at'),
-                                TextInput::make('verification_code')
-                                    ->maxLength(191),
                             ]),
                     ])
                     ->columnSpan(1),
@@ -114,9 +117,6 @@ class UserResource extends Resource
             ->recordActions([
                 EditAction::make(),
                 DeleteAction::make(),
-                Action::make('Impersonate')
-                    ->url(fn ($record) => route('impersonate', $record))
-                    ->visible(fn ($record) => auth()->user()->id !== $record->id),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
@@ -135,9 +135,9 @@ class UserResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => ListUsers::route('/'),
-            'create' => CreateUser::route('/create'),
-            'edit' => EditUser::route('/{record}/edit'),
+            'index' => ListMembers::route('/'),
+            'create' => CreateMember::route('/create'),
+            'edit' => EditMember::route('/{record}/edit'),
         ];
     }
 }
