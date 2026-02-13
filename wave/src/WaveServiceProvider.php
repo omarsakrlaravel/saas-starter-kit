@@ -31,6 +31,7 @@ use Wave\Facades\Wave as WaveFacade;
 use Wave\Http\Livewire\Billing\Checkout;
 use Wave\Http\Livewire\Billing\Update;
 use Wave\Http\Middleware\CanManageBilling;
+use Wave\Http\Middleware\HandleOrganizationInvite;
 use Wave\Http\Middleware\InstallMiddleware;
 use Wave\Http\Middleware\Subscribed;
 use Wave\Http\Middleware\TokenMiddleware;
@@ -62,6 +63,7 @@ class WaveServiceProvider extends ServiceProvider
         $this->app->router->aliasMiddleware('subscribed', Subscribed::class);
         $this->app->router->aliasMiddleware('token_api', TokenMiddleware::class);
         $this->app->router->aliasMiddleware('can-manage-billing', CanManageBilling::class);
+        $this->app->router->aliasMiddleware('handle-org-invite', HandleOrganizationInvite::class);
 
         if (! $this->hasDBConnection()) {
             $this->app->router->pushMiddlewareToGroup('web', InstallMiddleware::class);

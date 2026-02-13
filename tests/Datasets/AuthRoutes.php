@@ -9,6 +9,7 @@ dataset('authroutes', function () {
         '/settings/profile',
         '/settings/security',
         '/settings/sessions',
+        '/settings/organization',
         '/settings/api',
         '/settings/subscription',
         '/settings/invoices',

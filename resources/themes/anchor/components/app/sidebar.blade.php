@@ -22,6 +22,7 @@
                         <x-logo class="w-auto h-7" />
                     </a>
                 </div>
+                <x-app.org-switcher />
                 <div class="flex items-center px-4 pt-1 pb-3">
                     <div class="relative flex items-center w-full h-full rounded-lg">
                         <x-phosphor-magnifying-glass class="absolute left-0 w-5 h-5 ml-2 text-gray-400 -translate-y-px" />
