@@ -2,9 +2,11 @@
 
 namespace Wave;
 
+use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class Subscription extends Model
 {
@@ -52,12 +54,33 @@ class Subscription extends Model
      */
     public function user(): BelongsTo
     {
-        return $this->belongsTo(config('wave.user_model', User::class), 'billable_id');
+        $userClass = config('wave.user_model', User::class);
+
+        if ((string) $this->billable_type !== 'user') {
+            return $this->belongsTo($userClass, 'billable_id')->whereKey(0);
+        }
+
+        return $this->belongsTo($userClass, 'billable_id');
+    }
+
+    public function billable(): MorphTo
+    {
+        return $this->morphTo();
+    }
+
+    public function clearBillableCache(): void
+    {
+        if ($this->billable instanceof User) {
+            $this->billable->clearUserCache($this->plan_id);
+        } elseif ($this->billable instanceof Organization) {
+            $this->billable->clearMembersBillingCache($this->plan_id);
+        }
     }
 
     public function cancel()
     {
         $this->status = 'cancelled';
+        $this->cancelled_at = now();
         $this->save();
     }
 

@@ -7,10 +7,13 @@ use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Http;
 use Livewire\Component;
 use Wave\Actions\Billing\Paddle\AddSubscriptionIdFromTransaction;
+use Wave\Http\Livewire\Billing\Concerns\EnsuresBillingContextAccess;
 use Wave\Subscription;
 
 class Update extends Component
 {
+    use EnsuresBillingContextAccess;
+
     public $update_url;
 
     public $cancel_url;
@@ -25,14 +28,19 @@ class Update extends Component
 
     public $subscription;
 
+    public function boot(): void
+    {
+        $this->ensureBillingContextAccess();
+    }
+
     public function mount()
     {
-        $this->subscription = auth()->user()->subscription;
+        $this->subscription = auth()->user()->latestSubscription();
 
         if (config('wave.billing_provider') == 'paddle' && auth()->user()->subscriber()) {
             $subscription = $this->subscription;
 
-            if (is_null($this->subscription->vendor_subscription_id)) {
+            if (empty($this->subscription->vendor_subscription_id)) {
                 // If we did not obtain the user subscription id, try to get it again.
                 $subscription = app(AddSubscriptionIdFromTransaction::class)($this->subscription->vendor_transaction_id);
                 if (is_null($subscription)) {
@@ -72,8 +80,11 @@ class Update extends Component
 
     public function cancel()
     {
-
         $subscription = auth()->user()->latestSubscription();
+        if (! $subscription) {
+            return;
+        }
+
         $response = Http::withToken(config('wave.paddle.api_key'))->post($this->paddle_url.'/subscriptions/'.$subscription->vendor_subscription_id.'/cancel', [
             'reason' => 'Customer requested cancellation',
         ]);
@@ -95,7 +106,10 @@ class Update extends Component
 
     public function cancelImmediately()
     {
-        $subscription = auth()->user()->subscription;
+        $subscription = auth()->user()->latestSubscription();
+        if (! $subscription) {
+            return;
+        }
 
         $response = Http::withToken(config('wave.paddle.api_key'))->post($this->paddle_url.'/subscriptions/'.$subscription->vendor_subscription_id.'/cancel', [
             'effective_from' => 'immediately',

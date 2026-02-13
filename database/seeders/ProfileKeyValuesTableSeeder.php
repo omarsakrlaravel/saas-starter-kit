@@ -20,7 +20,7 @@ class ProfileKeyValuesTableSeeder extends Seeder
                 'id' => 10,
                 'type' => 'text_area',
                 'keyvalue_id' => 1,
-                'keyvalue_type' => 'users',
+                'keyvalue_type' => 'user',
                 'key' => 'about',
                 'value' => 'Hello I am the admin user. You can update this information in the edit profile section. Hope you enjoy using Wave.',
             ],

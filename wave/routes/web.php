@@ -5,7 +5,6 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Route;
 use Wave\Actions\Reset;
 
-
 Route::impersonate();
 
 // Additional Auth Routes
@@ -26,10 +25,18 @@ Route::group(['middleware' => 'auth'], function () {
     Route::post('changelog/read', '\Wave\Http\Controllers\ChangelogController@read')->name('changelog.read');
 
     /********** Checkout/Billing Routes ***********/
-    Route::post('cancel', '\Wave\Http\Controllers\SubscriptionController@cancel')->name('wave.cancel');
+    Route::post('cancel', '\Wave\Http\Controllers\SubscriptionController@cancel')
+        ->middleware('can-manage-billing')
+        ->name('wave.cancel');
 
-    Route::post('subscribe', '\Wave\Http\Controllers\SubscriptionController@subscribe')->name('wave.subscribe');
-    Route::post('switch-plans', '\Wave\Http\Controllers\SubscriptionController@switchPlans')->name('wave.switch-plans');
+    Route::post('subscribe', '\Wave\Http\Controllers\SubscriptionController@subscribe')
+        ->middleware('can-manage-billing')
+        ->name('wave.subscribe');
+    Route::post('switch-plans', '\Wave\Http\Controllers\SubscriptionController@switchPlans')
+        ->middleware('can-manage-billing')
+        ->name('wave.switch-plans');
+    Route::post('settings/billing-context', '\Wave\Http\Controllers\SubscriptionController@setBillingContext')
+        ->name('settings.billing-context');
 });
 
 Route::redirect('admin/login', '/auth/login');
@@ -42,7 +49,9 @@ if (app()->environment('local')) {
 /***** Billing Routes *****/
 Route::post('webhook/paddle', '\Wave\Http\Controllers\Billing\Webhooks\PaddleWebhook@handler')->middleware('paddle-webhook-signature');
 Route::post('webhook/stripe', '\Wave\Http\Controllers\Billing\Webhooks\StripeWebhook@handler');
-Route::get('stripe/portal', '\Wave\Http\Controllers\Billing\Stripe@redirect_to_customer_portal')->name('stripe.portal');
+Route::get('stripe/portal', '\Wave\Http\Controllers\Billing\Stripe@redirect_to_customer_portal')
+    ->middleware(['auth', 'can-manage-billing'])
+    ->name('stripe.portal');
 Route::redirect('billing', 'settings/subscription')->name('billing');
 
 try {

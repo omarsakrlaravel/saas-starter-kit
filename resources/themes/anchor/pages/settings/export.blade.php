@@ -56,8 +56,8 @@
             ];
             
             // Add subscription data if available
-            if ($user->subscription) {
-                $subscription = $user->subscription;
+            if ($user->latestSubscription()) {
+                $subscription = $user->latestSubscription();
                 $data['subscription'] = [
                     'plan' => $subscription->plan->name ?? null,
                     'status' => $subscription->status,

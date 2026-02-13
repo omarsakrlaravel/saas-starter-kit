@@ -8,11 +8,14 @@ use Livewire\Attributes\On;
 use Livewire\Component;
 use Stripe\StripeClient;
 use Wave\Actions\Billing\Paddle\AddSubscriptionIdFromTransaction;
+use Wave\Http\Livewire\Billing\Concerns\EnsuresBillingContextAccess;
 use Wave\Plan;
 use Wave\Subscription;
 
 class Checkout extends Component
 {
+    use EnsuresBillingContextAccess;
+
     public $billing_cycle_available = 'month'; // month, year, or both;
 
     public $billing_cycle_selected = 'month';
@@ -27,6 +30,11 @@ class Checkout extends Component
 
     public $userPlan = null;
 
+    public function boot(): void
+    {
+        $this->ensureBillingContextAccess();
+    }
+
     public function mount()
     {
         $this->billing_provider = config('wave.billing_provider', 'stripe');
@@ -35,14 +43,15 @@ class Checkout extends Component
 
         if ($this->change) {
             // if we are changing the user plan as opposecd to checking out the first time.
-            $this->userSubscription = auth()->user()->subscription;
-            $this->userPlan = auth()->user()->subscription->plan;
+            $this->userSubscription = auth()->user()->latestSubscription();
+            $this->userPlan = $this->userSubscription?->plan;
         }
     }
 
     public function redirectToStripeCheckout(Plan $plan)
     {
         $stripe = new StripeClient(config('wave.stripe.secret_key'));
+        $billingContext = auth()->user()->getBillingContext();
 
         $price_id = $this->billing_cycle_selected == 'month' ? $plan->monthly_price_id : $plan->yearly_price_id ?? null;
 
@@ -52,8 +61,8 @@ class Checkout extends Component
                 'quantity' => 1,
             ]],
             'metadata' => [
-                'billable_type' => 'user',
-                'billable_id' => auth()->user()->id,
+                'billable_type' => $billingContext['type'],
+                'billable_id' => $billingContext['id'],
                 'plan_id' => $plan->id,
                 'billing_cycle' => $this->billing_cycle_selected,
             ],
@@ -106,6 +115,7 @@ class Checkout extends Component
     #[On('verifyPaddleTransaction')]
     public function verifyPaddleTransaction($transactionId)
     {
+        $billingContext = auth()->user()->getBillingContext();
 
         $transaction = null;
 
@@ -120,8 +130,6 @@ class Checkout extends Component
 
         if ($transaction) {
             // Proceed with processing the transaction
-
-            $user = auth()->user();
 
             if ($this->billing_cycle_selected == 'month') {
                 $plan = Plan::where('monthly_price_id', $transaction->items[0]->price->id)->first();
@@ -140,8 +148,8 @@ class Checkout extends Component
             }
 
             Subscription::create([
-                'billable_type' => 'user',
-                'billable_id' => auth()->user()->id,
+                'billable_type' => $billingContext['type'],
+                'billable_id' => $billingContext['id'],
                 'plan_id' => $plan->id,
                 'vendor_slug' => 'paddle',
                 'vendor_transaction_id' => $transactionId,
@@ -168,7 +176,11 @@ class Checkout extends Component
 
     public function switchPlan(Plan $plan)
     {
-        $subscription = auth()->user()->subscription;
+        $subscription = auth()->user()->latestSubscription();
+
+        if (! $subscription) {
+            return;
+        }
 
         $price_id = ($this->billing_cycle_selected == 'month') ? $plan->monthly_price_id : $plan->yearly_price_id ?? null;
 

@@ -3,6 +3,7 @@
 namespace Wave;
 
 use App\Models\Forms;
+use App\Models\Organization;
 use Exception;
 use Filament\Support\Colors\Color;
 use Filament\Support\Facades\FilamentColor;
@@ -29,6 +30,7 @@ use Wave\Console\Commands\WaveStats;
 use Wave\Facades\Wave as WaveFacade;
 use Wave\Http\Livewire\Billing\Checkout;
 use Wave\Http\Livewire\Billing\Update;
+use Wave\Http\Middleware\CanManageBilling;
 use Wave\Http\Middleware\InstallMiddleware;
 use Wave\Http\Middleware\Subscribed;
 use Wave\Http\Middleware\TokenMiddleware;
@@ -59,6 +61,7 @@ class WaveServiceProvider extends ServiceProvider
         $this->app->router->aliasMiddleware('paddle-webhook-signature', VerifyPaddleWebhookSignature::class);
         $this->app->router->aliasMiddleware('subscribed', Subscribed::class);
         $this->app->router->aliasMiddleware('token_api', TokenMiddleware::class);
+        $this->app->router->aliasMiddleware('can-manage-billing', CanManageBilling::class);
 
         if (! $this->hasDBConnection()) {
             $this->app->router->pushMiddlewareToGroup('web', InstallMiddleware::class);
@@ -75,11 +78,6 @@ class WaveServiceProvider extends ServiceProvider
 
     public function boot(Router $router, Dispatcher $event): void
     {
-
-        Relation::morphMap([
-            'users' => config('wave.user_model'),
-        ]);
-
         $this->registerFilamentComponentsFriendlyNames();
 
         $this->loadViewsFrom(__DIR__.'/../resources/views', 'wave');
@@ -117,8 +115,9 @@ class WaveServiceProvider extends ServiceProvider
         }
 
         Relation::morphMap([
-            'user' => config('auth.providers.model'),
+            'user' => config('wave.user_model', \App\Models\User::class),
             'form' => Forms::class,
+            'organization' => Organization::class,
             // Add other mappings as needed
         ]);
 

@@ -20,44 +20,53 @@ class SubscriptionController extends Controller
 {
     private $paddle_url;
 
-    private $vendor_id;
-
     private $api_key;
 
     public function __construct()
     {
         $this->api_key = config('wave.paddle.api_key');
-        $this->vendor_id = config('wave.paddle.vendor');
 
         $this->paddle_url = (config('wave.paddle.env') == 'sandbox') ? 'https://sandbox-api.paddle.com' : 'https://api.paddle.com';
     }
 
-    public function cancel(Request $request): JsonResponse
+    public function subscribe(Request $request)
     {
-        $this->cancelSubscription($request->id);
-
-        return response()->json(['status' => 1]);
+        return $this->checkout($request);
     }
 
-    private function cancelSubscription()
+    public function cancel(Request $request): JsonResponse
     {
-        // Ensure user is authenticated
-        if (! auth()->check()) {
-            return redirect()->to('/login')->with(['message' => 'Please log in to continue.', 'message_type' => 'danger']);
+        [$status, $message] = $this->cancelSubscription($request->id);
+
+        return response()->json(
+            ['status' => $status ? 1 : 0, 'message' => $message],
+            $status ? 200 : 422
+        );
+    }
+
+    private function cancelSubscription($subscriptionId = null): array
+    {
+        // Auth user get latest subscription id
+        $subscription = auth()->user()->latestSubscription();
+        $subscriptionId = $subscriptionId ?: $subscription?->vendor_subscription_id;
+
+        if (! $subscription || ! $subscriptionId) {
+            return [false, 'No active subscription found.'];
         }
 
-        // Auth user get latest subscription id
-        $subscription_id = auth()->user()->latestSubscription->subscription_id;
+        if ($subscription->vendor_subscription_id !== (string) $subscriptionId) {
+            return [false, 'Invalid subscription ID.'];
+        }
 
         // Ensure the provided subscription ID matches the user's subscription ID
-        $localSubscription = Subscription::where('subscription_id', $subscription_id)->first();
+        $localSubscription = Subscription::where('vendor_subscription_id', $subscriptionId)->first();
 
-        if (! $localSubscription || auth()->user()->latestSubscription->subscription_id != $subscription_id) {
-            return redirect()->back()->with(['message' => 'Invalid subscription ID.', 'message_type' => 'danger']);
+        if (! $localSubscription) {
+            return [false, 'Invalid subscription ID.'];
         }
 
         $response = Http::withToken($this->api_key)
-            ->post($this->paddle_url.'/subscriptions/'.$subscription_id.'/cancel', [
+            ->post($this->paddle_url.'/subscriptions/'.$subscriptionId.'/cancel', [
                 'effective_from' => 'immediately',
             ]);
 
@@ -74,19 +83,18 @@ class SubscriptionController extends Controller
                 $localSubscription->status = 'cancelled';
                 $localSubscription->save();
 
-                $user = User::find($localSubscription->user_id);
-                $user->clearUserCache();
+                $localSubscription->clearBillableCache();
 
-                return redirect()->back()->with(['message' => 'Your subscription has been successfully canceled.', 'message_type' => 'success']);
+                return [true, 'Your subscription has been successfully canceled.'];
             } else {
                 // Handle any errors that were returned in the response body
                 $error = isset($body['error']['message']) ? $body['error']['message'] : 'Unknown error while canceling the subscription.';
 
-                return redirect()->back()->with(['message' => $error, 'message_type' => 'danger']);
+                return [false, $error];
             }
         } else {
             // Handle failed HTTP requests
-            return redirect()->back()->with(['message' => 'Failed to cancel the subscription. Please try again later.', 'message_type' => 'danger']);
+            return [false, 'Failed to cancel the subscription. Please try again later.'];
         }
     }
 
@@ -149,20 +157,30 @@ class SubscriptionController extends Controller
                 }
 
                 $plan = Plan::where('plan_id', $transaction->items[0]->price->id)->first();
+                if (! isset($plan->id)) {
+                    $message = 'Error locating that subscription product id. Please contact us if you think this is incorrect.';
+                } else {
+                    $billingContext = $user->getBillingContext();
 
-                // Create or update subscription details
-                $subscriptionRecord = Subscription::create([
-                    'subscription_id' => $transaction->subscription_id,
-                    'plan_id' => $transaction->items[0]->price->product_id,
-                    'user_id' => $user->id,
-                    'status' => $subscription->status,
-                    'last_payment_at' => $subscription->first_billed_at,
-                    'next_payment_at' => $subscription->next_billed_at,
-                    'cancel_url' => $subscription->management_urls->cancel,
-                    'update_url' => $subscription->management_urls->update_payment_method,
-                ]);
+                    Subscription::create([
+                        'billable_type' => $billingContext['type'],
+                        'billable_id' => $billingContext['id'],
+                        'vendor_subscription_id' => $transaction->subscription_id,
+                        'plan_id' => $plan->id,
+                        'vendor_slug' => 'paddle',
+                        'vendor_transaction_id' => $transaction->id,
+                        'vendor_customer_id' => $subscription->customer_id,
+                        'status' => $subscription->status,
+                        'last_payment_at' => $subscription->first_billed_at,
+                        'next_payment_at' => $subscription->next_billed_at,
+                        'cancel_url' => $subscription->management_urls->cancel,
+                        'update_url' => $subscription->management_urls->update_payment_method,
+                        'cycle' => 'month',
+                        'seats' => 1,
+                    ]);
 
-                $status = 1;
+                    $status = 1;
+                }
             } else {
                 $message = 'Error locating that subscription product id. Please contact us if you think this is incorrect.';
             }
@@ -181,13 +199,14 @@ class SubscriptionController extends Controller
     {
 
         // Check if user has a subscription
-        if (! $user->latestSubscription) {
+        $activeSubscription = $user->latestSubscription();
+        if (! $activeSubscription) {
             return [];
         }
 
         $invoices = [];
         $response = Http::withToken($this->api_key)->get($this->paddle_url.'/transactions', [
-            'subscription_id' => $user->latestSubscription->subscription_id,
+            'subscription_id' => $activeSubscription->vendor_subscription_id,
         ]);
 
         $transactions = json_decode($response->body());
@@ -209,36 +228,80 @@ class SubscriptionController extends Controller
     public function switchPlans(Request $request): RedirectResponse
     {
         $plan = Plan::where('plan_id', $request->plan_id)->first();
+        $subscription = $request->user()->latestSubscription();
 
-        if (isset($plan->id)) {
-            // Update the user plan with Paddle
-            $response = Http::withToken($this->api_key)->patch(
-                $this->paddle_url.'/subscriptions/'.(string) $request->user()->latestSubscription->subscription_id,
-                [
-                    'items' => [
-                        [
-                            'price_id' => $plan->plan_id,
-                            'quantity' => 1,
-                        ],
+        if (! isset($plan->id)) {
+            return redirect()->back()->with(['message' => 'Could not locate the selected plan.', 'message_type' => 'danger']);
+        }
+
+        if (! $subscription || empty($subscription->vendor_subscription_id)) {
+            return redirect()->back()->with(['message' => 'No active subscription found to update.', 'message_type' => 'danger']);
+        }
+
+        // Update the user plan with Paddle
+        $response = Http::withToken($this->api_key)->patch(
+            $this->paddle_url.'/subscriptions/'.$subscription->vendor_subscription_id,
+            [
+                'items' => [
+                    [
+                        'price_id' => $plan->plan_id,
+                        'quantity' => 1,
                     ],
-                    'proration_billing_mode' => 'prorated_immediately',
-                ]
-            );
+                ],
+                'proration_billing_mode' => 'prorated_immediately',
+            ]
+        );
 
-            if ($response->successful()) {
-                $body = $response->json();
+        if ($response->successful()) {
+            $body = $response->json();
 
-                if (isset($body['data']) && $body['data']['status'] == 'active') {
-                    // Update the subscription with the updated plan in the local database
-                    $request->user()->subscription->update([
-                        'plan_id' => $request->plan_id,
-                    ]);
+            if (isset($body['data']) && $body['data']['status'] == 'active') {
+                // Update the subscription with the updated plan in the local database
+                $subscription->update([
+                    'plan_id' => $plan->id,
+                ]);
 
-                    return redirect()->back()->with(['message' => 'Successfully switched to the '.$plan->name.' plan.', 'message_type' => 'success']);
-                }
+                return redirect()->back()->with(['message' => 'Successfully switched to the '.$plan->name.' plan.', 'message_type' => 'success']);
             }
         }
 
         return redirect()->back()->with(['message' => 'Sorry, there was an issue updating your plan.', 'message_type' => 'danger']);
+    }
+
+    public function setBillingContext(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'current_organization_id' => 'nullable|integer',
+        ]);
+
+        $organizationId = $request->integer('current_organization_id');
+        $organizationId = $organizationId > 0 ? $organizationId : null;
+        $organizationsEnabled = config('wave.organizations_enabled', true);
+        $user = $request->user();
+
+        if (! $organizationsEnabled) {
+            $organizationId = null;
+        } elseif ($organizationId !== null) {
+            $canUseOrganization = $user->organizations()
+                ->where('organizations.active', true)
+                ->wherePivot('status', 'active')
+                ->where('organizations.id', $organizationId)
+                ->exists();
+
+            if (! $canUseOrganization) {
+                return redirect()->back()->with([
+                    'message' => 'You do not belong to that organization.',
+                    'message_type' => 'danger',
+                ]);
+            }
+        }
+
+        $user->setBillingContext($organizationId);
+        $user->save();
+
+        return redirect()->back()->with([
+            'message' => 'Billing context updated successfully.',
+            'message_type' => 'success',
+        ]);
     }
 }

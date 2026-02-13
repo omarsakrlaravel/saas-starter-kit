@@ -18,6 +18,7 @@ return [
     'demo' => env('WAVE_DEMO', false),
     'dev_bar' => env('WAVE_BAR', false),
     'billing_provider' => env('BILLING_PROVIDER', 'stripe'),
+    'organizations_enabled' => env('WAVE_ORGANIZATIONS_ENABLED', true),
 
     'paddle' => [
         'vendor' => env('PADDLE_VENDOR_ID', ''),

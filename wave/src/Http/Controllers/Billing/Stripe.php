@@ -10,8 +10,12 @@ class Stripe extends Controller
 {
     public function redirect_to_customer_portal(): RedirectResponse
     {
-
         $latest_active_subscription = auth()->user()->latestSubscription();
+
+        if (! $latest_active_subscription) {
+            return redirect()->back()->withErrors('No active subscription found.');
+        }
+
         // Set your secret key. Remember to switch to your live secret key in production.
         // See your keys here: https://dashboard.stripe.com/apikeys
         $stripe = new StripeClient(config('wave.stripe.secret_key'));

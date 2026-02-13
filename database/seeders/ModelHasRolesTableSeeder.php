@@ -18,7 +18,7 @@ class ModelHasRolesTableSeeder extends Seeder
         DB::table('model_has_roles')->insert([
             0 => [
                 'role_id' => 1,
-                'model_type' => 'users',
+                'model_type' => 'user',
                 'model_id' => 1,
             ],
         ]);

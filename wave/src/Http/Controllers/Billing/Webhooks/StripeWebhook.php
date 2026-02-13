@@ -3,6 +3,7 @@
 namespace Wave\Http\Controllers\Billing\Webhooks;
 
 use App\Http\Controllers\Controller;
+use App\Models\Organization;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -56,6 +57,12 @@ class StripeWebhook extends Controller
                 $subscriptionCycle = $stripeSubscription->plan->interval;
                 $plan_price_column = ($subscriptionCycle == 'year') ? 'yearly_price_id' : 'monthly_price_id';
                 $updatedPlan = Plan::where($plan_price_column, $stripeSubscription->plan->id)->first();
+                if (! isset($updatedPlan->id)) {
+                    $subscription->cancel();
+                    $subscription->clearBillableCache();
+
+                    return;
+                }
 
                 $subscription->cycle = $subscriptionCycle;
                 $subscription->plan_id = $updatedPlan->id;
@@ -68,7 +75,7 @@ class StripeWebhook extends Controller
                 }
 
                 $subscription->save();
-                $subscription->user->clearUserCache();
+                $subscription->clearBillableCache();
             }
         }
 
@@ -79,7 +86,7 @@ class StripeWebhook extends Controller
             $subscription = Subscription::where('vendor_subscription_id', $stripeSubscription->id)->first();
             if (isset($subscription)) {
                 $subscription->cancel();
-                $subscription->user->clearUserCache();
+                $subscription->clearBillableCache();
             }
         }
 
@@ -117,7 +124,20 @@ class StripeWebhook extends Controller
             $plan_id = $checkout_session->metadata->plan_id;
             $billing_cycle = $checkout_session->metadata->billing_cycle;
 
-            $user = User::find($billable_id);
+            if (! in_array($billable_type, ['user', 'organization'], true)) {
+                return;
+            }
+
+            $billable = null;
+            if ($billable_type === 'user') {
+                $billable = User::find($billable_id);
+            } elseif ($billable_type === 'organization') {
+                $billable = Organization::find($billable_id);
+            }
+
+            if (! $billable) {
+                return;
+            }
 
             Subscription::create([
                 'billable_type' => $billable_type,
@@ -131,7 +151,11 @@ class StripeWebhook extends Controller
                 'seats' => 1,
             ]);
 
-            $user->clearUserCache();
+            if ($billable instanceof User) {
+                $billable->clearUserCache($plan_id);
+            } elseif ($billable instanceof Organization) {
+                $billable->clearMembersBillingCache($plan_id);
+            }
         }
     }
 }
