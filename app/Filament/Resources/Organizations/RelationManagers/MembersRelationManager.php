@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Organizations\RelationManagers;
 
+use App\Models\Organization;
 use Filament\Actions\AttachAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DetachAction;
@@ -17,9 +18,34 @@ class MembersRelationManager extends RelationManager
 {
     protected static string $relationship = 'members';
 
+    protected function syncOwnerIfNeeded($record): void
+    {
+        if ($record->pivot->role !== 'owner') {
+            return;
+        }
+
+        /** @var Organization $organization */
+        $organization = $this->getOwnerRecord();
+
+        if ($organization->owner_user_id === $record->id) {
+            return;
+        }
+
+        $previousOwnerId = $organization->owner_user_id;
+
+        $organization->update(['owner_user_id' => $record->id]);
+
+        if ($previousOwnerId) {
+            $organization->members()->updateExistingPivot($previousOwnerId, [
+                'role' => 'member',
+            ]);
+        }
+    }
+
     public function table(Table $table): Table
     {
         return $table
+            ->description('Adding or removing members here bypasses Stripe seat billing. Use the organization settings page for billing-integrated management.')
             ->recordTitleAttribute('email')
             ->columns([
                 ImageColumn::make('avatar')
@@ -53,7 +79,10 @@ class MembersRelationManager extends RelationManager
                             ])
                             ->default('member')
                             ->required(),
-                    ]),
+                    ])
+                    ->after(function ($record): void {
+                        $this->syncOwnerIfNeeded($record);
+                    }),
             ])
             ->recordActions([
                 EditAction::make()
@@ -64,7 +93,10 @@ class MembersRelationManager extends RelationManager
                                 'owner' => 'Owner',
                             ])
                             ->required(),
-                    ]),
+                    ])
+                    ->after(function ($record): void {
+                        $this->syncOwnerIfNeeded($record);
+                    }),
                 DetachAction::make(),
             ])
             ->toolbarActions([

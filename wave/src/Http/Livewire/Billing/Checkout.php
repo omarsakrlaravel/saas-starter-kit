@@ -190,7 +190,7 @@ class Checkout extends Component
                 'items' => [
                     [
                         'price_id' => $price_id,
-                        'quantity' => 1,
+                        'quantity' => $subscription->seats,
                     ],
                 ],
                 'proration_billing_mode' => 'prorated_immediately',

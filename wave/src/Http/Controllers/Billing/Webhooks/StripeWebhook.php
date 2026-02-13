@@ -66,6 +66,7 @@ class StripeWebhook extends Controller
 
                 $subscription->cycle = $subscriptionCycle;
                 $subscription->plan_id = $updatedPlan->id;
+                $subscription->seats = (int) ($stripeSubscription->quantity ?? $subscription->seats);
 
                 // this would be true if the user decides to cancel their subscription
                 if (is_null($stripeSubscription->cancel_at)) {

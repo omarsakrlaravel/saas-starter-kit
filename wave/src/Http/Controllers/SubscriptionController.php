@@ -245,7 +245,7 @@ class SubscriptionController extends Controller
                 'items' => [
                     [
                         'price_id' => $plan->plan_id,
-                        'quantity' => 1,
+                        'quantity' => $subscription->seats,
                     ],
                 ],
                 'proration_billing_mode' => 'prorated_immediately',

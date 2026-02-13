@@ -13,6 +13,7 @@
     use Illuminate\Support\Facades\URL;
     use Illuminate\Support\Str;
     use Livewire\Volt\Component;
+    use Wave\Actions\Billing\Stripe\UpdateSubscriptionQuantity;
     use function Laravel\Folio\{middleware, name};
 
     middleware(['auth', 'verified']);
@@ -141,6 +142,27 @@
 
                     $org->members()->detach($userId);
 
+                    $subscription = $org->activeSubscription();
+                    if ($subscription) {
+                        try {
+                            app(UpdateSubscriptionQuantity::class)($subscription, -1);
+                        } catch (\RuntimeException $e) {
+                            $org->members()->attach($userId, [
+                                'role' => 'member',
+                                'status' => 'active',
+                                'invited_by' => auth()->id(),
+                                'joined_at' => now(),
+                            ]);
+
+                            Notification::make()
+                                ->title('Failed to update subscription seats. Member was not removed.')
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
+                    }
+
                     Notification::make()
                         ->title('Member removed')
                         ->success()
@@ -189,6 +211,20 @@
                     $org = $this->currentOrganization();
                     if (! $org || $this->isOwner()) {
                         return;
+                    }
+
+                    $subscription = $org->activeSubscription();
+                    if ($subscription) {
+                        try {
+                            app(UpdateSubscriptionQuantity::class)($subscription, -1);
+                        } catch (\RuntimeException $e) {
+                            Notification::make()
+                                ->title('Failed to update subscription seats. Please try again.')
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
                     }
 
                     $org->members()->detach(auth()->id());
@@ -283,7 +319,7 @@
                 return false;
             }
 
-            return $org->owner_user_id === auth()->id();
+            return $org->pivot->role === 'owner';
         }
     }
 
@@ -332,7 +368,13 @@
                             </span>
                             <div>
                                 <h3 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">{{ $org->name }}</h3>
-                                <p class="text-xs text-zinc-500 dark:text-zinc-400">{{ $org->members()->wherePivot('status', 'active')->count() }} {{ Str::plural('member', $org->members()->wherePivot('status', 'active')->count()) }}</p>
+                                @php
+                                    $activeMemberCount = $org->members()->wherePivot('status', 'active')->count();
+                                    $activeSubscription = $org->activeSubscription();
+                                @endphp
+                                <p class="text-xs text-zinc-500 dark:text-zinc-400">
+                                    {{ $activeMemberCount }} {{ Str::plural('member', $activeMemberCount) }}@if($activeSubscription) · {{ $activeSubscription->seats }} {{ Str::plural('seat', $activeSubscription->seats) }} on plan @endif
+                                </p>
                             </div>
                         </div>
                         @if($isOwner)
