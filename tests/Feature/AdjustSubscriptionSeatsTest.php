@@ -10,6 +10,10 @@ beforeEach(function () {
     $this->artisan('migrate:fresh');
     $this->seed();
 
+    // Clean seeded org data so tests control their own state
+    Subscription::query()->delete();
+    Organization::query()->delete();
+
     $this->plan = Plan::where('name', 'Premium')->first();
     if (! $this->plan) {
         $this->plan = Plan::create([

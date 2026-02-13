@@ -3,16 +3,15 @@
 namespace Wave\Http\Middleware;
 
 use Closure;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 class CanManageBilling
 {
     /**
      * Handle an incoming request.
      */
-    public function handle(Request $request, Closure $next): RedirectResponse|JsonResponse
+    public function handle(Request $request, Closure $next): Response
     {
         if (auth()->check() && auth()->user()->canManageBillingContext()) {
             return $next($request);

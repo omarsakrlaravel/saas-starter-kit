@@ -124,6 +124,7 @@ class StripeWebhook extends Controller
             $billable_type = $checkout_session->metadata->billable_type;
             $plan_id = $checkout_session->metadata->plan_id;
             $billing_cycle = $checkout_session->metadata->billing_cycle;
+            $seat_quantity = max((int) ($checkout_session->metadata->seat_quantity ?? 1), 1);
 
             if (! in_array($billable_type, ['user', 'organization'], true)) {
                 return;
@@ -149,7 +150,7 @@ class StripeWebhook extends Controller
                 'vendor_subscription_id' => $checkout_session->subscription,
                 'cycle' => $billing_cycle,
                 'status' => 'active',
-                'seats' => 1,
+                'seats' => $seat_quantity,
             ]);
 
             if ($billable instanceof User) {

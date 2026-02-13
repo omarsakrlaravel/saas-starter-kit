@@ -2,6 +2,7 @@
 
 namespace Wave\Http\Livewire\Billing;
 
+use App\Models\Organization;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Http;
 use Livewire\Attributes\On;
@@ -30,6 +31,12 @@ class Checkout extends Component
 
     public $userPlan = null;
 
+    public $seat_quantity = 1;
+
+    public $minimum_seat_quantity = 1;
+
+    public $maximum_seat_quantity = 100;
+
     public function boot(): void
     {
         $this->ensureBillingContextAccess();
@@ -46,25 +53,64 @@ class Checkout extends Component
             $this->userSubscription = auth()->user()->latestSubscription();
             $this->userPlan = $this->userSubscription?->plan;
         }
+
+        $this->initializeSeatQuantity();
+    }
+
+    protected function initializeSeatQuantity(): void
+    {
+        $billingContext = auth()->user()->getBillingContext();
+
+        if ($billingContext['type'] !== 'organization') {
+            $this->seat_quantity = 1;
+            $this->minimum_seat_quantity = 1;
+
+            return;
+        }
+
+        $organization = Organization::find($billingContext['id']);
+        $minimumSeatQuantity = max((int) ($organization?->occupiedSeatCount() ?? 0), 1);
+
+        $this->minimum_seat_quantity = $minimumSeatQuantity;
+        if ($this->change && $this->userSubscription) {
+            $this->seat_quantity = max((int) $this->userSubscription->seats, $minimumSeatQuantity);
+
+            return;
+        }
+
+        $this->seat_quantity = max((int) $this->seat_quantity, $minimumSeatQuantity);
+    }
+
+    protected function resolveSeatQuantity(): int
+    {
+        $validated = $this->validate([
+            'seat_quantity' => 'required|integer|min:'.$this->minimum_seat_quantity.'|max:'.$this->maximum_seat_quantity,
+        ], [
+            'seat_quantity.min' => 'Seat quantity must cover all occupied seats.',
+        ]);
+
+        return (int) $validated['seat_quantity'];
     }
 
     public function redirectToStripeCheckout(Plan $plan)
     {
         $stripe = new StripeClient(config('wave.stripe.secret_key'));
         $billingContext = auth()->user()->getBillingContext();
+        $seatQuantity = $this->resolveSeatQuantity();
 
         $price_id = $this->billing_cycle_selected == 'month' ? $plan->monthly_price_id : $plan->yearly_price_id ?? null;
 
         $checkout_session = $stripe->checkout->sessions->create([
             'line_items' => [[
                 'price' => $price_id,
-                'quantity' => 1,
+                'quantity' => $seatQuantity,
             ]],
             'metadata' => [
                 'billable_type' => $billingContext['type'],
                 'billable_id' => $billingContext['id'],
                 'plan_id' => $plan->id,
                 'billing_cycle' => $this->billing_cycle_selected,
+                'seat_quantity' => (string) $seatQuantity,
             ],
             'mode' => 'subscription',
             'success_url' => url('subscription/welcome'),
@@ -147,6 +193,8 @@ class Checkout extends Component
                 return;
             }
 
+            $seatQuantity = max((int) ($transaction->items[0]->quantity ?? $this->seat_quantity), 1);
+
             Subscription::create([
                 'billable_type' => $billingContext['type'],
                 'billable_id' => $billingContext['id'],
@@ -157,7 +205,7 @@ class Checkout extends Component
                 'vendor_subscription_id' => $transaction->subscription_id,
                 'cycle' => $this->billing_cycle_selected,
                 'status' => 'active',
-                'seats' => 1,
+                'seats' => $seatQuantity,
             ]);
 
             $this->js('savePaddleSubscription("'.$transactionId.'")');

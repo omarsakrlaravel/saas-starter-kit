@@ -2,6 +2,8 @@
     <div x-data="{ 
             billing_cycle_available: @entangle('billing_cycle_available'),
             billing_cycle_selected: @entangle('billing_cycle_selected'),
+            seat_quantity: @entangle('seat_quantity'),
+            minimum_seat_quantity: @entangle('minimum_seat_quantity'),
             toggleButtonClicked(el, month_or_year){
                 this.toggleRepositionMarker(el);
                 this.billing_cycle_selected = month_or_year;
@@ -22,6 +24,43 @@
             <x-billing.billing_cycle_toggle></x-billing.billing_cycle_toggle>
 
             <div class="h-full space-y-5">
+                @if(! $change && auth()->user()->getBillingContext()['type'] === 'organization')
+                    <div class="w-full rounded-xl border border-gray-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-800">
+                        <div class="flex items-center justify-between">
+                            <label class="text-sm font-medium text-gray-700 dark:text-neutral-200">Seats</label>
+                            <span class="text-xs text-gray-500 dark:text-neutral-400" x-text="minimum_seat_quantity + ' min'"></span>
+                        </div>
+                        <div class="mt-2 flex items-center gap-3">
+                            <button
+                                type="button"
+                                @click="seat_quantity = Math.max(minimum_seat_quantity, seat_quantity - 1)"
+                                :disabled="seat_quantity <= minimum_seat_quantity"
+                                class="flex h-9 w-9 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-neutral-600 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-700"
+                            >
+                                -
+                            </button>
+                            <input
+                                x-model.number="seat_quantity"
+                                type="number"
+                                :min="minimum_seat_quantity"
+                                max="{{ $maximum_seat_quantity }}"
+                                class="w-28 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-center text-lg font-semibold text-gray-900 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none dark:border-neutral-600 dark:bg-neutral-900 dark:text-neutral-100"
+                            />
+                            <button
+                                type="button"
+                                @click="seat_quantity = Math.min({{ $maximum_seat_quantity }}, seat_quantity + 1)"
+                                :disabled="seat_quantity >= {{ $maximum_seat_quantity }}"
+                                class="flex h-9 w-9 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-neutral-600 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-700"
+                            >
+                                +
+                            </button>
+                        </div>
+                        @error('seat_quantity')
+                            <p class="mt-2 text-xs text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+                @endif
+
                 @foreach($plans as $plan)
                     @php $features = is_array($plan->features) ? $plan->features : explode(',', $plan->features); @endphp
                     <div 
@@ -108,8 +147,8 @@
                                                 
                                             @else
                                                 <x-billing.button x-on:click="
-                                                        if(billing_cycle_selected == 'month'){ openCheckout('{{ $plan->monthly_price_id }}'); }
-                                                        if(billing_cycle_selected == 'year'){ openCheckout('{{ $plan->yearly_price_id }}'); }
+                                                        if(billing_cycle_selected == 'month'){ openCheckout('{{ $plan->monthly_price_id }}', seat_quantity); }
+                                                        if(billing_cycle_selected == 'year'){ openCheckout('{{ $plan->yearly_price_id }}', seat_quantity); }
                                                     " 
                                                     rounded="md" color="{{ config('devdojo.billing.style.color') }}"
                                                 >
@@ -193,12 +232,12 @@
                window.dispatchEvent(new CustomEvent('loader-hide')); 
             }
             
-            window.openCheckout = function(priceId) {
+            window.openCheckout = function(priceId, quantity = 1) {
                 if(paddle_public_key){
                     Paddle.Checkout.open({
                         items: [{
                             priceId: priceId,
-                            quantity: 1
+                            quantity: quantity
                         }],
                         customer: {
                             email: '{{ auth()->user()->email }}'

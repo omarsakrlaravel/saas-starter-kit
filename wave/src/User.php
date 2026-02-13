@@ -402,6 +402,10 @@ class User extends AuthUser implements FilamentUser, HasAvatar, JWTSubject
         if (config('wave.billing_provider') == 'stripe') {
             $stripe = new StripeClient(config('wave.stripe.secret_key'));
             foreach ($subscriptions as $subscription) {
+                if (empty($subscription->vendor_customer_id)) {
+                    continue;
+                }
+
                 $invoices = $stripe->invoices->all(['customer' => $subscription->vendor_customer_id, 'limit' => 100]);
 
                 foreach ($invoices as $invoice) {

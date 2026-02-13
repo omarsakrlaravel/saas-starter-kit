@@ -10,6 +10,10 @@ beforeEach(function () {
     $this->artisan('migrate:fresh');
     $this->seed();
 
+    // Clean seeded data so tests control their own state
+    Subscription::query()->delete();
+    User::where('id', '>', 1)->delete();
+
     // Create plans
     $this->basicPlan = Plan::create([
         'name' => 'Basic Plan',

@@ -28,9 +28,25 @@
         public string $editName = '';
         public string $inviteEmail = '';
         public int $targetSeats = 1;
+        public ?string $seatUpdateError = null;
+        public ?string $seatPaymentUrl = null;
 
         public function mount(): void
         {
+            $switchId = request()->query('switch');
+            if ($switchId) {
+                $canSwitch = auth()->user()->organizations()
+                    ->where('organizations.id', $switchId)
+                    ->where('organizations.active', true)
+                    ->wherePivot('status', 'active')
+                    ->exists();
+
+                if ($canSwitch) {
+                    auth()->user()->setBillingContext((int) $switchId);
+                    auth()->user()->save();
+                }
+            }
+
             $org = $this->currentOrganization();
             if ($org) {
                 $this->editName = $org->name;
@@ -210,7 +226,19 @@
         {
             $org = $this->currentOrganization();
             $subscription = $org?->activeSubscription();
+            if (! $subscription || $subscription->billable_type !== 'organization') {
+                $this->seatUpdateError = 'Seat management is only available for organization subscriptions.';
+                Notification::make()
+                    ->title('Seat management is unavailable')
+                    ->warning()
+                    ->send();
+
+                return;
+            }
+
             $this->targetSeats = $subscription?->seats ?? 1;
+            $this->seatUpdateError = null;
+            $this->seatPaymentUrl = null;
             $this->dispatch('open-modal', id: 'manage-seats');
         }
 
@@ -225,6 +253,16 @@
             if (! $subscription) {
                 return;
             }
+            if ($subscription->billable_type !== 'organization') {
+                $this->seatUpdateError = 'Seat management is only available for organization subscriptions.';
+                $this->seatPaymentUrl = null;
+                Notification::make()
+                    ->title('Seat management is unavailable')
+                    ->warning()
+                    ->send();
+
+                return;
+            }
 
             $this->validate([
                 'targetSeats' => 'required|integer|min:1|max:100',
@@ -233,6 +271,7 @@
             $occupied = $org->occupiedSeatCount();
             if ($this->targetSeats < $occupied) {
                 $this->addError('targetSeats', "Cannot reduce below {$occupied} occupied " . Str::plural('seat', $occupied) . '.');
+                $this->seatUpdateError = "Seat count cannot be reduced below {$occupied}.";
 
                 return;
             }
@@ -245,10 +284,23 @@
             }
 
             try {
-                app(UpdateSubscriptionQuantity::class)($subscription, $delta);
+                $invoiceUrl = app(UpdateSubscriptionQuantity::class)($subscription, $delta);
+
+                if ($invoiceUrl) {
+                    $this->seatPaymentUrl = $invoiceUrl;
+                    $this->seatUpdateError = 'The seat upgrade was saved, but payment is still pending. Complete payment to secure the new seats.';
+                    Notification::make()
+                        ->title('Payment required')
+                        ->warning()
+                        ->send();
+
+                    return;
+                }
             } catch (\RuntimeException $e) {
+                $this->seatUpdateError = $e->getMessage();
+                $this->seatPaymentUrl = null;
                 Notification::make()
-                    ->title('Failed to update seats. Please try again.')
+                    ->title('Unable to update seats. Please update your payment method and retry.')
                     ->danger()
                     ->send();
 
@@ -259,6 +311,8 @@
                 ->title('Seats updated successfully.')
                 ->success()
                 ->send();
+            $this->seatUpdateError = null;
+            $this->seatPaymentUrl = null;
 
             $this->dispatch('close-modal', id: 'manage-seats');
         }
@@ -366,8 +420,8 @@
                 @endphp
 
                 @if(! $org)
-                    {{-- No org — create form --}}
-                    <div class="p-6 text-center bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg">
+                    {{-- Create form --}}
+                    <div class="mb-6 p-6 text-center bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg">
                         <x-phosphor-buildings-duotone class="w-12 h-12 mx-auto text-zinc-400" />
                         <h3 class="mt-3 text-base font-semibold text-zinc-900 dark:text-zinc-100">Create Organization</h3>
                         <p class="mt-1 text-sm text-zinc-600 dark:text-zinc-400">Create an organization to collaborate with your team.</p>
@@ -386,6 +440,44 @@
                             <x-button type="submit">Create</x-button>
                         </form>
                     </div>
+
+                    {{-- List existing organizations --}}
+                    @php
+                        $userOrganizations = $user->organizations()
+                            ->where('organizations.active', true)
+                            ->wherePivot('status', 'active')
+                            ->get();
+                    @endphp
+
+                    @if($userOrganizations->isNotEmpty())
+                        <div class="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg overflow-hidden">
+                            <div class="px-4 py-3 border-b border-zinc-200 dark:border-zinc-700">
+                                <h3 class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Your Organizations</h3>
+                            </div>
+                            <ul class="divide-y divide-zinc-200 dark:divide-zinc-700">
+                                @foreach($userOrganizations as $userOrg)
+                                    <li class="flex items-center justify-between px-4 py-3">
+                                        <div class="flex items-center gap-3">
+                                            <span class="flex items-center justify-center w-9 h-9 rounded-lg text-sm font-bold bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900">
+                                                {{ strtoupper(substr($userOrg->name, 0, 1)) }}
+                                            </span>
+                                            <div>
+                                                <p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $userOrg->name }}</p>
+                                                <p class="text-xs text-zinc-500">{{ ucfirst($userOrg->pivot->role) }}</p>
+                                            </div>
+                                        </div>
+                                        <a
+                                            href="{{ route('settings.organization') }}?switch={{ $userOrg->id }}"
+                                            wire:navigate
+                                            class="inline-flex items-center gap-1.5 rounded-md border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900/70 px-3 py-1.5 text-xs font-medium text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors"
+                                        >
+                                            Switch to &rarr;
+                                        </a>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
                 @else
                     {{-- Org header: name + settings gear --}}
                     @php
@@ -393,9 +485,10 @@
                         $invitedMemberCount = $org->invitedMemberCount();
                         $seatUsage = $org->occupiedSeatCount();
                         $activeSubscription = $org->activeSubscription();
-                        $totalSeats = $activeSubscription?->seats ?? 0;
-                        $availableSeats = max($totalSeats - $seatUsage, 0);
-                        $usagePercent = $totalSeats > 0 ? min(($seatUsage / $totalSeats) * 100, 100) : 0;
+                        $isOrganizationSubscription = $activeSubscription && $activeSubscription->billable_type === 'organization';
+                        $totalSeats = $isOrganizationSubscription ? $activeSubscription->seats : 0;
+                        $availableSeats = $isOrganizationSubscription ? max($totalSeats - $seatUsage, 0) : 0;
+                        $usagePercent = ($isOrganizationSubscription && $totalSeats > 0) ? min(($seatUsage / $totalSeats) * 100, 100) : 0;
                     @endphp
 
                     <div class="flex items-center justify-between mb-6">
@@ -436,7 +529,7 @@
                                         </div>
                                     </div>
 
-                                    @if($activeSubscription)
+                                    @if($isOrganizationSubscription)
                                         <button
                                             wire:click="openManageSeats"
                                             class="inline-flex items-center gap-1.5 rounded-md border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900/70 px-3 py-1.5 text-xs font-medium text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors"
@@ -479,7 +572,7 @@
                                         <div class="w-full h-2 rounded-full bg-zinc-200 dark:bg-zinc-700 overflow-hidden">
                                             <div class="h-full rounded-full transition-all duration-300 {{ $usagePercent >= 100 ? 'bg-amber-500' : 'bg-zinc-900 dark:bg-zinc-300' }}" style="width: {{ $usagePercent }}%"></div>
                                         </div>
-                                        @if(! $activeSubscription)
+                                        @if(! $isOrganizationSubscription)
                                             <p class="mt-2 text-xs text-amber-600 dark:text-amber-400">
                                                 Configure billing before adding members.
                                             </p>
@@ -501,7 +594,7 @@
                                                 wire:model="inviteEmail"
                                                 placeholder="Invite by email address..."
                                                 class="w-full rounded-md border border-zinc-200 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 text-sm px-3 py-1.5 placeholder:text-zinc-400"
-                                                @if(! $activeSubscription || ! $org->hasAvailableSeatForNewInvite()) disabled @endif
+                                                @if(! $isOrganizationSubscription || ! $org->hasAvailableSeatForNewInvite()) disabled @endif
                                             />
                                             @error('inviteEmail')
                                                 <p class="absolute -bottom-5 left-0 text-xs text-red-600">{{ $message }}</p>
@@ -510,14 +603,14 @@
                                         <button
                                             type="submit"
                                             class="inline-flex items-center gap-1.5 rounded-md bg-zinc-900 dark:bg-zinc-100 px-3.5 py-1.5 text-sm font-medium text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                                            @if(! $activeSubscription || ! $org->hasAvailableSeatForNewInvite()) disabled @endif
+                                            @if(! $isOrganizationSubscription || ! $org->hasAvailableSeatForNewInvite()) disabled @endif
                                             wire:loading.attr="disabled"
                                         >
                                             <x-phosphor-paper-plane-tilt-bold class="w-3.5 h-3.5" />
                                             Invite
                                         </button>
                                     </form>
-                                    @if(! $activeSubscription)
+                                    @if(! $isOrganizationSubscription)
                                         <p class="mt-6 text-xs text-amber-600 dark:text-amber-400">
                                             Billing is required before inviting a team member.
                                         </p>
@@ -603,7 +696,7 @@
                             </div>
                         </x-filament::modal>
 
-                        @if($activeSubscription)
+                        @if($isOrganizationSubscription)
                             @php
                                 $plan = $activeSubscription->plan;
                                 $pricePerSeat = $activeSubscription->cycle === 'year'
@@ -619,6 +712,7 @@
                                 <div
                                     x-data="{
                                         seats: @entangle('targetSeats'),
+                                        current: {{ $activeSubscription->seats }},
                                         min: {{ $minSeats }},
                                         max: 100,
                                         price: {{ $pricePerSeat }},
@@ -689,17 +783,47 @@
                                         </div>
                                     </div>
 
-                                    {{-- Price summary --}}
-                                    <div class="flex items-center justify-between rounded-lg bg-zinc-50 dark:bg-zinc-800 px-4 py-3 border border-zinc-200 dark:border-zinc-700">
-                                        <span class="text-sm text-zinc-600 dark:text-zinc-400" x-text="seats + (seats === 1 ? ' seat' : ' seats') + ' × ${{ number_format($pricePerSeat, 2) }}/{{ $cycleLabel }}'"></span>
-                                        <span class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                                            $<span x-text="(seats * price).toFixed(2)"></span>/{{ $cycleLabel }}
-                                        </span>
+                                    {{-- Billing summary --}}
+                                    <div class="rounded-lg bg-zinc-50 dark:bg-zinc-800 px-4 py-3 border border-zinc-200 dark:border-zinc-700 space-y-2">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-sm text-zinc-600 dark:text-zinc-400">Current seats</span>
+                                            <span class="text-sm font-medium text-zinc-900 dark:text-zinc-100" x-text="current"></span>
+                                        </div>
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-sm text-zinc-600 dark:text-zinc-400">New recurring total</span>
+                                            <span class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                                                $<span x-text="(seats * price).toFixed(2)"></span>/{{ $cycleLabel }}
+                                            </span>
+                                        </div>
+                                        <p x-show="seats > current" class="text-xs text-zinc-500 dark:text-zinc-400">
+                                            Extra seats are invoiced immediately as a prorated charge for the current period.
+                                        </p>
+                                        <p x-show="seats < current" class="text-xs text-zinc-500 dark:text-zinc-400">
+                                            Seat reductions apply now for access, with no refund or credit for the current period. The lower total applies on renewal.
+                                        </p>
                                     </div>
 
                                     @error('targetSeats')
                                         <p class="text-xs text-red-600">{{ $message }}</p>
                                     @enderror
+
+                                    @if($seatUpdateError)
+                                        <div class="rounded-md border border-red-200 bg-red-50 dark:border-red-900/40 dark:bg-red-900/10 p-3 text-xs text-red-700 dark:text-red-300">
+                                            <p>{{ $seatUpdateError }}</p>
+                                            @if($seatPaymentUrl)
+                                                <a href="{{ $seatPaymentUrl }}" target="_blank" rel="noopener noreferrer" class="inline-flex mt-2 underline underline-offset-2 text-red-700 dark:text-red-200">
+                                                    Pay invoice
+                                                </a>
+                                            @elseif(config('wave.billing_provider') === 'stripe')
+                                                <a href="{{ route('stripe.portal') }}" wire:navigate class="inline-flex mt-2 underline underline-offset-2 text-red-700 dark:text-red-200">
+                                                    Update payment method
+                                                </a>
+                                                <p class="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+                                                    If payment succeeds there, retry updating seats.
+                                                </p>
+                                            @endif
+                                        </div>
+                                    @endif
 
                                     {{-- Actions --}}
                                     <div class="flex items-center justify-end gap-3 pt-1">

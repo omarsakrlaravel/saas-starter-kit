@@ -12,7 +12,7 @@ class Stripe extends Controller
     {
         $latest_active_subscription = auth()->user()->latestSubscription();
 
-        if (! $latest_active_subscription) {
+        if (! $latest_active_subscription || empty($latest_active_subscription->vendor_customer_id)) {
             return redirect()->back()->withErrors('No active subscription found.');
         }
 
