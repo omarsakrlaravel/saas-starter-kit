@@ -12,10 +12,11 @@ class UpdateSubscriptionQuantity
      * Update the seat quantity on a subscription.
      *
      * @param  int  $delta  Positive to add seats, negative to remove
+     * @param  string  $prorationBehavior  Stripe proration behavior: 'create_prorations' (default) or 'none'
      *
      * @throws RuntimeException
      */
-    public function __invoke(Subscription $subscription, int $delta): void
+    public function __invoke(Subscription $subscription, int $delta, string $prorationBehavior = 'create_prorations'): void
     {
         $newQuantity = $subscription->seats + $delta;
 
@@ -36,7 +37,7 @@ class UpdateSubscriptionQuantity
                         'quantity' => $newQuantity,
                     ],
                 ],
-                'proration_behavior' => 'create_prorations',
+                'proration_behavior' => $prorationBehavior,
             ]);
         }
 

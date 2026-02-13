@@ -7,7 +7,6 @@ use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Wave\Actions\Billing\Stripe\UpdateSubscriptionQuantity;
 
 class OrganizationInviteController extends Controller
 {
@@ -44,14 +43,31 @@ class OrganizationInviteController extends Controller
             ->where('users.id', $user->id)
             ->first();
 
-        if ($membership) {
-            if ($membership->pivot->status === 'active') {
+        if ($membership && $membership->pivot->status === 'active') {
+            return redirect('/dashboard')->with([
+                'message' => "You're already a member of {$organization->name}.",
+                'message_type' => 'info',
+            ]);
+        }
+
+        $subscription = $organization->activeSubscription();
+        if ($subscription && ! $organization->hasAvailableSeatForNewInvite()) {
+            if (! $membership || $membership->pivot->status !== 'invited') {
                 return redirect('/dashboard')->with([
-                    'message' => "You're already a member of {$organization->name}.",
-                    'message_type' => 'info',
+                    'message' => 'No seats available in this organization. Ask the owner to add seats.',
+                    'message_type' => 'danger',
                 ]);
             }
 
+            if ($organization->occupiedSeatCount() >= $subscription->seats + 1) {
+                return redirect('/dashboard')->with([
+                    'message' => 'No seats available in this organization. Ask the owner to add seats.',
+                    'message_type' => 'danger',
+                ]);
+            }
+        }
+
+        if ($membership) {
             $organization->members()->updateExistingPivot($user->id, [
                 'status' => 'active',
                 'joined_at' => now(),
@@ -64,27 +80,6 @@ class OrganizationInviteController extends Controller
                 'invited_at' => now(),
                 'joined_at' => now(),
             ]);
-        }
-
-        $subscription = $organization->activeSubscription();
-        if ($subscription) {
-            try {
-                app(UpdateSubscriptionQuantity::class)($subscription, 1);
-            } catch (\RuntimeException $e) {
-                if ($membership) {
-                    $organization->members()->updateExistingPivot($user->id, [
-                        'status' => 'invited',
-                        'joined_at' => null,
-                    ]);
-                } else {
-                    $organization->members()->detach($user->id);
-                }
-
-                return redirect('/dashboard')->with([
-                    'message' => 'Unable to update subscription seats. Please contact the organization owner.',
-                    'message_type' => 'danger',
-                ]);
-            }
         }
 
         $user->setBillingContext($organization->id);

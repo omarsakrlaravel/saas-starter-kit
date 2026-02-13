@@ -63,7 +63,9 @@ beforeEach(function () {
     });
 });
 
-test('accepting invite increments seats on subscription', function () {
+test('accepting invite does not change purchased seats', function () {
+    $this->subscription->update(['seats' => 2]);
+
     $invitedUser = User::factory()->create(['email' => 'invited@example.com']);
     $this->org->members()->attach($invitedUser->id, [
         'role' => 'member',
@@ -85,7 +87,92 @@ test('accepting invite increments seats on subscription', function () {
     expect($this->subscription->seats)->toBe(2);
 });
 
-test('removing member decrements seats on subscription', function () {
+test('adding seats increases purchased seat count', function () {
+    $this->actingAs($this->owner);
+
+    Volt::test('settings.organization')
+        ->set('targetSeats', 3)
+        ->call('updateSeats');
+
+    $this->subscription->refresh();
+    expect($this->subscription->seats)->toBe(3);
+});
+
+test('adding seats unlocks invite flow', function () {
+    Mail::fake();
+    $this->subscription->update(['seats' => 1]);
+    $this->actingAs($this->owner);
+
+    Volt::test('settings.organization')
+        ->set('targetSeats', 2)
+        ->call('updateSeats');
+
+    $this->subscription->refresh();
+    expect($this->subscription->seats)->toBe(2);
+
+    Volt::test('settings.organization')
+        ->set('inviteEmail', 'newmember@example.com')
+        ->call('inviteMember');
+
+    Mail::assertSent(OrganizationInvite::class);
+});
+
+test('removing seats decreases purchased seat count', function () {
+    $this->subscription->update(['seats' => 5]);
+    $this->actingAs($this->owner);
+
+    Volt::test('settings.organization')
+        ->set('targetSeats', 3)
+        ->call('updateSeats');
+
+    $this->subscription->refresh();
+    expect($this->subscription->seats)->toBe(3);
+});
+
+test('removing seats is blocked when it would go below occupied count', function () {
+    $member = User::factory()->create();
+    $this->org->members()->attach($member->id, [
+        'role' => 'member',
+        'status' => 'active',
+        'joined_at' => now(),
+    ]);
+    // 2 occupied (owner + member), 3 seats total, can't go below 2
+    $this->subscription->update(['seats' => 3]);
+
+    $this->actingAs($this->owner);
+
+    Volt::test('settings.organization')
+        ->set('targetSeats', 1)
+        ->call('updateSeats')
+        ->assertHasErrors(['targetSeats']);
+
+    $this->subscription->refresh();
+    expect($this->subscription->seats)->toBe(3);
+});
+
+test('removing seats respects pending invites as occupied', function () {
+    $invitedUser = User::factory()->create();
+    $this->org->members()->attach($invitedUser->id, [
+        'role' => 'member',
+        'status' => 'invited',
+        'invited_by' => $this->owner->id,
+        'invited_at' => now(),
+    ]);
+    // 2 occupied (owner + invited), 3 seats total, can't go below 2
+    $this->subscription->update(['seats' => 3]);
+
+    $this->actingAs($this->owner);
+
+    Volt::test('settings.organization')
+        ->set('targetSeats', 1)
+        ->call('updateSeats')
+        ->assertHasErrors(['targetSeats']);
+
+    $this->subscription->refresh();
+    expect($this->subscription->seats)->toBe(3);
+});
+
+test('removing member does not change purchased seats', function () {
     $member = User::factory()->create();
     $this->org->members()->attach($member->id, [
         'role' => 'member',
@@ -100,11 +187,11 @@ test('removing member decrements seats on subscription', function () {
         ->callAction('removeMember', arguments: ['userId' => $member->id]);
 
     $this->subscription->refresh();
-    expect($this->subscription->seats)->toBe(1)
+    expect($this->subscription->seats)->toBe(2)
         ->and($this->org->members()->where('users.id', $member->id)->exists())->toBeFalse();
 });
 
-test('leaving organization decrements seats on subscription', function () {
+test('leaving organization does not change purchased seats', function () {
     $member = User::factory()->create();
     $this->org->members()->attach($member->id, [
         'role' => 'member',
@@ -120,7 +207,7 @@ test('leaving organization decrements seats on subscription', function () {
         ->callAction('leaveOrganization');
 
     $this->subscription->refresh();
-    expect($this->subscription->seats)->toBe(1)
+    expect($this->subscription->seats)->toBe(2)
         ->and($this->org->members()->where('users.id', $member->id)->exists())->toBeFalse();
 });
 
@@ -142,37 +229,28 @@ test('revoking invite does not change seats', function () {
     expect($this->subscription->seats)->toBe(1);
 });
 
-test('sending invite does not change seats', function () {
+test('sending invite requires available seats', function () {
     Mail::fake();
+    $this->subscription->update(['seats' => 1]);
 
     $this->actingAs($this->owner);
 
     Volt::test('settings.organization')
         ->set('inviteEmail', 'newinvite@example.com')
-        ->call('inviteMember');
+        ->call('inviteMember')
+        ->assertHasErrors(['inviteEmail']);
 
     $this->subscription->refresh();
     expect($this->subscription->seats)->toBe(1);
 
-    Mail::assertSent(OrganizationInvite::class);
+    Mail::assertNotSent(OrganizationInvite::class);
 });
 
-test('failed seat update rolls back invite acceptance', function () {
-    $this->mock(UpdateSubscriptionQuantity::class, function ($mock) {
-        $mock->shouldReceive('__invoke')->andThrow(new RuntimeException('Stripe API error'));
-    });
-
-    $invitedUser = User::factory()->create(['email' => 'fail@example.com']);
-    $this->org->members()->attach($invitedUser->id, [
-        'role' => 'member',
-        'status' => 'invited',
-        'invited_by' => $this->owner->id,
-        'invited_at' => now(),
-    ]);
-
+test('accepting invite without available seats is blocked', function () {
+    $invitedUser = User::factory()->create(['email' => 'blocked@example.com']);
     $url = URL::signedRoute('organization.invite.accept', [
         'organization' => $this->org->id,
-        'email' => 'fail@example.com',
+        'email' => 'blocked@example.com',
     ], now()->addDays(7));
 
     $this->actingAs($invitedUser)
@@ -180,31 +258,7 @@ test('failed seat update rolls back invite acceptance', function () {
         ->assertRedirect('/dashboard')
         ->assertSessionHas('message_type', 'danger');
 
-    $membership = $this->org->members()->where('users.id', $invitedUser->id)->first();
-    expect($membership->pivot->status)->toBe('invited')
-        ->and($this->subscription->fresh()->seats)->toBe(1);
-});
-
-test('failed seat update rolls back member removal', function () {
-    $this->mock(UpdateSubscriptionQuantity::class, function ($mock) {
-        $mock->shouldReceive('__invoke')->andThrow(new RuntimeException('Stripe API error'));
-    });
-
-    $member = User::factory()->create();
-    $this->org->members()->attach($member->id, [
-        'role' => 'member',
-        'status' => 'active',
-        'joined_at' => now(),
-    ]);
-    $this->subscription->update(['seats' => 2]);
-
-    $this->actingAs($this->owner);
-
-    Volt::test('settings.organization')
-        ->callAction('removeMember', arguments: ['userId' => $member->id]);
-
-    expect($this->org->members()->where('users.id', $member->id)->exists())->toBeTrue()
-        ->and($this->subscription->fresh()->seats)->toBe(2);
+    expect($this->org->members()->where('users.id', $invitedUser->id)->exists())->toBeFalse();
 });
 
 test('accepting invite without active subscription still works', function () {

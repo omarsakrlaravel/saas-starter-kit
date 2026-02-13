@@ -59,6 +59,43 @@ class Organization extends Model
         return $this->subscriptions()->where('status', 'active')->orderByDesc('created_at')->first();
     }
 
+    public function activeMemberCount(): int
+    {
+        return $this->members()->wherePivot('status', 'active')->count();
+    }
+
+    public function invitedMemberCount(): int
+    {
+        return $this->members()->wherePivot('status', 'invited')->count();
+    }
+
+    public function occupiedSeatCount(): int
+    {
+        return $this->activeMemberCount() + $this->invitedMemberCount();
+    }
+
+    public function availableSeatCount(): ?int
+    {
+        $subscription = $this->activeSubscription();
+
+        if (! $subscription) {
+            return null;
+        }
+
+        return max(0, $subscription->seats - $this->occupiedSeatCount());
+    }
+
+    public function hasAvailableSeatForNewInvite(): bool
+    {
+        $subscription = $this->activeSubscription();
+
+        if (! $subscription) {
+            return true;
+        }
+
+        return $this->occupiedSeatCount() < $subscription->seats;
+    }
+
     public function clearMembersBillingCache(?int $planId = null): void
     {
         $this->members()->chunkById(100, function ($members) use ($planId): void {
