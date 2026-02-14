@@ -206,6 +206,8 @@ class Checkout extends Component
                 'cycle' => $this->billing_cycle_selected,
                 'status' => 'active',
                 'seats' => $seatQuantity,
+                'last_payment_at' => $transaction->billed_at ?? $transaction->created_at ?? now(),
+                'next_payment_at' => $transaction->details->billing_period->ends_at ?? null,
             ]);
 
             $this->js('savePaddleSubscription("'.$transactionId.'")');

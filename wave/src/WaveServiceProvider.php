@@ -23,7 +23,6 @@ use Intervention\Image\Drivers\Gd\Driver;
 use Intervention\Image\ImageManager;
 use Laravel\Folio\Folio;
 use Livewire\Livewire;
-use Wave\Console\Commands\AdjustSubscriptionSeats;
 use Wave\Console\Commands\CancelExpiredSubscriptions;
 use Wave\Console\Commands\CleanOldActivityLogs;
 use Wave\Console\Commands\ProcessScheduledAccountDeletions;
@@ -110,7 +109,6 @@ class WaveServiceProvider extends ServiceProvider
 
         if ($this->app->runningInConsole()) {
             $this->commands([
-                AdjustSubscriptionSeats::class,
                 CancelExpiredSubscriptions::class,
                 WaveStats::class,
                 CleanOldActivityLogs::class,

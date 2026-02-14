@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Cache;
 use Stripe\Checkout\Session;
 use Stripe\Exception\SignatureVerificationException;
 use Stripe\Stripe;
+use Stripe\Subscription as StripeSubscription;
 use Stripe\Webhook;
 use UnexpectedValueException;
 use Wave\Plan;
@@ -67,6 +68,14 @@ class StripeWebhook extends Controller
                 $subscription->cycle = $subscriptionCycle;
                 $subscription->plan_id = $updatedPlan->id;
                 $subscription->seats = (int) ($stripeSubscription->quantity ?? $subscription->seats);
+
+                [$periodStart, $periodEnd] = $this->extractPeriodDates($stripeSubscription);
+                if ($periodStart) {
+                    $subscription->last_payment_at = Carbon::createFromTimestamp($periodStart);
+                }
+                if ($periodEnd) {
+                    $subscription->next_payment_at = Carbon::createFromTimestamp($periodEnd);
+                }
 
                 // this would be true if the user decides to cancel their subscription
                 if (is_null($stripeSubscription->cancel_at)) {
@@ -141,7 +150,7 @@ class StripeWebhook extends Controller
                 return;
             }
 
-            Subscription::create([
+            $subscriptionData = [
                 'billable_type' => $billable_type,
                 'billable_id' => $billable_id,
                 'plan_id' => $plan_id,
@@ -151,7 +160,24 @@ class StripeWebhook extends Controller
                 'cycle' => $billing_cycle,
                 'status' => 'active',
                 'seats' => $seat_quantity,
-            ]);
+            ];
+
+            if ($checkout_session->subscription) {
+                try {
+                    $stripeSubscription = StripeSubscription::retrieve($checkout_session->subscription);
+                    [$periodStart, $periodEnd] = $this->extractPeriodDates($stripeSubscription);
+                    if ($periodStart) {
+                        $subscriptionData['last_payment_at'] = Carbon::createFromTimestamp($periodStart);
+                    }
+                    if ($periodEnd) {
+                        $subscriptionData['next_payment_at'] = Carbon::createFromTimestamp($periodEnd);
+                    }
+                } catch (\Throwable $e) {
+                    // Continue without payment timestamps if retrieval fails
+                }
+            }
+
+            Subscription::create($subscriptionData);
 
             if ($billable instanceof User) {
                 $billable->clearUserCache($plan_id);
@@ -159,5 +185,28 @@ class StripeWebhook extends Controller
                 $billable->clearMembersBillingCache($plan_id);
             }
         }
+    }
+
+    /**
+     * Extract period dates from a Stripe subscription object.
+     *
+     * In newer Stripe API versions, current_period_start/end moved
+     * from the subscription root to items.data[0].
+     *
+     * @return array{0: int|null, 1: int|null} [periodStart, periodEnd]
+     */
+    protected function extractPeriodDates($stripeSubscription): array
+    {
+        $periodStart = $stripeSubscription->current_period_start ?? null;
+        $periodEnd = $stripeSubscription->current_period_end ?? null;
+
+        // Newer Stripe API versions store period on subscription items
+        if (! $periodStart && isset($stripeSubscription->items->data[0])) {
+            $item = $stripeSubscription->items->data[0];
+            $periodStart = $item->current_period_start ?? null;
+            $periodEnd = $item->current_period_end ?? null;
+        }
+
+        return [$periodStart, $periodEnd];
     }
 }

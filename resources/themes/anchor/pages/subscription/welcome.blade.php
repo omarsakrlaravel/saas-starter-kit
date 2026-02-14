@@ -5,57 +5,88 @@
 ?>
 
 @php
-    $plan = auth()->user()->plan();
-    $subscription = auth()->user()->latestSubscription();
-    $interval = auth()->user()->planInterval();
+    $isSubscriber = auth()->user()->subscriber();
+    $plan = $isSubscriber ? auth()->user()->plan() : null;
+    $subscription = $isSubscriber ? auth()->user()->latestSubscription() : null;
+    $interval = $isSubscriber ? auth()->user()->planInterval() : null;
     $features = $plan ? (is_array($plan->features) ? $plan->features : explode(',', $plan->features ?? '')) : [];
 @endphp
 
 <x-layouts.app>
     <x-app.container class="space-y-6">
 
-        {{-- Hero --}}
-        <div class="flex flex-col items-center pt-4 text-center">
-            <div class="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-100 dark:bg-emerald-900/40">
-                <x-phosphor-check-circle-duotone class="h-9 w-9 text-emerald-600 dark:text-emerald-400" />
-            </div>
-            <h1 class="text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl dark:text-zinc-100">You're all set!</h1>
-            <p class="mt-2 max-w-md text-base text-zinc-500 dark:text-zinc-400">
-                Your subscription is now active. You have full access to everything in your plan.
-            </p>
-        </div>
-
-        @if($plan)
-            {{-- Plan summary --}}
-            <div class="mx-auto w-full max-w-lg overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-700">
-                <div class="flex items-center justify-between border-b border-zinc-200 bg-zinc-50 px-5 py-3.5 dark:border-zinc-700 dark:bg-zinc-800/60">
-                    <div class="flex items-center gap-3">
-                        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/40">
-                            <x-phosphor-crown-duotone class="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                        </div>
-                        <div>
-                            <h3 class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{{ $plan->name }} Plan</h3>
-                            <p class="text-xs text-zinc-500 dark:text-zinc-400">{{ $interval }} billing</p>
-                        </div>
-                    </div>
-                    <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20 dark:bg-emerald-900/30 dark:text-emerald-400 dark:ring-emerald-500/30">
-                        <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
-                        Active
-                    </span>
+        @if($isSubscriber)
+            {{-- Hero --}}
+            <div class="flex flex-col items-center pt-4 text-center">
+                <div class="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-100 dark:bg-emerald-900/40">
+                    <x-phosphor-check-circle-duotone class="h-9 w-9 text-emerald-600 dark:text-emerald-400" />
                 </div>
+                <h1 class="text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl dark:text-zinc-100">You're all set!</h1>
+                <p class="mt-2 max-w-md text-base text-zinc-500 dark:text-zinc-400">
+                    Your subscription is now active. You have full access to everything in your plan.
+                </p>
+            </div>
 
-                @if(!empty($features) && $features[0] !== '')
-                    <div class="px-5 py-4">
-                        <ul class="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                            @foreach($features as $feature)
-                                <li class="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-300">
-                                    <x-phosphor-check-circle-duotone class="h-4 w-4 flex-shrink-0 text-emerald-500" />
-                                    <span>{{ trim($feature) }}</span>
-                                </li>
-                            @endforeach
-                        </ul>
+            @if($plan)
+                {{-- Plan summary --}}
+                <div class="mx-auto w-full max-w-lg overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-700">
+                    <div class="flex items-center justify-between border-b border-zinc-200 bg-zinc-50 px-5 py-3.5 dark:border-zinc-700 dark:bg-zinc-800/60">
+                        <div class="flex items-center gap-3">
+                            <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/40">
+                                <x-phosphor-crown-duotone class="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{{ $plan->name }} Plan</h3>
+                                <p class="text-xs text-zinc-500 dark:text-zinc-400">{{ $interval }} billing</p>
+                            </div>
+                        </div>
+                        <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20 dark:bg-emerald-900/30 dark:text-emerald-400 dark:ring-emerald-500/30">
+                            <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                            Active
+                        </span>
                     </div>
-                @endif
+
+                    @if(!empty($features) && $features[0] !== '')
+                        <div class="px-5 py-4">
+                            <ul class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                @foreach($features as $feature)
+                                    <li class="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-300">
+                                        <x-phosphor-check-circle-duotone class="h-4 w-4 flex-shrink-0 text-emerald-500" />
+                                        <span>{{ trim($feature) }}</span>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+                </div>
+            @endif
+        @else
+            {{-- Waiting for webhook / processing state --}}
+            <div class="flex flex-col items-center pt-4 text-center" x-data="{ ready: false }" x-init="
+                let attempts = 0;
+                let check = setInterval(async () => {
+                    attempts++;
+                    try {
+                        let res = await fetch('/subscription/welcome', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                        let html = await res.text();
+                        if (html.includes('all set')) {
+                            clearInterval(check);
+                            window.location.reload();
+                        }
+                    } catch(e) {}
+                    if (attempts >= 15) clearInterval(check);
+                }, 3000);
+            ">
+                <div class="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-100 dark:bg-blue-900/40">
+                    <svg class="h-8 w-8 animate-spin text-blue-600 dark:text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </div>
+                <h1 class="text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl dark:text-zinc-100">Activating your subscription...</h1>
+                <p class="mt-2 max-w-md text-base text-zinc-500 dark:text-zinc-400">
+                    We're confirming your payment. This usually takes just a few seconds.
+                </p>
             </div>
         @endif
 
@@ -98,10 +129,12 @@
 
     </x-app.container>
 
-    <x-slot name="javascript">
-        <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
-        <script>
-            confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-        </script>
-    </x-slot>
+    @if($isSubscriber)
+        <x-slot name="javascript">
+            <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+            <script>
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+            </script>
+        </x-slot>
+    @endif
 </x-layouts.app>

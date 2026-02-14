@@ -63,31 +63,59 @@
                             <div class="px-5 py-5">
                                 {{-- Price --}}
                                 <div class="mb-5">
+                                    @php
+                                        $unitPrice = $subscription->cycle === 'month' ? $plan->monthly_price : $plan->yearly_price;
+                                        $seats = ($isOrgBilling && $subscription->seats) ? $subscription->seats : 1;
+                                        $totalPrice = $unitPrice * $seats;
+                                        $cycleLabel = $subscription->cycle === 'month' ? 'month' : 'year';
+                                    @endphp
                                     <div class="flex items-baseline gap-1">
                                         <span class="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-                                            ${{ $subscription->cycle === 'month' ? $plan->monthly_price : $plan->yearly_price }}
+                                            ${{ number_format($totalPrice, 0) }}
                                         </span>
                                         <span class="text-sm text-zinc-500 dark:text-zinc-400">
-                                            /{{ $subscription->cycle === 'month' ? 'month' : 'year' }}
+                                            /{{ $cycleLabel }}
                                         </span>
                                     </div>
+                                    @if($seats > 1)
+                                        <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">${{ number_format($unitPrice, 0) }}/seat &times; {{ $seats }} seats</p>
+                                    @endif
                                     @if($plan->description)
                                         <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">{{ $plan->description }}</p>
                                     @endif
                                 </div>
 
+                                {{-- Subscription ID --}}
+                                @if($subscription->vendor_subscription_id)
+                                    <div x-data="{ copied: false }" class="mb-5 flex items-center justify-between rounded-lg bg-zinc-50 px-4 py-3 dark:bg-zinc-800/40">
+                                        <div class="min-w-0">
+                                            <dt class="text-xs font-medium text-zinc-500 dark:text-zinc-400">Subscription ID</dt>
+                                            <dd class="mt-0.5 truncate font-mono text-sm text-zinc-900 dark:text-zinc-100">{{ $subscription->vendor_subscription_id }}</dd>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            @click="navigator.clipboard.writeText('{{ $subscription->vendor_subscription_id }}'); copied = true; setTimeout(() => copied = false, 2000)"
+                                            class="ml-3 flex-shrink-0 rounded-md p-1.5 text-zinc-400 transition-colors hover:bg-zinc-200 hover:text-zinc-600 dark:hover:bg-zinc-700 dark:hover:text-zinc-300"
+                                            :title="copied ? 'Copied!' : 'Copy to clipboard'"
+                                        >
+                                            <x-phosphor-check-bold x-show="copied" x-cloak class="h-4 w-4 text-emerald-500" />
+                                            <x-phosphor-copy class="h-4 w-4" x-show="!copied" />
+                                        </button>
+                                    </div>
+                                @endif
+
                                 {{-- Billing Details Grid --}}
                                 <div class="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                    @if($subscription->next_payment_at)
+                                        <div class="rounded-lg bg-zinc-50 px-4 py-3 dark:bg-zinc-800/40">
+                                            <dt class="text-xs font-medium text-zinc-500 dark:text-zinc-400">Next billing date</dt>
+                                            <dd class="mt-0.5 text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ \Carbon\Carbon::parse($subscription->next_payment_at)->format('M j, Y') }}</dd>
+                                        </div>
+                                    @endif
                                     @if($subscription->last_payment_at)
                                         <div class="rounded-lg bg-zinc-50 px-4 py-3 dark:bg-zinc-800/40">
                                             <dt class="text-xs font-medium text-zinc-500 dark:text-zinc-400">Last payment</dt>
                                             <dd class="mt-0.5 text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ \Carbon\Carbon::parse($subscription->last_payment_at)->format('M j, Y') }}</dd>
-                                        </div>
-                                    @endif
-                                    @if($subscription->next_payment_at)
-                                        <div class="rounded-lg bg-zinc-50 px-4 py-3 dark:bg-zinc-800/40">
-                                            <dt class="text-xs font-medium text-zinc-500 dark:text-zinc-400">Next payment</dt>
-                                            <dd class="mt-0.5 text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ \Carbon\Carbon::parse($subscription->next_payment_at)->format('M j, Y') }}</dd>
                                         </div>
                                     @endif
                                     <div class="rounded-lg bg-zinc-50 px-4 py-3 dark:bg-zinc-800/40">

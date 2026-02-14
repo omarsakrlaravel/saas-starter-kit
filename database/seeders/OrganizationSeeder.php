@@ -91,10 +91,12 @@ class OrganizationSeeder extends Seeder
             'plan_id' => 2,
             'vendor_slug' => 'stripe',
             'vendor_customer_id' => null,
-            'vendor_subscription_id' => null,
+            'vendor_subscription_id' => 'sub_seed_'.uniqid(),
             'status' => 'active',
             'cycle' => 'month',
             'seats' => 5,
+            'last_payment_at' => $now,
+            'next_payment_at' => now()->addMonth(),
             'created_at' => $now,
             'updated_at' => $now,
         ]);
