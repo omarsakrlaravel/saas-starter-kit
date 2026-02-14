@@ -4,14 +4,10 @@ namespace Wave\Http\Livewire\Billing;
 
 use App\Models\Organization;
 use Filament\Notifications\Notification;
-use Illuminate\Support\Facades\Http;
-use Livewire\Attributes\On;
+use Illuminate\Support\Str;
 use Livewire\Component;
-use Stripe\StripeClient;
-use Wave\Actions\Billing\Paddle\AddSubscriptionIdFromTransaction;
 use Wave\Http\Livewire\Billing\Concerns\EnsuresBillingContextAccess;
 use Wave\Plan;
-use Wave\Subscription;
 
 class Checkout extends Component
 {
@@ -20,10 +16,6 @@ class Checkout extends Component
     public $billing_cycle_available = 'month'; // month, year, or both;
 
     public $billing_cycle_selected = 'month';
-
-    public $billing_provider;
-
-    public $paddle_url;
 
     public $change = false;
 
@@ -37,6 +29,8 @@ class Checkout extends Component
 
     public $maximum_seat_quantity = 100;
 
+    public $coupon_code = '';
+
     public function boot(): void
     {
         $this->ensureBillingContextAccess();
@@ -44,12 +38,9 @@ class Checkout extends Component
 
     public function mount()
     {
-        $this->billing_provider = config('wave.billing_provider', 'stripe');
-        $this->paddle_url = (config('wave.paddle.env') == 'sandbox') ? 'https://sandbox-api.paddle.com' : 'https://api.paddle.com';
         $this->updateCycleBasedOnPlans();
 
         if ($this->change) {
-            // if we are changing the user plan as opposecd to checking out the first time.
             $this->userSubscription = auth()->user()->latestSubscription();
             $this->userPlan = $this->userSubscription?->plan;
         }
@@ -73,7 +64,7 @@ class Checkout extends Component
 
         $this->minimum_seat_quantity = $minimumSeatQuantity;
         if ($this->change && $this->userSubscription) {
-            $this->seat_quantity = max((int) $this->userSubscription->seats, $minimumSeatQuantity);
+            $this->seat_quantity = max((int) $this->userSubscription->quantity, $minimumSeatQuantity);
 
             return;
         }
@@ -94,30 +85,115 @@ class Checkout extends Component
 
     public function redirectToStripeCheckout(Plan $plan)
     {
-        $stripe = new StripeClient(config('wave.stripe.secret_key'));
+        $user = auth()->user();
         $billingContext = auth()->user()->getBillingContext();
         $seatQuantity = $this->resolveSeatQuantity();
+        $priceId = $this->billing_cycle_selected === 'month' ? $plan->monthly_price_id : $plan->yearly_price_id;
+        $subscriptionMetadata = [
+            'user_id' => (string) $user->id,
+            'billable_type' => $billingContext['type'],
+            'billable_id' => (string) $billingContext['id'],
+            'plan_id' => (string) $plan->id,
+            'billing_cycle' => $this->billing_cycle_selected,
+            'seat_quantity' => (string) $seatQuantity,
+        ];
 
-        $price_id = $this->billing_cycle_selected == 'month' ? $plan->monthly_price_id : $plan->yearly_price_id ?? null;
+        if (empty($priceId)) {
+            Notification::make()
+                ->title('This billing cycle is not available for the selected plan.')
+                ->danger()
+                ->send();
 
-        $checkout_session = $stripe->checkout->sessions->create([
-            'line_items' => [[
-                'price' => $price_id,
-                'quantity' => $seatQuantity,
-            ]],
-            'metadata' => [
-                'billable_type' => $billingContext['type'],
-                'billable_id' => $billingContext['id'],
+            return;
+        }
+
+        try {
+            $checkout = $user->newSubscription('default', $priceId)
+                ->quantity($seatQuantity)
+                ->withMetadata($subscriptionMetadata);
+
+            if (! empty($plan->trial_days)) {
+                $checkout->trialDays((int) $plan->trial_days);
+            }
+
+            $discountApplied = false;
+            $couponCode = trim((string) $this->coupon_code);
+
+            if ($couponCode !== '') {
+                $discountApplied = $this->applyCheckoutDiscount($checkout, $couponCode, $user);
+
+                if (! $discountApplied) {
+                    Notification::make()
+                        ->title('Coupon code is invalid or inactive.')
+                        ->danger()
+                        ->send();
+
+                    return;
+                }
+            } elseif (! empty($plan->stripe_promotion_code)) {
+                $discountApplied = $this->applyCheckoutDiscount($checkout, (string) $plan->stripe_promotion_code, $user);
+            } elseif (! empty($plan->stripe_coupon_id)) {
+                $discountApplied = $this->applyCheckoutDiscount($checkout, (string) $plan->stripe_coupon_id, $user);
+            }
+
+            if (! $discountApplied) {
+                $checkout->allowPromotionCodes();
+            }
+
+            $checkoutSession = $checkout->checkout([
+                'success_url' => route('subscription.welcome').'?session_id={CHECKOUT_SESSION_ID}',
+                'cancel_url' => route('settings.subscription'),
+                'metadata' => $subscriptionMetadata,
+            ]);
+
+            $checkoutUrl = $checkoutSession->url;
+            if (! is_string($checkoutUrl) || $checkoutUrl === '') {
+                throw new \RuntimeException('Stripe checkout session URL was not returned.');
+            }
+
+            return redirect()->away($checkoutUrl);
+        } catch (\Throwable $e) {
+            logger()->error('Stripe checkout initialization failed', [
+                'user_id' => $user->id,
                 'plan_id' => $plan->id,
                 'billing_cycle' => $this->billing_cycle_selected,
-                'seat_quantity' => (string) $seatQuantity,
-            ],
-            'mode' => 'subscription',
-            'success_url' => url('subscription/welcome'),
-            'cancel_url' => url('settings/subscription'),
-        ]);
+                'error' => $e->getMessage(),
+            ]);
 
-        return redirect()->to($checkout_session->url);
+            Notification::make()
+                ->title('Unable to start checkout: '.$e->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+
+    protected function applyCheckoutDiscount($checkout, string $value, $user): bool
+    {
+        $normalized = trim($value);
+        if ($normalized === '') {
+            return false;
+        }
+
+        if (Str::startsWith($normalized, 'promo_')) {
+            $checkout->withPromotionCode($normalized);
+
+            return true;
+        }
+
+        if (Str::startsWith($normalized, 'coupon_')) {
+            $checkout->withCoupon($normalized);
+
+            return true;
+        }
+
+        $promotionCode = $user->findActivePromotionCode($normalized);
+        if ($promotionCode) {
+            $checkout->withPromotionCode($promotionCode->id);
+
+            return true;
+        }
+
+        return false;
     }
 
     public function updateCycleBasedOnPlans()
@@ -143,116 +219,45 @@ class Checkout extends Component
         }
     }
 
-    #[On('savePaddleSubscription')]
-    public function savePaddleSubscription($transactionId)
-    {
-        $subscription = app(AddSubscriptionIdFromTransaction::class)($transactionId);
-        if (! is_null($subscription)) {
-            return redirect()->to('/subscription/welcome');
-        }
-
-        $this->js('closeLoader()');
-        Notification::make()
-            ->title('Unable to obtain subscription information from payment provider.')
-            ->danger()
-            ->send();
-    }
-
-    #[On('verifyPaddleTransaction')]
-    public function verifyPaddleTransaction($transactionId)
-    {
-        $billingContext = auth()->user()->getBillingContext();
-
-        $transaction = null;
-
-        $response = Http::withToken(config('wave.paddle.api_key'))->get($this->paddle_url.'/transactions/'.$transactionId);
-
-        if ($response->successful()) {
-            $resBody = json_decode($response->body());
-            if (isset($resBody->data->status) && ($resBody->data->status == 'paid' || $resBody->data->status == 'completed' || $resBody->data->status == 'ready')) {
-                $transaction = $resBody->data;
-            }
-        }
-
-        if ($transaction) {
-            // Proceed with processing the transaction
-
-            if ($this->billing_cycle_selected == 'month') {
-                $plan = Plan::where('monthly_price_id', $transaction->items[0]->price->id)->first();
-            } else {
-                $plan = Plan::where('yearly_price_id', $transaction->items[0]->price->id)->first();
-            }
-
-            if (! isset($plan->id)) {
-                $this->js('Paddle.Checkout.close()');
-                Notification::make()
-                    ->title('Plan Price ID not found. Something went wrong during the checkout process')
-                    ->success()
-                    ->send();
-
-                return;
-            }
-
-            $seatQuantity = max((int) ($transaction->items[0]->quantity ?? $this->seat_quantity), 1);
-
-            Subscription::create([
-                'billable_type' => $billingContext['type'],
-                'billable_id' => $billingContext['id'],
-                'plan_id' => $plan->id,
-                'vendor_slug' => 'paddle',
-                'vendor_transaction_id' => $transactionId,
-                'vendor_customer_id' => $transaction->customer_id,
-                'vendor_subscription_id' => $transaction->subscription_id,
-                'cycle' => $this->billing_cycle_selected,
-                'status' => 'active',
-                'seats' => $seatQuantity,
-                'last_payment_at' => $transaction->billed_at ?? $transaction->created_at ?? now(),
-                'next_payment_at' => $transaction->details->billing_period->ends_at ?? null,
-            ]);
-
-            $this->js('savePaddleSubscription("'.$transactionId.'")');
-
-        } else {
-            $this->js('Paddle.Checkout.close()');
-            Notification::make()
-                ->title('Error processing the transaction. Please try again.')
-                ->danger()
-                ->send();
-        }
-
-        // if we got here something went wrong and we need to let the user know.
-
-    }
-
     public function switchPlan(Plan $plan)
     {
         $subscription = auth()->user()->latestSubscription();
 
-        if (! $subscription) {
+        if (! $subscription || ! $subscription->valid()) {
+            Notification::make()
+                ->title('No active subscription found to update.')
+                ->danger()
+                ->send();
+
             return;
         }
 
-        $price_id = ($this->billing_cycle_selected == 'month') ? $plan->monthly_price_id : $plan->yearly_price_id ?? null;
+        $priceId = $this->billing_cycle_selected === 'month' ? $plan->monthly_price_id : $plan->yearly_price_id;
+        if (empty($priceId)) {
+            Notification::make()
+                ->title('This billing cycle is not available for the selected plan.')
+                ->danger()
+                ->send();
 
-        $response = Http::withToken(config('wave.paddle.api_key'))->patch(
-            $this->paddle_url.'/subscriptions/'.$subscription->vendor_subscription_id,
-            [
-                'items' => [
-                    [
-                        'price_id' => $price_id,
-                        'quantity' => $subscription->seats,
-                    ],
-                ],
-                'proration_billing_mode' => 'prorated_immediately',
-            ]
-        );
+            return;
+        }
 
-        if ($response->successful()) {
-            $subscription->plan_id = $plan->id;
-            $subscription->cycle = $this->billing_cycle_selected;
-            $subscription->save();
+        try {
+            $subscription->swapAndInvoice($priceId);
+
+            $subscription->update([
+                'plan_id' => $plan->id,
+                'cycle' => $this->billing_cycle_selected,
+            ]);
+
+            $subscription->clearBillableCache();
 
             return redirect()->to('/settings/subscription')->with(['update' => true]);
+        } catch (\Throwable) {
+            Notification::make()
+                ->title('Unable to switch plans right now. Please try again.')
+                ->danger()
+                ->send();
         }
     }
 

@@ -60,7 +60,7 @@
                 $subscription = $user->latestSubscription();
                 $data['subscription'] = [
                     'plan' => $subscription->plan->name ?? null,
-                    'status' => $subscription->status,
+                    'status' => $subscription->stripe_status,
                     'cycle' => $subscription->cycle ?? null,
                     'created_at' => $subscription->created_at instanceof \Carbon\Carbon 
                         ? $subscription->created_at->toDateTimeString() 

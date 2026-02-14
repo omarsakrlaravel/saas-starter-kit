@@ -59,7 +59,7 @@ class OrganizationInviteController extends Controller
                 ]);
             }
 
-            if ($organization->occupiedSeatCount() >= $subscription->seats + 1) {
+            if ($organization->occupiedSeatCount() >= $subscription->quantity + 1) {
                 return redirect('/dashboard')->with([
                     'message' => 'No seats available in this organization. Ask the owner to add seats.',
                     'message_type' => 'danger',

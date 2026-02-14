@@ -51,15 +51,16 @@ it('calculates MRR correctly for monthly subscriptions', function () {
     for ($i = 0; $i < 3; $i++) {
         $user = User::factory()->create(['verified' => 1]);
         Subscription::create([
+            'user_id' => $user->id,
+            'type' => 'default',
             'billable_type' => 'user',
             'billable_id' => $user->id,
             'plan_id' => $this->basicPlan->id,
-            'vendor_slug' => 'stripe',
-            'vendor_subscription_id' => 'sub_'.uniqid(),
-            'vendor_customer_id' => 'cus_'.uniqid(),
+            'stripe_id' => 'sub_'.uniqid(),
+            'stripe_status' => 'active',
+            'stripe_price' => 'price_basic_monthly',
             'cycle' => 'month',
-            'status' => 'active',
-            'seats' => 1,
+            'quantity' => 1,
         ]);
     }
 
@@ -74,19 +75,20 @@ it('calculates MRR correctly for yearly subscriptions', function () {
     for ($i = 0; $i < 2; $i++) {
         $user = User::factory()->create(['verified' => 1]);
         Subscription::create([
+            'user_id' => $user->id,
+            'type' => 'default',
             'billable_type' => 'user',
             'billable_id' => $user->id,
             'plan_id' => $this->premiumPlan->id,
-            'vendor_slug' => 'stripe',
-            'vendor_subscription_id' => 'sub_'.uniqid(),
-            'vendor_customer_id' => 'cus_'.uniqid(),
+            'stripe_id' => 'sub_'.uniqid(),
+            'stripe_status' => 'active',
+            'stripe_price' => 'price_premium_yearly',
             'cycle' => 'year',
-            'status' => 'active',
-            'seats' => 1,
+            'quantity' => 1,
         ]);
     }
 
-    // Expected MRR: 2 × ($299.99 / 12) = $49.998... ≈ $50.00
+    // Expected MRR: 2 x ($299.99 / 12) = $49.998... ~ $50.00
     $this->artisan('wave:stats', ['--json' => true])
         ->assertSuccessful()
         ->expectsOutputToContain('50');
@@ -97,33 +99,35 @@ it('calculates MRR correctly for mixed subscriptions', function () {
     for ($i = 0; $i < 2; $i++) {
         $user = User::factory()->create(['verified' => 1]);
         Subscription::create([
+            'user_id' => $user->id,
+            'type' => 'default',
             'billable_type' => 'user',
             'billable_id' => $user->id,
             'plan_id' => $this->basicPlan->id,
-            'vendor_slug' => 'stripe',
-            'vendor_subscription_id' => 'sub_'.uniqid(),
-            'vendor_customer_id' => 'cus_'.uniqid(),
+            'stripe_id' => 'sub_'.uniqid(),
+            'stripe_status' => 'active',
+            'stripe_price' => 'price_basic_monthly',
             'cycle' => 'month',
-            'status' => 'active',
-            'seats' => 1,
+            'quantity' => 1,
         ]);
     }
 
     // Create 1 yearly premium subscription
     $user = User::factory()->create(['verified' => 1]);
     Subscription::create([
+        'user_id' => $user->id,
+        'type' => 'default',
         'billable_type' => 'user',
         'billable_id' => $user->id,
         'plan_id' => $this->premiumPlan->id,
-        'vendor_slug' => 'stripe',
-        'vendor_subscription_id' => 'sub_'.uniqid(),
-        'vendor_customer_id' => 'cus_'.uniqid(),
+        'stripe_id' => 'sub_'.uniqid(),
+        'stripe_status' => 'active',
+        'stripe_price' => 'price_premium_yearly',
         'cycle' => 'year',
-        'status' => 'active',
-        'seats' => 1,
+        'quantity' => 1,
     ]);
 
-    // Expected MRR: (2 × $9.99) + ($299.99 / 12) = $19.98 + $25.00 = $44.98
+    // Expected MRR: (2 x $9.99) + ($299.99 / 12) = $19.98 + $25.00 = $44.98
     $this->artisan('wave:stats', ['--json' => true])
         ->assertSuccessful()
         ->expectsOutputToContain('44.98');
@@ -134,15 +138,16 @@ it('counts active subscriptions correctly', function () {
     for ($i = 0; $i < 5; $i++) {
         $user = User::factory()->create(['verified' => 1]);
         Subscription::create([
+            'user_id' => $user->id,
+            'type' => 'default',
             'billable_type' => 'user',
             'billable_id' => $user->id,
             'plan_id' => $this->basicPlan->id,
-            'vendor_slug' => 'stripe',
-            'vendor_subscription_id' => 'sub_'.uniqid(),
-            'vendor_customer_id' => 'cus_'.uniqid(),
+            'stripe_id' => 'sub_'.uniqid(),
+            'stripe_status' => 'active',
+            'stripe_price' => 'price_basic_monthly',
             'cycle' => 'month',
-            'status' => 'active',
-            'seats' => 1,
+            'quantity' => 1,
         ]);
     }
 
@@ -150,16 +155,17 @@ it('counts active subscriptions correctly', function () {
     for ($i = 0; $i < 2; $i++) {
         $user = User::factory()->create(['verified' => 1]);
         Subscription::create([
+            'user_id' => $user->id,
+            'type' => 'default',
             'billable_type' => 'user',
             'billable_id' => $user->id,
             'plan_id' => $this->premiumPlan->id,
-            'vendor_slug' => 'stripe',
-            'vendor_subscription_id' => 'sub_'.uniqid(),
-            'vendor_customer_id' => 'cus_'.uniqid(),
+            'stripe_id' => 'sub_'.uniqid(),
+            'stripe_status' => 'canceled',
+            'stripe_price' => 'price_premium_monthly',
             'cycle' => 'month',
-            'status' => 'cancelled',
-            'seats' => 1,
-            'ends_at' => now()->addDays(10),
+            'quantity' => 1,
+            'ends_at' => now()->subDay(),
         ]);
     }
 
@@ -185,18 +191,19 @@ it('calculates ARR correctly', function () {
     // Create monthly subscription
     $user = User::factory()->create(['verified' => 1]);
     Subscription::create([
+        'user_id' => $user->id,
+        'type' => 'default',
         'billable_type' => 'user',
         'billable_id' => $user->id,
         'plan_id' => $this->basicPlan->id,
-        'vendor_slug' => 'stripe',
-        'vendor_subscription_id' => 'sub_'.uniqid(),
-        'vendor_customer_id' => 'cus_'.uniqid(),
+        'stripe_id' => 'sub_'.uniqid(),
+        'stripe_status' => 'active',
+        'stripe_price' => 'price_basic_monthly',
         'cycle' => 'month',
-        'status' => 'active',
-        'seats' => 1,
+        'quantity' => 1,
     ]);
 
-    // MRR = $9.99, ARR = $9.99 × 12 = $119.88
+    // MRR = $9.99, ARR = $9.99 x 12 = $119.88
     $this->artisan('wave:stats', ['--json' => true])
         ->assertSuccessful()
         ->expectsOutputToContain('119.88');
@@ -213,15 +220,16 @@ it('displays plan breakdown correctly', function () {
     for ($i = 0; $i < 3; $i++) {
         $user = User::factory()->create(['verified' => 1]);
         Subscription::create([
+            'user_id' => $user->id,
+            'type' => 'default',
             'billable_type' => 'user',
             'billable_id' => $user->id,
             'plan_id' => $this->basicPlan->id,
-            'vendor_slug' => 'stripe',
-            'vendor_subscription_id' => 'sub_'.uniqid(),
-            'vendor_customer_id' => 'cus_'.uniqid(),
+            'stripe_id' => 'sub_'.uniqid(),
+            'stripe_status' => 'active',
+            'stripe_price' => 'price_basic_monthly',
             'cycle' => 'month',
-            'status' => 'active',
-            'seats' => 1,
+            'quantity' => 1,
         ]);
     }
 
@@ -229,15 +237,16 @@ it('displays plan breakdown correctly', function () {
     for ($i = 0; $i < 2; $i++) {
         $user = User::factory()->create(['verified' => 1]);
         Subscription::create([
+            'user_id' => $user->id,
+            'type' => 'default',
             'billable_type' => 'user',
             'billable_id' => $user->id,
             'plan_id' => $this->premiumPlan->id,
-            'vendor_slug' => 'stripe',
-            'vendor_subscription_id' => 'sub_'.uniqid(),
-            'vendor_customer_id' => 'cus_'.uniqid(),
+            'stripe_id' => 'sub_'.uniqid(),
+            'stripe_status' => 'active',
+            'stripe_price' => 'price_premium_monthly',
             'cycle' => 'month',
-            'status' => 'active',
-            'seats' => 1,
+            'quantity' => 1,
         ]);
     }
 
@@ -269,29 +278,32 @@ it('ignores inactive subscriptions in MRR calculation', function () {
     // Create active subscription
     $activeUser = User::factory()->create(['verified' => 1]);
     Subscription::create([
+        'user_id' => $activeUser->id,
+        'type' => 'default',
         'billable_type' => 'user',
         'billable_id' => $activeUser->id,
         'plan_id' => $this->basicPlan->id,
-        'vendor_slug' => 'stripe',
-        'vendor_subscription_id' => 'sub_'.uniqid(),
-        'vendor_customer_id' => 'cus_'.uniqid(),
+        'stripe_id' => 'sub_'.uniqid(),
+        'stripe_status' => 'active',
+        'stripe_price' => 'price_basic_monthly',
         'cycle' => 'month',
-        'status' => 'active',
-        'seats' => 1,
+        'quantity' => 1,
     ]);
 
     // Create cancelled subscription
     $cancelledUser = User::factory()->create(['verified' => 1]);
     Subscription::create([
+        'user_id' => $cancelledUser->id,
+        'type' => 'default',
         'billable_type' => 'user',
         'billable_id' => $cancelledUser->id,
         'plan_id' => $this->premiumPlan->id,
-        'vendor_slug' => 'stripe',
-        'vendor_subscription_id' => 'sub_'.uniqid(),
-        'vendor_customer_id' => 'cus_'.uniqid(),
+        'stripe_id' => 'sub_'.uniqid(),
+        'stripe_status' => 'canceled',
+        'stripe_price' => 'price_premium_monthly',
         'cycle' => 'month',
-        'status' => 'cancelled',
-        'seats' => 1,
+        'quantity' => 1,
+        'ends_at' => now()->subDay(),
     ]);
 
     // Expected MRR: Only the active subscription = $9.99
@@ -304,15 +316,16 @@ it('handles subscriptions without plans gracefully', function () {
     // Create subscription with valid plan
     $user = User::factory()->create(['verified' => 1]);
     Subscription::create([
+        'user_id' => $user->id,
+        'type' => 'default',
         'billable_type' => 'user',
         'billable_id' => $user->id,
         'plan_id' => $this->basicPlan->id,
-        'vendor_slug' => 'stripe',
-        'vendor_subscription_id' => 'sub_'.uniqid(),
-        'vendor_customer_id' => 'cus_'.uniqid(),
+        'stripe_id' => 'sub_'.uniqid(),
+        'stripe_status' => 'active',
+        'stripe_price' => 'price_basic_monthly',
         'cycle' => 'month',
-        'status' => 'active',
-        'seats' => 1,
+        'quantity' => 1,
     ]);
 
     // Should calculate MRR for subscription with valid plan

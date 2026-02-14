@@ -18,7 +18,7 @@ return [
     ],
     (object) [
         'title' => 'Subscriptions',
-        'description' => 'Allow users to pay for your service and signup for a subscription using Paddle Payments.',
+        'description' => 'Allow users to pay for your service and signup for a subscription using Stripe and Laravel Cashier.',
         'image' => '/themes/tailwind/images/subscriptions.png',
     ],
     (object) [

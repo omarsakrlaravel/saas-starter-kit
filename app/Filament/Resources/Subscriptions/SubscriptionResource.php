@@ -50,21 +50,16 @@ class SubscriptionResource extends Resource
                         TextInput::make('billable_id')
                             ->numeric()
                             ->required(),
+                        TextInput::make('user_id')
+                            ->numeric(),
+                        TextInput::make('type')
+                            ->default('default')
+                            ->required(),
                         Select::make('plan_id')
                             ->relationship('plan', 'name')
                             ->required()
                             ->preload()
                             ->searchable(),
-                        Select::make('status')
-                            ->options([
-                                'active' => 'Active',
-                                'trialing' => 'Trialing',
-                                'past_due' => 'Past Due',
-                                'cancelled' => 'Cancelled',
-                                'incomplete' => 'Incomplete',
-                            ])
-                            ->required()
-                            ->default('active'),
                         Select::make('cycle')
                             ->options([
                                 'month' => 'Monthly',
@@ -73,24 +68,26 @@ class SubscriptionResource extends Resource
                             ])
                             ->required()
                             ->default('month'),
-                        TextInput::make('seats')
+                        TextInput::make('quantity')
                             ->numeric()
                             ->required()
                             ->default(1),
-                        TextInput::make('vendor_slug')
+                        TextInput::make('stripe_id'),
+                        Select::make('stripe_status')
+                            ->options([
+                                'active' => 'Active',
+                                'trialing' => 'Trialing',
+                                'past_due' => 'Past Due',
+                                'canceled' => 'Canceled',
+                                'incomplete' => 'Incomplete',
+                            ])
                             ->required()
-                            ->default('stripe'),
-                        TextInput::make('vendor_product_id'),
-                        TextInput::make('vendor_transaction_id'),
-                        TextInput::make('vendor_customer_id'),
-                        TextInput::make('vendor_subscription_id'),
+                            ->default('active'),
+                        TextInput::make('stripe_price'),
                         DateTimePicker::make('trial_ends_at'),
                         DateTimePicker::make('ends_at'),
                         DateTimePicker::make('last_payment_at'),
                         DateTimePicker::make('next_payment_at'),
-                        DateTimePicker::make('cancelled_at'),
-                        TextInput::make('cancel_url'),
-                        TextInput::make('update_url'),
                     ])
                     ->columns(2),
             ]);
@@ -110,13 +107,14 @@ class SubscriptionResource extends Resource
                     }),
                 TextColumn::make('plan.name')
                     ->sortable(),
-                TextColumn::make('status')
+                TextColumn::make('stripe_status')
+                    ->label('Status')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
                         'active' => 'success',
                         'trialing' => 'warning',
                         'past_due' => 'danger',
-                        'cancelled' => 'gray',
+                        'canceled' => 'gray',
                         default => 'gray',
                     }),
                 TextColumn::make('cycle')
@@ -132,18 +130,25 @@ class SubscriptionResource extends Resource
                     ->dateTime()
                     ->sortable()
                     ->placeholder('—'),
+                TextColumn::make('quantity')
+                    ->label('Seats')
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('stripe_id')
+                    ->label('Stripe Subscription')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                SelectFilter::make('status')
+                SelectFilter::make('stripe_status')
+                    ->label('Status')
                     ->options([
                         'active' => 'Active',
                         'trialing' => 'Trialing',
                         'past_due' => 'Past Due',
-                        'cancelled' => 'Cancelled',
+                        'canceled' => 'Canceled',
                         'incomplete' => 'Incomplete',
                     ]),
                 SelectFilter::make('cycle')

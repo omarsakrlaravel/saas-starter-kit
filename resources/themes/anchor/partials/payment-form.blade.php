@@ -17,7 +17,7 @@
 <script>
 
 	// Create a Stripe client.
-	var stripe = Stripe('{{ config('wave.stripe.publishable_key') }}');
+	var stripe = Stripe('{{ config('wave.stripe.key') }}');
 
 	// Create an instance of Elements.
 	var elements = stripe.elements();

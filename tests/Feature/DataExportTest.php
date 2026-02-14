@@ -117,16 +117,18 @@ test('export handles subscription with string ends_at date', function () {
     // Create a subscription directly in the database with ends_at as a string
     // This simulates a cancelled subscription scenario where ends_at might not be cast properly
     $subscriptionId = \DB::table('subscriptions')->insertGetId([
+        'user_id' => $user->id,
+        'type' => 'default',
         'billable_type' => 'user',
         'billable_id' => $user->id,
         'plan_id' => $plan->id,
-        'vendor_slug' => 'paddle',
-        'vendor_subscription_id' => 'sub_test_'.time(),
-        'status' => 'cancelled',
+        'stripe_id' => 'sub_test_'.time(),
+        'stripe_status' => 'canceled',
+        'stripe_price' => 'price_test',
         'cycle' => 'month',
-        'seats' => 1,
+        'quantity' => 1,
         'trial_ends_at' => null,
-        'ends_at' => '2026-12-31 23:59:59', // String format, not Carbon
+        'ends_at' => '2026-12-31 23:59:59',
         'created_at' => now()->toDateTimeString(),
         'updated_at' => now()->toDateTimeString(),
     ]);
@@ -149,7 +151,7 @@ test('export handles subscription with string ends_at date', function () {
     $exportData = [
         'subscription' => [
             'plan' => $subscription->plan->name ?? null,
-            'status' => $subscription->status,
+            'status' => $subscription->stripe_status,
             'cycle' => $subscription->cycle ?? null,
             'created_at' => $subscription->created_at instanceof \Carbon\Carbon
                 ? $subscription->created_at->toDateTimeString()
@@ -164,7 +166,7 @@ test('export handles subscription with string ends_at date', function () {
 
     // This should work without throwing an error
     expect($exportData['subscription']['ends_at'])->toBe('2026-12-31 23:59:59');
-    expect($exportData['subscription']['status'])->toBe('cancelled');
+    expect($exportData['subscription']['status'])->toBe('canceled');
     expect($exportData['subscription']['plan'])->toBe($plan->name);
 
     // Clean up

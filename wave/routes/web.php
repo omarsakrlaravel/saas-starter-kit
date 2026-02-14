@@ -20,10 +20,6 @@ Route::view('install', 'wave::install')->name('wave.install');
 Route::group(['middleware' => 'auth'], function () {
     Route::redirect('settings', 'settings/profile')->name('settings');
 
-    if (config('wave.billing_provider') == 'paddle') {
-        Route::get('settings/invoices/{invoice}', '\Wave\Http\Controllers\SubscriptionController@invoice')->name('wave.paddle.invoice');
-    }
-
     Route::post('notification/read/{id}', '\Wave\Http\Controllers\NotificationController@delete')->name('wave.notification.read');
     Route::post('changelog/read', '\Wave\Http\Controllers\ChangelogController@read')->name('changelog.read');
 
@@ -50,8 +46,8 @@ if (app()->environment('local')) {
 }
 
 /***** Billing Routes *****/
-Route::post('webhook/paddle', '\Wave\Http\Controllers\Billing\Webhooks\PaddleWebhook@handler')->middleware('paddle-webhook-signature');
-Route::post('webhook/stripe', '\Wave\Http\Controllers\Billing\Webhooks\StripeWebhook@handler');
+Route::post('stripe/webhook', [\Laravel\Cashier\Http\Controllers\WebhookController::class, 'handleWebhook'])
+    ->name('cashier.webhook');
 Route::get('stripe/portal', '\Wave\Http\Controllers\Billing\Stripe@redirect_to_customer_portal')
     ->middleware(['auth', 'can-manage-billing'])
     ->name('stripe.portal');

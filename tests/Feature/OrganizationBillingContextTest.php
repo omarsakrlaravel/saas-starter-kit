@@ -41,25 +41,29 @@ test('latest subscription follows active current organization context', function
     ]);
 
     $userSubscription = Subscription::create([
+        'user_id' => $this->user->id,
+        'type' => 'default',
         'billable_type' => 'user',
         'billable_id' => $this->user->id,
         'plan_id' => $this->premiumPlan->id,
-        'vendor_slug' => 'stripe',
-        'vendor_subscription_id' => 'sub_user_'.uniqid(),
+        'stripe_id' => 'sub_user_'.uniqid(),
+        'stripe_status' => 'active',
+        'stripe_price' => 'price_premium_monthly',
         'cycle' => 'month',
-        'status' => 'active',
-        'seats' => 1,
+        'quantity' => 1,
     ]);
 
     $organizationSubscription = Subscription::create([
+        'user_id' => $owner->id,
+        'type' => 'default',
         'billable_type' => 'organization',
         'billable_id' => $organization->id,
         'plan_id' => $this->premiumPlan->id,
-        'vendor_slug' => 'stripe',
-        'vendor_subscription_id' => 'sub_org_'.uniqid(),
+        'stripe_id' => 'sub_org_'.uniqid(),
+        'stripe_status' => 'active',
+        'stripe_price' => 'price_premium_monthly',
         'cycle' => 'month',
-        'status' => 'active',
-        'seats' => 1,
+        'quantity' => 1,
     ]);
 
     $this->user->update(['current_organization_id' => $organization->id]);
@@ -85,14 +89,16 @@ test('non-active organization membership falls back to direct user subscription'
     ]);
 
     $userSubscription = Subscription::create([
+        'user_id' => $this->user->id,
+        'type' => 'default',
         'billable_type' => 'user',
         'billable_id' => $this->user->id,
         'plan_id' => $this->premiumPlan->id,
-        'vendor_slug' => 'stripe',
-        'vendor_subscription_id' => 'sub_user_'.uniqid(),
+        'stripe_id' => 'sub_user_'.uniqid(),
+        'stripe_status' => 'active',
+        'stripe_price' => 'price_premium_monthly',
         'cycle' => 'month',
-        'status' => 'active',
-        'seats' => 1,
+        'quantity' => 1,
     ]);
 
     $this->user->update(['current_organization_id' => $organization->id]);
@@ -193,21 +199,23 @@ test('cancel endpoint returns failure for unauthorized organization member', fun
     ]);
 
     $subscription = Subscription::create([
+        'user_id' => $owner->id,
+        'type' => 'default',
         'billable_type' => 'organization',
         'billable_id' => $organization->id,
         'plan_id' => $this->premiumPlan->id,
-        'vendor_slug' => 'paddle',
-        'vendor_subscription_id' => 'sub_org_'.uniqid(),
+        'stripe_id' => 'sub_org_'.uniqid(),
+        'stripe_status' => 'active',
+        'stripe_price' => 'price_premium_monthly',
         'cycle' => 'month',
-        'status' => 'active',
-        'seats' => 1,
+        'quantity' => 1,
     ]);
 
     $this->user->update(['current_organization_id' => $organization->id]);
     $this->user->refresh();
 
     $this->actingAs($this->user)
-        ->postJson(route('wave.cancel'), ['id' => $subscription->vendor_subscription_id])
+        ->postJson(route('wave.cancel'))
         ->assertUnprocessable()
         ->assertJson(['status' => 0]);
 });
@@ -219,7 +227,7 @@ test('cancel endpoint returns failure response when user has no active subscript
         ->assertJson(['status' => 0]);
 });
 
-test('organization subscriptions do not resolve a user relation', function () {
+test('organization subscriptions resolve user to the owner', function () {
     $organization = Organization::create([
         'name' => 'Acme Corp',
         'slug' => 'acme-corp',
@@ -228,17 +236,20 @@ test('organization subscriptions do not resolve a user relation', function () {
     ]);
 
     $subscription = Subscription::create([
+        'user_id' => $this->user->id,
+        'type' => 'default',
         'billable_type' => 'organization',
         'billable_id' => $organization->id,
         'plan_id' => $this->premiumPlan->id,
-        'vendor_slug' => 'stripe',
-        'vendor_subscription_id' => 'sub_org_'.uniqid(),
+        'stripe_id' => 'sub_org_'.uniqid(),
+        'stripe_status' => 'active',
+        'stripe_price' => 'price_premium_monthly',
         'cycle' => 'month',
-        'status' => 'active',
-        'seats' => 1,
+        'quantity' => 1,
     ]);
 
-    expect($subscription->user)->toBeNull()
+    expect($subscription->user)->not->toBeNull()
+        ->and($subscription->user->id)->toBe($this->user->id)
         ->and($subscription->billable?->is($organization))->toBeTrue();
 });
 
@@ -251,25 +262,29 @@ test('billing context can be switched through settings route', function () {
     ]);
 
     Subscription::create([
+        'user_id' => $this->user->id,
+        'type' => 'default',
         'billable_type' => 'user',
         'billable_id' => $this->user->id,
         'plan_id' => $this->premiumPlan->id,
-        'vendor_slug' => 'stripe',
-        'vendor_subscription_id' => 'sub_user_'.uniqid(),
+        'stripe_id' => 'sub_user_'.uniqid(),
+        'stripe_status' => 'active',
+        'stripe_price' => 'price_premium_monthly',
         'cycle' => 'month',
-        'status' => 'active',
-        'seats' => 1,
+        'quantity' => 1,
     ]);
 
     Subscription::create([
+        'user_id' => $this->user->id,
+        'type' => 'default',
         'billable_type' => 'organization',
         'billable_id' => $organization->id,
         'plan_id' => $this->premiumPlan->id,
-        'vendor_slug' => 'stripe',
-        'vendor_subscription_id' => 'sub_org_'.uniqid(),
+        'stripe_id' => 'sub_org_'.uniqid(),
+        'stripe_status' => 'active',
+        'stripe_price' => 'price_premium_monthly',
         'cycle' => 'month',
-        'status' => 'active',
-        'seats' => 1,
+        'quantity' => 1,
     ]);
 
     $response = $this->actingAs($this->user)

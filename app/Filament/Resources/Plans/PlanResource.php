@@ -66,22 +66,40 @@ class PlanResource extends Resource
                             ->schema([
                                 TextInput::make('monthly_price_id')
                                     ->label('Monthly Price ID')
-                                    ->hint('Stripe/Paddle ID')
+                                    ->hint('Stripe Price ID')
                                     ->maxLength(191),
                                 TextInput::make('monthly_price')
                                     ->maxLength(191),
                                 TextInput::make('yearly_price_id')
                                     ->label('Yearly Price ID')
-                                    ->hint('Stripe/Paddle ID')
+                                    ->hint('Stripe Price ID')
                                     ->maxLength(191),
                                 TextInput::make('yearly_price')
                                     ->maxLength(191),
                                 TextInput::make('onetime_price_id')
                                     ->label('One-time Price ID')
-                                    ->hint('Stripe/Paddle ID')
+                                    ->hint('Stripe Price ID')
                                     ->maxLength(191),
                                 TextInput::make('onetime_price')
                                     ->maxLength(191),
+                            ])
+                            ->columns(2),
+                        Section::make('Trials and Coupons')
+                            ->description('Configure default trial and discount behavior for this plan.')
+                            ->schema([
+                                TextInput::make('trial_days')
+                                    ->numeric()
+                                    ->minValue(0)
+                                    ->label('Trial Days')
+                                    ->helperText('Leave empty or 0 to disable free trial.'),
+                                TextInput::make('stripe_coupon_id')
+                                    ->maxLength(191)
+                                    ->label('Stripe Coupon ID')
+                                    ->helperText('Optional default coupon to apply when no promotion code is entered.'),
+                                TextInput::make('stripe_promotion_code')
+                                    ->maxLength(191)
+                                    ->label('Stripe Promotion Code ID')
+                                    ->helperText('Optional default promotion code ID (API ID, not customer-facing code).'),
                             ])
                             ->columns(2),
                         Section::make('Feature Limits')
@@ -123,6 +141,9 @@ class PlanResource extends Resource
             ->columns([
                 TextColumn::make('name')
                     ->searchable(),
+                TextColumn::make('trial_days')
+                    ->label('Trial')
+                    ->formatStateUsing(fn (?int $state): string => $state && $state > 0 ? $state.' days' : 'None'),
                 TextColumn::make('sort_order')
                     ->numeric()
                     ->sortable(),

@@ -4,35 +4,44 @@ namespace Wave;
 
 use App\Models\Organization;
 use App\Models\User;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Laravel\Cashier\Subscription as CashierSubscription;
 
-class Subscription extends Model
+class Subscription extends CashierSubscription
 {
+    protected static function booted(): void
+    {
+        static::creating(function (Subscription $subscription): void {
+            if (empty($subscription->billable_type)) {
+                $subscription->billable_type = 'user';
+            }
+            if (empty($subscription->billable_id) && $subscription->user_id) {
+                $subscription->billable_id = $subscription->user_id;
+            }
+        });
+    }
+
     /**
      * The attributes that are mass assignable.
      *
      * @var array<int, string>
      */
     protected $fillable = [
+        'user_id',
+        'type',
+        'stripe_id',
+        'stripe_status',
+        'stripe_price',
+        'quantity',
         'billable_type',
         'billable_id',
         'plan_id',
-        'vendor_slug',
-        'vendor_product_id',
-        'vendor_transaction_id',
-        'vendor_customer_id',
-        'vendor_subscription_id',
         'cycle',
-        'status',
-        'seats',
         'trial_ends_at',
         'ends_at',
         'last_payment_at',
         'next_payment_at',
-        'cancel_url',
-        'update_url',
     ];
 
     /**
@@ -43,26 +52,27 @@ class Subscription extends Model
     protected function casts(): array
     {
         return [
-            'cancelled_at' => 'datetime',
+            'trial_ends_at' => 'datetime',
+            'ends_at' => 'datetime',
             'last_payment_at' => 'datetime',
             'next_payment_at' => 'datetime',
         ];
     }
 
     /**
-     * The user that owns the subscription.
+     * The user (Cashier billable) that owns the subscription.
+     * Uses user_id as Cashier expects.
      */
     public function user(): BelongsTo
     {
         $userClass = config('wave.user_model', User::class);
 
-        if ((string) $this->billable_type !== 'user') {
-            return $this->belongsTo($userClass, 'billable_id')->whereKey(0);
-        }
-
-        return $this->belongsTo($userClass, 'billable_id');
+        return $this->belongsTo($userClass, 'user_id');
     }
 
+    /**
+     * The polymorphic billable entity (User or Organization).
+     */
     public function billable(): MorphTo
     {
         return $this->morphTo();
@@ -75,13 +85,6 @@ class Subscription extends Model
         } elseif ($this->billable instanceof Organization) {
             $this->billable->clearMembersBillingCache($this->plan_id);
         }
-    }
-
-    public function cancel()
-    {
-        $this->status = 'cancelled';
-        $this->cancelled_at = now();
-        $this->save();
     }
 
     /**

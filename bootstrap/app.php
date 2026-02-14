@@ -23,8 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->encryptCookies(except: []);
         $middleware->validateCsrfTokens(except: [
-            '/webhook/paddle',
-            '/webhook/stripe',
+            'stripe/*',
         ]);
 
         $middleware->append(\Filament\Http\Middleware\DisableBladeIconComponents::class);

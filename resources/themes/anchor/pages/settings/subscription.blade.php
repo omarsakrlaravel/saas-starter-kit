@@ -65,7 +65,7 @@
                                 <div class="mb-5">
                                     @php
                                         $unitPrice = $subscription->cycle === 'month' ? $plan->monthly_price : $plan->yearly_price;
-                                        $seats = ($isOrgBilling && $subscription->seats) ? $subscription->seats : 1;
+                                        $seats = ($isOrgBilling && $subscription->quantity) ? $subscription->quantity : 1;
                                         $totalPrice = $unitPrice * $seats;
                                         $cycleLabel = $subscription->cycle === 'month' ? 'month' : 'year';
                                     @endphp
@@ -86,15 +86,15 @@
                                 </div>
 
                                 {{-- Subscription ID --}}
-                                @if($subscription->vendor_subscription_id)
+                                @if($subscription->stripe_id)
                                     <div x-data="{ copied: false }" class="mb-5 flex items-center justify-between rounded-lg bg-zinc-50 px-4 py-3 dark:bg-zinc-800/40">
                                         <div class="min-w-0">
                                             <dt class="text-xs font-medium text-zinc-500 dark:text-zinc-400">Subscription ID</dt>
-                                            <dd class="mt-0.5 truncate font-mono text-sm text-zinc-900 dark:text-zinc-100">{{ $subscription->vendor_subscription_id }}</dd>
+                                            <dd class="mt-0.5 truncate font-mono text-sm text-zinc-900 dark:text-zinc-100">{{ $subscription->stripe_id }}</dd>
                                         </div>
                                         <button
                                             type="button"
-                                            @click="navigator.clipboard.writeText('{{ $subscription->vendor_subscription_id }}'); copied = true; setTimeout(() => copied = false, 2000)"
+                                            @click="navigator.clipboard.writeText('{{ $subscription->stripe_id }}'); copied = true; setTimeout(() => copied = false, 2000)"
                                             class="ml-3 flex-shrink-0 rounded-md p-1.5 text-zinc-400 transition-colors hover:bg-zinc-200 hover:text-zinc-600 dark:hover:bg-zinc-700 dark:hover:text-zinc-300"
                                             :title="copied ? 'Copied!' : 'Copy to clipboard'"
                                         >
@@ -120,12 +120,12 @@
                                     @endif
                                     <div class="rounded-lg bg-zinc-50 px-4 py-3 dark:bg-zinc-800/40">
                                         <dt class="text-xs font-medium text-zinc-500 dark:text-zinc-400">Billing provider</dt>
-                                        <dd class="mt-0.5 text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ ucfirst(config('wave.billing_provider')) }}</dd>
+                                        <dd class="mt-0.5 text-sm font-medium text-zinc-900 dark:text-zinc-100">Stripe</dd>
                                     </div>
-                                    @if($isOrgBilling && $subscription->seats)
+                                    @if($isOrgBilling && $subscription->quantity)
                                         <div class="rounded-lg bg-zinc-50 px-4 py-3 dark:bg-zinc-800/40">
                                             <dt class="text-xs font-medium text-zinc-500 dark:text-zinc-400">Seats</dt>
-                                            <dd class="mt-0.5 text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $subscription->seats }}</dd>
+                                            <dd class="mt-0.5 text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $subscription->quantity }}</dd>
                                         </div>
                                     @endif
                                 </div>
@@ -173,7 +173,7 @@
 
                         <p class="mt-4 flex items-center justify-center gap-1.5 text-xs text-zinc-400 dark:text-zinc-500">
                             <x-phosphor-shield-check-duotone class="h-4 w-4" />
-                            <span>Payments securely processed by <strong class="font-medium text-zinc-500 dark:text-zinc-400">{{ ucfirst(config('wave.billing_provider')) }}</strong></span>
+                            <span>Payments securely processed by <strong class="font-medium text-zinc-500 dark:text-zinc-400">Stripe</strong></span>
                         </p>
                     @endnotsubscriber
                 @endrole

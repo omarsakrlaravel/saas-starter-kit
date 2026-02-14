@@ -5,6 +5,12 @@
 ?>
 
 @php
+    // Clear billing cache so each poll gets fresh data from the database.
+    // The welcome page is loaded right after Stripe redirects — the webhook
+    // that creates the subscription may arrive seconds later, so we must
+    // never serve a stale cached "not subscribed" response here.
+    auth()->user()->clearUserCache();
+
     $isSubscriber = auth()->user()->subscriber();
     $plan = $isSubscriber ? auth()->user()->plan() : null;
     $subscription = $isSubscriber ? auth()->user()->latestSubscription() : null;
@@ -74,7 +80,7 @@
                             window.location.reload();
                         }
                     } catch(e) {}
-                    if (attempts >= 15) clearInterval(check);
+                    if (attempts >= 40) clearInterval(check);
                 }, 3000);
             ">
                 <div class="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-100 dark:bg-blue-900/40">

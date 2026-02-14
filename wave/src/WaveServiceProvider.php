@@ -23,7 +23,6 @@ use Intervention\Image\Drivers\Gd\Driver;
 use Intervention\Image\ImageManager;
 use Laravel\Folio\Folio;
 use Livewire\Livewire;
-use Wave\Console\Commands\CancelExpiredSubscriptions;
 use Wave\Console\Commands\CleanOldActivityLogs;
 use Wave\Console\Commands\ProcessScheduledAccountDeletions;
 use Wave\Console\Commands\WaveStats;
@@ -35,7 +34,6 @@ use Wave\Http\Middleware\HandleOrganizationInvite;
 use Wave\Http\Middleware\InstallMiddleware;
 use Wave\Http\Middleware\Subscribed;
 use Wave\Http\Middleware\TokenMiddleware;
-use Wave\Http\Middleware\VerifyPaddleWebhookSignature;
 use Wave\Overrides\Vite;
 
 class WaveServiceProvider extends ServiceProvider
@@ -59,7 +57,6 @@ class WaveServiceProvider extends ServiceProvider
 
         $this->loadLivewireComponents();
 
-        $this->app->router->aliasMiddleware('paddle-webhook-signature', VerifyPaddleWebhookSignature::class);
         $this->app->router->aliasMiddleware('subscribed', Subscribed::class);
         $this->app->router->aliasMiddleware('token_api', TokenMiddleware::class);
         $this->app->router->aliasMiddleware('can-manage-billing', CanManageBilling::class);
@@ -109,7 +106,6 @@ class WaveServiceProvider extends ServiceProvider
 
         if ($this->app->runningInConsole()) {
             $this->commands([
-                CancelExpiredSubscriptions::class,
                 WaveStats::class,
                 CleanOldActivityLogs::class,
                 ProcessScheduledAccountDeletions::class,

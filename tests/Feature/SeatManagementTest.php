@@ -38,14 +38,16 @@ beforeEach(function () {
     ]);
 
     $this->subscription = Subscription::create([
+        'user_id' => $this->owner->id,
+        'type' => 'default',
         'billable_type' => 'organization',
         'billable_id' => $this->org->id,
         'plan_id' => $this->premiumPlan->id,
-        'vendor_slug' => 'stripe',
-        'vendor_subscription_id' => 'sub_org_'.uniqid(),
+        'stripe_id' => 'sub_org_'.uniqid(),
+        'stripe_status' => 'active',
+        'stripe_price' => 'price_premium_monthly',
         'cycle' => 'month',
-        'status' => 'active',
-        'seats' => 1,
+        'quantity' => 1,
     ]);
 
     $this->owner->update(['current_organization_id' => $this->org->id]);
@@ -53,18 +55,18 @@ beforeEach(function () {
     // Mock the action to avoid Stripe API calls
     $this->mock = $this->mock(UpdateSubscriptionQuantity::class, function ($mock) {
         $mock->shouldReceive('__invoke')->andReturnUsing(function (Subscription $subscription, int $delta) {
-            $newQuantity = $subscription->seats + $delta;
+            $newQuantity = $subscription->quantity + $delta;
             if ($newQuantity < 1) {
                 throw new RuntimeException('Subscription must have at least 1 seat.');
             }
-            $subscription->seats = $newQuantity;
+            $subscription->quantity = $newQuantity;
             $subscription->save();
         })->byDefault();
     });
 });
 
 test('accepting invite does not change purchased seats', function () {
-    $this->subscription->update(['seats' => 2]);
+    $this->subscription->update(['quantity' => 2]);
 
     $invitedUser = User::factory()->create(['email' => 'invited@example.com']);
     $this->org->members()->attach($invitedUser->id, [
@@ -84,7 +86,7 @@ test('accepting invite does not change purchased seats', function () {
         ->assertRedirect('/dashboard');
 
     $this->subscription->refresh();
-    expect($this->subscription->seats)->toBe(2);
+    expect($this->subscription->quantity)->toBe(2);
 });
 
 test('adding seats increases purchased seat count', function () {
@@ -95,12 +97,12 @@ test('adding seats increases purchased seat count', function () {
         ->call('updateSeats');
 
     $this->subscription->refresh();
-    expect($this->subscription->seats)->toBe(3);
+    expect($this->subscription->quantity)->toBe(3);
 });
 
 test('adding seats unlocks invite flow', function () {
     Mail::fake();
-    $this->subscription->update(['seats' => 1]);
+    $this->subscription->update(['quantity' => 1]);
     $this->actingAs($this->owner);
 
     Volt::test('settings.organization')
@@ -108,7 +110,7 @@ test('adding seats unlocks invite flow', function () {
         ->call('updateSeats');
 
     $this->subscription->refresh();
-    expect($this->subscription->seats)->toBe(2);
+    expect($this->subscription->quantity)->toBe(2);
 
     Volt::test('settings.organization')
         ->set('inviteEmail', 'newmember@example.com')
@@ -118,7 +120,7 @@ test('adding seats unlocks invite flow', function () {
 });
 
 test('removing seats decreases purchased seat count', function () {
-    $this->subscription->update(['seats' => 5]);
+    $this->subscription->update(['quantity' => 5]);
     $this->actingAs($this->owner);
 
     Volt::test('settings.organization')
@@ -126,7 +128,7 @@ test('removing seats decreases purchased seat count', function () {
         ->call('updateSeats');
 
     $this->subscription->refresh();
-    expect($this->subscription->seats)->toBe(3);
+    expect($this->subscription->quantity)->toBe(3);
 });
 
 test('removing seats is blocked when it would go below occupied count', function () {
@@ -137,7 +139,7 @@ test('removing seats is blocked when it would go below occupied count', function
         'joined_at' => now(),
     ]);
     // 2 occupied (owner + member), 3 seats total, can't go below 2
-    $this->subscription->update(['seats' => 3]);
+    $this->subscription->update(['quantity' => 3]);
 
     $this->actingAs($this->owner);
 
@@ -147,7 +149,7 @@ test('removing seats is blocked when it would go below occupied count', function
         ->assertHasErrors(['targetSeats']);
 
     $this->subscription->refresh();
-    expect($this->subscription->seats)->toBe(3);
+    expect($this->subscription->quantity)->toBe(3);
 });
 
 test('removing seats respects pending invites as occupied', function () {
@@ -159,7 +161,7 @@ test('removing seats respects pending invites as occupied', function () {
         'invited_at' => now(),
     ]);
     // 2 occupied (owner + invited), 3 seats total, can't go below 2
-    $this->subscription->update(['seats' => 3]);
+    $this->subscription->update(['quantity' => 3]);
 
     $this->actingAs($this->owner);
 
@@ -169,7 +171,7 @@ test('removing seats respects pending invites as occupied', function () {
         ->assertHasErrors(['targetSeats']);
 
     $this->subscription->refresh();
-    expect($this->subscription->seats)->toBe(3);
+    expect($this->subscription->quantity)->toBe(3);
 });
 
 test('removing member does not change purchased seats', function () {
@@ -179,7 +181,7 @@ test('removing member does not change purchased seats', function () {
         'status' => 'active',
         'joined_at' => now(),
     ]);
-    $this->subscription->update(['seats' => 2]);
+    $this->subscription->update(['quantity' => 2]);
 
     $this->actingAs($this->owner);
 
@@ -187,7 +189,7 @@ test('removing member does not change purchased seats', function () {
         ->callAction('removeMember', arguments: ['userId' => $member->id]);
 
     $this->subscription->refresh();
-    expect($this->subscription->seats)->toBe(2)
+    expect($this->subscription->quantity)->toBe(2)
         ->and($this->org->members()->where('users.id', $member->id)->exists())->toBeFalse();
 });
 
@@ -198,7 +200,7 @@ test('leaving organization does not change purchased seats', function () {
         'status' => 'active',
         'joined_at' => now(),
     ]);
-    $this->subscription->update(['seats' => 2]);
+    $this->subscription->update(['quantity' => 2]);
     $member->update(['current_organization_id' => $this->org->id]);
 
     $this->actingAs($member);
@@ -207,7 +209,7 @@ test('leaving organization does not change purchased seats', function () {
         ->callAction('leaveOrganization');
 
     $this->subscription->refresh();
-    expect($this->subscription->seats)->toBe(2)
+    expect($this->subscription->quantity)->toBe(2)
         ->and($this->org->members()->where('users.id', $member->id)->exists())->toBeFalse();
 });
 
@@ -226,12 +228,12 @@ test('revoking invite does not change seats', function () {
         ->callAction('revokeInvite', arguments: ['userId' => $invitedUser->id]);
 
     $this->subscription->refresh();
-    expect($this->subscription->seats)->toBe(1);
+    expect($this->subscription->quantity)->toBe(1);
 });
 
 test('sending invite requires available seats', function () {
     Mail::fake();
-    $this->subscription->update(['seats' => 1]);
+    $this->subscription->update(['quantity' => 1]);
 
     $this->actingAs($this->owner);
 
@@ -241,7 +243,7 @@ test('sending invite requires available seats', function () {
         ->assertHasErrors(['inviteEmail']);
 
     $this->subscription->refresh();
-    expect($this->subscription->seats)->toBe(1);
+    expect($this->subscription->quantity)->toBe(1);
 
     Mail::assertNotSent(OrganizationInvite::class);
 });
@@ -262,7 +264,7 @@ test('accepting invite without available seats is blocked', function () {
 });
 
 test('accepting invite without active subscription still works', function () {
-    $this->subscription->update(['status' => 'cancelled']);
+    $this->subscription->update(['stripe_status' => 'canceled', 'ends_at' => now()->subDay()]);
 
     $invitedUser = User::factory()->create(['email' => 'nosub@example.com']);
     $this->org->members()->attach($invitedUser->id, [
@@ -288,14 +290,16 @@ test('accepting invite without active subscription still works', function () {
 
 test('webhook syncs seats from stripe quantity', function () {
     $subscription = Subscription::create([
+        'user_id' => $this->owner->id,
+        'type' => 'default',
         'billable_type' => 'organization',
         'billable_id' => $this->org->id,
         'plan_id' => $this->premiumPlan->id,
-        'vendor_slug' => 'stripe',
-        'vendor_subscription_id' => 'sub_webhook_test',
+        'stripe_id' => 'sub_webhook_test',
+        'stripe_status' => 'active',
+        'stripe_price' => 'price_premium_monthly',
         'cycle' => 'month',
-        'status' => 'active',
-        'seats' => 1,
+        'quantity' => 1,
     ]);
 
     $webhookPayload = [
@@ -318,7 +322,7 @@ test('webhook syncs seats from stripe quantity', function () {
     $stripeSubscription = (object) $webhookPayload['data']['object'];
     $stripeSubscription->plan = (object) $stripeSubscription->plan;
 
-    $localSub = Subscription::where('vendor_subscription_id', $stripeSubscription->id)->first();
+    $localSub = Subscription::where('stripe_id', $stripeSubscription->id)->first();
     if ($localSub) {
         $subscriptionCycle = $stripeSubscription->plan->interval;
         $plan_price_column = ($subscriptionCycle == 'year') ? 'yearly_price_id' : 'monthly_price_id';
@@ -327,7 +331,7 @@ test('webhook syncs seats from stripe quantity', function () {
         if ($updatedPlan) {
             $localSub->cycle = $subscriptionCycle;
             $localSub->plan_id = $updatedPlan->id;
-            $localSub->seats = (int) ($stripeSubscription->quantity ?? $localSub->seats);
+            $localSub->quantity = (int) ($stripeSubscription->quantity ?? $localSub->quantity);
 
             if (is_null($stripeSubscription->cancel_at)) {
                 $localSub->ends_at = null;
@@ -338,5 +342,5 @@ test('webhook syncs seats from stripe quantity', function () {
     }
 
     $subscription->refresh();
-    expect($subscription->seats)->toBe(5);
+    expect($subscription->quantity)->toBe(5);
 });

@@ -14,6 +14,7 @@ class Plan extends Model
     protected $casts = [
         'limits' => 'array',
         'features' => 'array',
+        'trial_days' => 'integer',
     ];
 
     public function subscriptions(): HasMany

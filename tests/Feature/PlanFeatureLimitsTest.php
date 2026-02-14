@@ -69,15 +69,16 @@ beforeEach(function () {
 test('user can get feature limit from plan', function () {
     // Subscribe user to free plan
     Subscription::create([
+        'user_id' => $this->user->id,
+        'type' => 'default',
         'billable_type' => 'user',
         'billable_id' => $this->user->id,
         'plan_id' => $this->freePlan->id,
-        'vendor_slug' => 'stripe',
-        'vendor_customer_id' => 'cus_'.uniqid(),
-        'vendor_subscription_id' => 'sub_'.uniqid(),
+        'stripe_id' => 'sub_'.uniqid(),
+        'stripe_status' => 'active',
+        'stripe_price' => 'price_free_monthly',
         'cycle' => 'month',
-        'status' => 'active',
-        'seats' => 1,
+        'quantity' => 1,
     ]);
 
     expect($this->user->featureLimit('api_keys'))->toBe(1);
@@ -85,15 +86,16 @@ test('user can get feature limit from plan', function () {
 
 test('user can get higher limit from pro plan', function () {
     Subscription::create([
+        'user_id' => $this->user->id,
+        'type' => 'default',
         'billable_type' => 'user',
         'billable_id' => $this->user->id,
         'plan_id' => $this->proPlan->id,
-        'vendor_slug' => 'stripe',
-        'vendor_customer_id' => 'cus_'.uniqid(),
-        'vendor_subscription_id' => 'sub_'.uniqid(),
+        'stripe_id' => 'sub_'.uniqid(),
+        'stripe_status' => 'active',
+        'stripe_price' => 'price_pro_monthly',
         'cycle' => 'month',
-        'status' => 'active',
-        'seats' => 1,
+        'quantity' => 1,
     ]);
 
     expect($this->user->featureLimit('api_keys'))->toBe(10);
@@ -101,15 +103,16 @@ test('user can get higher limit from pro plan', function () {
 
 test('unlimited limit returns null', function () {
     Subscription::create([
+        'user_id' => $this->user->id,
+        'type' => 'default',
         'billable_type' => 'user',
         'billable_id' => $this->user->id,
         'plan_id' => $this->unlimitedPlan->id,
-        'vendor_slug' => 'stripe',
-        'vendor_customer_id' => 'cus_'.uniqid(),
-        'vendor_subscription_id' => 'sub_'.uniqid(),
+        'stripe_id' => 'sub_'.uniqid(),
+        'stripe_status' => 'active',
+        'stripe_price' => 'price_enterprise_monthly',
         'cycle' => 'month',
-        'status' => 'active',
-        'seats' => 1,
+        'quantity' => 1,
     ]);
 
     expect($this->user->featureLimit('api_keys'))->toBeNull();
@@ -132,15 +135,16 @@ test('admin bypasses all limits', function () {
     config(['limits.admin_bypass' => true]);
 
     Subscription::create([
+        'user_id' => $this->user->id,
+        'type' => 'default',
         'billable_type' => 'user',
         'billable_id' => $this->user->id,
         'plan_id' => $this->freePlan->id,
-        'vendor_slug' => 'stripe',
-        'vendor_customer_id' => 'cus_'.uniqid(),
-        'vendor_subscription_id' => 'sub_'.uniqid(),
+        'stripe_id' => 'sub_'.uniqid(),
+        'stripe_status' => 'active',
+        'stripe_price' => 'price_free_monthly',
         'cycle' => 'month',
-        'status' => 'active',
-        'seats' => 1,
+        'quantity' => 1,
     ]);
 
     expect($this->user->featureLimit('api_keys'))->toBeNull();
@@ -151,15 +155,16 @@ test('admin bypass can be disabled', function () {
     config(['limits.admin_bypass' => false]);
 
     Subscription::create([
+        'user_id' => $this->user->id,
+        'type' => 'default',
         'billable_type' => 'user',
         'billable_id' => $this->user->id,
         'plan_id' => $this->freePlan->id,
-        'vendor_slug' => 'stripe',
-        'vendor_customer_id' => 'cus_'.uniqid(),
-        'vendor_subscription_id' => 'sub_'.uniqid(),
+        'stripe_id' => 'sub_'.uniqid(),
+        'stripe_status' => 'active',
+        'stripe_price' => 'price_free_monthly',
         'cycle' => 'month',
-        'status' => 'active',
-        'seats' => 1,
+        'quantity' => 1,
     ]);
 
     expect($this->user->featureLimit('api_keys'))->toBe(1);
@@ -195,15 +200,16 @@ test('feature usage is cached within request', function () {
 
 test('canUseFeature returns true when under limit', function () {
     Subscription::create([
+        'user_id' => $this->user->id,
+        'type' => 'default',
         'billable_type' => 'user',
         'billable_id' => $this->user->id,
         'plan_id' => $this->proPlan->id,
-        'vendor_slug' => 'stripe',
-        'vendor_customer_id' => 'cus_'.uniqid(),
-        'vendor_subscription_id' => 'sub_'.uniqid(),
+        'stripe_id' => 'sub_'.uniqid(),
+        'stripe_status' => 'active',
+        'stripe_price' => 'price_pro_monthly',
         'cycle' => 'month',
-        'status' => 'active',
-        'seats' => 1,
+        'quantity' => 1,
     ]);
 
     // Pro plan has limit of 10
@@ -214,15 +220,16 @@ test('canUseFeature returns true when under limit', function () {
 
 test('canUseFeature returns false when at limit', function () {
     Subscription::create([
+        'user_id' => $this->user->id,
+        'type' => 'default',
         'billable_type' => 'user',
         'billable_id' => $this->user->id,
         'plan_id' => $this->freePlan->id,
-        'vendor_slug' => 'stripe',
-        'vendor_customer_id' => 'cus_'.uniqid(),
-        'vendor_subscription_id' => 'sub_'.uniqid(),
+        'stripe_id' => 'sub_'.uniqid(),
+        'stripe_status' => 'active',
+        'stripe_price' => 'price_free_monthly',
         'cycle' => 'month',
-        'status' => 'active',
-        'seats' => 1,
+        'quantity' => 1,
     ]);
 
     // Free plan has limit of 1
@@ -233,15 +240,16 @@ test('canUseFeature returns false when at limit', function () {
 
 test('canUseFeature with amount parameter', function () {
     Subscription::create([
+        'user_id' => $this->user->id,
+        'type' => 'default',
         'billable_type' => 'user',
         'billable_id' => $this->user->id,
         'plan_id' => $this->proPlan->id,
-        'vendor_slug' => 'stripe',
-        'vendor_customer_id' => 'cus_'.uniqid(),
-        'vendor_subscription_id' => 'sub_'.uniqid(),
+        'stripe_id' => 'sub_'.uniqid(),
+        'stripe_status' => 'active',
+        'stripe_price' => 'price_pro_monthly',
         'cycle' => 'month',
-        'status' => 'active',
-        'seats' => 1,
+        'quantity' => 1,
     ]);
 
     // Pro plan has limit of 10
@@ -256,15 +264,16 @@ test('canUseFeature with amount parameter', function () {
 
 test('featureRemaining returns correct value', function () {
     Subscription::create([
+        'user_id' => $this->user->id,
+        'type' => 'default',
         'billable_type' => 'user',
         'billable_id' => $this->user->id,
         'plan_id' => $this->proPlan->id,
-        'vendor_slug' => 'stripe',
-        'vendor_customer_id' => 'cus_'.uniqid(),
-        'vendor_subscription_id' => 'sub_'.uniqid(),
+        'stripe_id' => 'sub_'.uniqid(),
+        'stripe_status' => 'active',
+        'stripe_price' => 'price_pro_monthly',
         'cycle' => 'month',
-        'status' => 'active',
-        'seats' => 1,
+        'quantity' => 1,
     ]);
 
     ApiKey::create(['user_id' => $this->user->id, 'name' => 'Key 1', 'key' => 'test_key_1']);
@@ -275,15 +284,16 @@ test('featureRemaining returns correct value', function () {
 
 test('featureRemaining returns null for unlimited', function () {
     Subscription::create([
+        'user_id' => $this->user->id,
+        'type' => 'default',
         'billable_type' => 'user',
         'billable_id' => $this->user->id,
         'plan_id' => $this->unlimitedPlan->id,
-        'vendor_slug' => 'stripe',
-        'vendor_customer_id' => 'cus_'.uniqid(),
-        'vendor_subscription_id' => 'sub_'.uniqid(),
+        'stripe_id' => 'sub_'.uniqid(),
+        'stripe_status' => 'active',
+        'stripe_price' => 'price_enterprise_monthly',
         'cycle' => 'month',
-        'status' => 'active',
-        'seats' => 1,
+        'quantity' => 1,
     ]);
 
     expect($this->user->featureRemaining('api_keys'))->toBeNull();
@@ -291,15 +301,16 @@ test('featureRemaining returns null for unlimited', function () {
 
 test('featureLimitReached returns correct boolean', function () {
     Subscription::create([
+        'user_id' => $this->user->id,
+        'type' => 'default',
         'billable_type' => 'user',
         'billable_id' => $this->user->id,
         'plan_id' => $this->freePlan->id,
-        'vendor_slug' => 'stripe',
-        'vendor_customer_id' => 'cus_'.uniqid(),
-        'vendor_subscription_id' => 'sub_'.uniqid(),
+        'stripe_id' => 'sub_'.uniqid(),
+        'stripe_status' => 'active',
+        'stripe_price' => 'price_free_monthly',
         'cycle' => 'month',
-        'status' => 'active',
-        'seats' => 1,
+        'quantity' => 1,
     ]);
 
     expect($this->user->featureLimitReached('api_keys'))->toBeFalse();
@@ -312,15 +323,16 @@ test('featureLimitReached returns correct boolean', function () {
 
 test('allFeatureLimits returns plan limits array', function () {
     Subscription::create([
+        'user_id' => $this->user->id,
+        'type' => 'default',
         'billable_type' => 'user',
         'billable_id' => $this->user->id,
         'plan_id' => $this->proPlan->id,
-        'vendor_slug' => 'stripe',
-        'vendor_customer_id' => 'cus_'.uniqid(),
-        'vendor_subscription_id' => 'sub_'.uniqid(),
+        'stripe_id' => 'sub_'.uniqid(),
+        'stripe_status' => 'active',
+        'stripe_price' => 'price_pro_monthly',
         'cycle' => 'month',
-        'status' => 'active',
-        'seats' => 1,
+        'quantity' => 1,
     ]);
 
     $limits = $this->user->allFeatureLimits();
@@ -360,15 +372,16 @@ test('zero limit disables feature', function () {
     ]);
 
     Subscription::create([
+        'user_id' => $this->user->id,
+        'type' => 'default',
         'billable_type' => 'user',
         'billable_id' => $this->user->id,
         'plan_id' => $disabledPlan->id,
-        'vendor_slug' => 'stripe',
-        'vendor_customer_id' => 'cus_'.uniqid(),
-        'vendor_subscription_id' => 'sub_'.uniqid(),
+        'stripe_id' => 'sub_'.uniqid(),
+        'stripe_status' => 'active',
+        'stripe_price' => 'price_disabled_monthly',
         'cycle' => 'month',
-        'status' => 'active',
-        'seats' => 1,
+        'quantity' => 1,
     ]);
 
     expect($this->user->featureLimit('api_keys'))->toBe(0)
@@ -377,15 +390,16 @@ test('zero limit disables feature', function () {
 
 test('undefined feature in plan returns unlimited', function () {
     Subscription::create([
+        'user_id' => $this->user->id,
+        'type' => 'default',
         'billable_type' => 'user',
         'billable_id' => $this->user->id,
         'plan_id' => $this->freePlan->id,
-        'vendor_slug' => 'stripe',
-        'vendor_customer_id' => 'cus_'.uniqid(),
-        'vendor_subscription_id' => 'sub_'.uniqid(),
+        'stripe_id' => 'sub_'.uniqid(),
+        'stripe_status' => 'active',
+        'stripe_price' => 'price_free_monthly',
         'cycle' => 'month',
-        'status' => 'active',
-        'seats' => 1,
+        'quantity' => 1,
     ]);
 
     expect($this->user->featureLimit('undefined_feature'))->toBeNull()
@@ -394,15 +408,16 @@ test('undefined feature in plan returns unlimited', function () {
 
 test('featureUsagePercent returns correct percentage', function () {
     Subscription::create([
+        'user_id' => $this->user->id,
+        'type' => 'default',
         'billable_type' => 'user',
         'billable_id' => $this->user->id,
         'plan_id' => $this->proPlan->id,
-        'vendor_slug' => 'stripe',
-        'vendor_customer_id' => 'cus_'.uniqid(),
-        'vendor_subscription_id' => 'sub_'.uniqid(),
+        'stripe_id' => 'sub_'.uniqid(),
+        'stripe_status' => 'active',
+        'stripe_price' => 'price_pro_monthly',
         'cycle' => 'month',
-        'status' => 'active',
-        'seats' => 1,
+        'quantity' => 1,
     ]);
 
     // Pro plan has limit of 10
@@ -415,15 +430,16 @@ test('featureUsagePercent returns correct percentage', function () {
 
 test('featureUsagePercent returns null for unlimited', function () {
     Subscription::create([
+        'user_id' => $this->user->id,
+        'type' => 'default',
         'billable_type' => 'user',
         'billable_id' => $this->user->id,
         'plan_id' => $this->unlimitedPlan->id,
-        'vendor_slug' => 'stripe',
-        'vendor_customer_id' => 'cus_'.uniqid(),
-        'vendor_subscription_id' => 'sub_'.uniqid(),
+        'stripe_id' => 'sub_'.uniqid(),
+        'stripe_status' => 'active',
+        'stripe_price' => 'price_enterprise_monthly',
         'cycle' => 'month',
-        'status' => 'active',
-        'seats' => 1,
+        'quantity' => 1,
     ]);
 
     expect($this->user->featureUsagePercent('api_keys'))->toBeNull();
@@ -431,15 +447,16 @@ test('featureUsagePercent returns null for unlimited', function () {
 
 test('featureUsagePercent caps at 100', function () {
     Subscription::create([
+        'user_id' => $this->user->id,
+        'type' => 'default',
         'billable_type' => 'user',
         'billable_id' => $this->user->id,
         'plan_id' => $this->freePlan->id,
-        'vendor_slug' => 'stripe',
-        'vendor_customer_id' => 'cus_'.uniqid(),
-        'vendor_subscription_id' => 'sub_'.uniqid(),
+        'stripe_id' => 'sub_'.uniqid(),
+        'stripe_status' => 'active',
+        'stripe_price' => 'price_free_monthly',
         'cycle' => 'month',
-        'status' => 'active',
-        'seats' => 1,
+        'quantity' => 1,
     ]);
 
     // Free plan has limit of 1, create 2
@@ -451,15 +468,16 @@ test('featureUsagePercent caps at 100', function () {
 
 test('featureNearLimit returns true when approaching limit', function () {
     Subscription::create([
+        'user_id' => $this->user->id,
+        'type' => 'default',
         'billable_type' => 'user',
         'billable_id' => $this->user->id,
         'plan_id' => $this->proPlan->id,
-        'vendor_slug' => 'stripe',
-        'vendor_customer_id' => 'cus_'.uniqid(),
-        'vendor_subscription_id' => 'sub_'.uniqid(),
+        'stripe_id' => 'sub_'.uniqid(),
+        'stripe_status' => 'active',
+        'stripe_price' => 'price_pro_monthly',
         'cycle' => 'month',
-        'status' => 'active',
-        'seats' => 1,
+        'quantity' => 1,
     ]);
 
     // Pro plan has limit of 10, create 8 (80%)
@@ -473,15 +491,16 @@ test('featureNearLimit returns true when approaching limit', function () {
 
 test('featureNearLimit returns false when well under limit', function () {
     Subscription::create([
+        'user_id' => $this->user->id,
+        'type' => 'default',
         'billable_type' => 'user',
         'billable_id' => $this->user->id,
         'plan_id' => $this->proPlan->id,
-        'vendor_slug' => 'stripe',
-        'vendor_customer_id' => 'cus_'.uniqid(),
-        'vendor_subscription_id' => 'sub_'.uniqid(),
+        'stripe_id' => 'sub_'.uniqid(),
+        'stripe_status' => 'active',
+        'stripe_price' => 'price_pro_monthly',
         'cycle' => 'month',
-        'status' => 'active',
-        'seats' => 1,
+        'quantity' => 1,
     ]);
 
     // Pro plan has limit of 10, create 2 (20%)
@@ -493,15 +512,16 @@ test('featureNearLimit returns false when well under limit', function () {
 
 test('featureNearLimit returns false for unlimited', function () {
     Subscription::create([
+        'user_id' => $this->user->id,
+        'type' => 'default',
         'billable_type' => 'user',
         'billable_id' => $this->user->id,
         'plan_id' => $this->unlimitedPlan->id,
-        'vendor_slug' => 'stripe',
-        'vendor_customer_id' => 'cus_'.uniqid(),
-        'vendor_subscription_id' => 'sub_'.uniqid(),
+        'stripe_id' => 'sub_'.uniqid(),
+        'stripe_status' => 'active',
+        'stripe_price' => 'price_enterprise_monthly',
         'cycle' => 'month',
-        'status' => 'active',
-        'seats' => 1,
+        'quantity' => 1,
     ]);
 
     for ($i = 1; $i <= 100; $i++) {
@@ -514,15 +534,16 @@ test('featureNearLimit returns false for unlimited', function () {
 
 test('featureNearLimit with custom threshold', function () {
     Subscription::create([
+        'user_id' => $this->user->id,
+        'type' => 'default',
         'billable_type' => 'user',
         'billable_id' => $this->user->id,
         'plan_id' => $this->proPlan->id,
-        'vendor_slug' => 'stripe',
-        'vendor_customer_id' => 'cus_'.uniqid(),
-        'vendor_subscription_id' => 'sub_'.uniqid(),
+        'stripe_id' => 'sub_'.uniqid(),
+        'stripe_status' => 'active',
+        'stripe_price' => 'price_pro_monthly',
         'cycle' => 'month',
-        'status' => 'active',
-        'seats' => 1,
+        'quantity' => 1,
     ]);
 
     // Pro plan has limit of 10, create 5 (50%)

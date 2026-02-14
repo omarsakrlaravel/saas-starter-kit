@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Listeners\ApplySubscriptionMetadata;
+use App\Listeners\HandleStripeWebhook;
 use App\Listeners\LogSuccessfulLogin;
 use App\Listeners\LogSuccessfulLogout;
 use Exception;
@@ -15,6 +17,9 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Cashier\Cashier;
+use Laravel\Cashier\Events\WebhookHandled;
+use Laravel\Cashier\Events\WebhookReceived;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -32,7 +37,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        Cashier::ignoreRoutes();
+        Cashier::useCustomerModel(config('wave.user_model', \App\Models\User::class));
+        Cashier::useSubscriptionModel(\Wave\Subscription::class);
     }
 
     /**
@@ -49,6 +56,8 @@ class AppServiceProvider extends ServiceProvider
         // Register activity log event listeners
         Event::listen(Login::class, LogSuccessfulLogin::class);
         Event::listen(Logout::class, LogSuccessfulLogout::class);
+        Event::listen(WebhookReceived::class, HandleStripeWebhook::class);
+        Event::listen(WebhookHandled::class, ApplySubscriptionMetadata::class);
 
         Validator::extend('base64image', function ($attribute, $value, $parameters, $validator) {
             $explode = explode(',', $value);

@@ -236,7 +236,7 @@
                 return;
             }
 
-            $this->targetSeats = $subscription?->seats ?? 1;
+            $this->targetSeats = $subscription?->quantity ?? 1;
             $this->seatUpdateError = null;
             $this->seatPaymentUrl = null;
             $this->dispatch('open-modal', id: 'manage-seats');
@@ -276,7 +276,7 @@
                 return;
             }
 
-            $delta = $this->targetSeats - $subscription->seats;
+            $delta = $this->targetSeats - $subscription->quantity;
             if ($delta === 0) {
                 $this->dispatch('close-modal', id: 'manage-seats');
 
@@ -288,7 +288,7 @@
 
                 if ($invoiceUrl) {
                     $this->seatPaymentUrl = $invoiceUrl;
-                    $this->seatUpdateError = 'The seat upgrade was saved, but payment is still pending. Complete payment to secure the new seats.';
+                    $this->seatUpdateError = 'Seat upgrade is pending payment. Complete the invoice to apply the new seats.';
                     Notification::make()
                         ->title('Payment required')
                         ->warning()
@@ -486,7 +486,7 @@
                         $seatUsage = $org->occupiedSeatCount();
                         $activeSubscription = $org->activeSubscription();
                         $isOrganizationSubscription = $activeSubscription && $activeSubscription->billable_type === 'organization';
-                        $totalSeats = $isOrganizationSubscription ? $activeSubscription->seats : 0;
+                        $totalSeats = $isOrganizationSubscription ? $activeSubscription->quantity : 0;
                         $availableSeats = $isOrganizationSubscription ? max($totalSeats - $seatUsage, 0) : 0;
                         $usagePercent = ($isOrganizationSubscription && $totalSeats > 0) ? min(($seatUsage / $totalSeats) * 100, 100) : 0;
                     @endphp
@@ -712,7 +712,7 @@
                                 <div
                                     x-data="{
                                         seats: @entangle('targetSeats'),
-                                        current: {{ $activeSubscription->seats }},
+                                        current: {{ $activeSubscription->quantity }},
                                         min: {{ $minSeats }},
                                         max: 100,
                                         price: {{ $pricePerSeat }},
@@ -814,7 +814,7 @@
                                                 <a href="{{ $seatPaymentUrl }}" target="_blank" rel="noopener noreferrer" class="inline-flex mt-2 underline underline-offset-2 text-red-700 dark:text-red-200">
                                                     Pay invoice
                                                 </a>
-                                            @elseif(config('wave.billing_provider') === 'stripe')
+                                            @else
                                                 <a href="{{ route('stripe.portal') }}" wire:navigate class="inline-flex mt-2 underline underline-offset-2 text-red-700 dark:text-red-200">
                                                     Update payment method
                                                 </a>

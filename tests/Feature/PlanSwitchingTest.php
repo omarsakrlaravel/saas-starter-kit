@@ -59,15 +59,16 @@ beforeEach(function () {
 test('plan method returns correct current plan', function () {
     // Create subscription with premium plan
     Subscription::create([
+        'user_id' => $this->user->id,
+        'type' => 'default',
         'billable_type' => 'user',
         'billable_id' => $this->user->id,
         'plan_id' => $this->premiumPlan->id,
-        'vendor_slug' => 'stripe',
-        'vendor_customer_id' => 'cus_'.uniqid(),
-        'vendor_subscription_id' => 'sub_'.uniqid(),
+        'stripe_id' => 'sub_'.uniqid(),
+        'stripe_status' => 'active',
+        'stripe_price' => 'price_premium_monthly',
         'cycle' => 'month',
-        'status' => 'active',
-        'seats' => 1,
+        'quantity' => 1,
     ]);
 
     $currentPlan = $this->user->plan();
@@ -80,32 +81,34 @@ test('plan method returns correct current plan', function () {
 test('planInterval returns correct billing cycle', function () {
     // Test monthly
     Subscription::create([
+        'user_id' => $this->user->id,
+        'type' => 'default',
         'billable_type' => 'user',
         'billable_id' => $this->user->id,
         'plan_id' => $this->premiumPlan->id,
-        'vendor_slug' => 'stripe',
-        'vendor_customer_id' => 'cus_'.uniqid(),
-        'vendor_subscription_id' => 'sub_'.uniqid(),
+        'stripe_id' => 'sub_'.uniqid(),
+        'stripe_status' => 'active',
+        'stripe_price' => 'price_premium_monthly',
         'cycle' => 'month',
-        'status' => 'active',
-        'seats' => 1,
+        'quantity' => 1,
     ]);
 
     expect($this->user->planInterval())->toBe('Monthly');
 
-    // Create new subscription with yearly cycle
-    $this->user->subscription->update(['status' => 'cancelled']);
+    // Simulate cancellation of current subscription
+    $this->user->subscription->update(['stripe_status' => 'canceled', 'ends_at' => now()->subDay()]);
 
     Subscription::create([
+        'user_id' => $this->user->id,
+        'type' => 'default',
         'billable_type' => 'user',
         'billable_id' => $this->user->id,
         'plan_id' => $this->proPlan->id,
-        'vendor_slug' => 'stripe',
-        'vendor_customer_id' => 'cus_'.uniqid(),
-        'vendor_subscription_id' => 'sub_'.uniqid(),
+        'stripe_id' => 'sub_'.uniqid(),
+        'stripe_status' => 'active',
+        'stripe_price' => 'price_pro_yearly',
         'cycle' => 'year',
-        'status' => 'active',
-        'seats' => 1,
+        'quantity' => 1,
     ]);
 
     expect($this->user->fresh()->planInterval())->toBe('Yearly');
@@ -114,15 +117,16 @@ test('planInterval returns correct billing cycle', function () {
 test('latestSubscription returns most recent active subscription', function () {
     // Create older subscription
     $oldSubscription = Subscription::create([
+        'user_id' => $this->user->id,
+        'type' => 'default',
         'billable_type' => 'user',
         'billable_id' => $this->user->id,
         'plan_id' => $this->basicPlan->id,
-        'vendor_slug' => 'stripe',
-        'vendor_customer_id' => 'cus_'.uniqid(),
-        'vendor_subscription_id' => 'sub_'.uniqid(),
+        'stripe_id' => 'sub_'.uniqid(),
+        'stripe_status' => 'active',
+        'stripe_price' => 'price_basic_monthly',
         'cycle' => 'month',
-        'status' => 'active',
-        'seats' => 1,
+        'quantity' => 1,
         'created_at' => now()->subDays(30),
     ]);
 
@@ -130,15 +134,16 @@ test('latestSubscription returns most recent active subscription', function () {
 
     // Create newer subscription
     $newSubscription = Subscription::create([
+        'user_id' => $this->user->id,
+        'type' => 'default',
         'billable_type' => 'user',
         'billable_id' => $this->user->id,
         'plan_id' => $this->premiumPlan->id,
-        'vendor_slug' => 'stripe',
-        'vendor_customer_id' => 'cus_'.uniqid(),
-        'vendor_subscription_id' => 'sub_'.uniqid(),
+        'stripe_id' => 'sub_'.uniqid(),
+        'stripe_status' => 'active',
+        'stripe_price' => 'price_premium_yearly',
         'cycle' => 'year',
-        'status' => 'active',
-        'seats' => 1,
+        'quantity' => 1,
     ]);
 
     $latest = $this->user->latestSubscription();
@@ -150,35 +155,37 @@ test('latestSubscription returns most recent active subscription', function () {
 
 test('subscription relationship returns active subscription', function () {
     $subscription = Subscription::create([
+        'user_id' => $this->user->id,
+        'type' => 'default',
         'billable_type' => 'user',
         'billable_id' => $this->user->id,
         'plan_id' => $this->premiumPlan->id,
-        'vendor_slug' => 'paddle',
-        'vendor_customer_id' => 'cus_'.uniqid(),
-        'vendor_subscription_id' => 'sub_'.uniqid(),
+        'stripe_id' => 'sub_'.uniqid(),
+        'stripe_status' => 'active',
+        'stripe_price' => 'price_premium_monthly',
         'cycle' => 'month',
-        'status' => 'active',
-        'seats' => 1,
+        'quantity' => 1,
     ]);
 
     $userSubscription = $this->user->subscription;
 
     expect($userSubscription)->not->toBeNull()
         ->and($userSubscription->id)->toBe($subscription->id)
-        ->and($userSubscription->status)->toBe('active');
+        ->and($userSubscription->stripe_status)->toBe('active');
 });
 
 test('plan relationship on subscription works correctly', function () {
     $subscription = Subscription::create([
+        'user_id' => $this->user->id,
+        'type' => 'default',
         'billable_type' => 'user',
         'billable_id' => $this->user->id,
         'plan_id' => $this->premiumPlan->id,
-        'vendor_slug' => 'stripe',
-        'vendor_customer_id' => 'cus_'.uniqid(),
-        'vendor_subscription_id' => 'sub_'.uniqid(),
+        'stripe_id' => 'sub_'.uniqid(),
+        'stripe_status' => 'active',
+        'stripe_price' => 'price_premium_monthly',
         'cycle' => 'month',
-        'status' => 'active',
-        'seats' => 1,
+        'quantity' => 1,
     ]);
 
     $plan = $subscription->plan;
@@ -190,15 +197,16 @@ test('plan relationship on subscription works correctly', function () {
 
 test('user relationship on subscription works correctly', function () {
     $subscription = Subscription::create([
+        'user_id' => $this->user->id,
+        'type' => 'default',
         'billable_type' => 'user',
         'billable_id' => $this->user->id,
         'plan_id' => $this->premiumPlan->id,
-        'vendor_slug' => 'stripe',
-        'vendor_customer_id' => 'cus_'.uniqid(),
-        'vendor_subscription_id' => 'sub_'.uniqid(),
+        'stripe_id' => 'sub_'.uniqid(),
+        'stripe_status' => 'active',
+        'stripe_price' => 'price_premium_monthly',
         'cycle' => 'month',
-        'status' => 'active',
-        'seats' => 1,
+        'quantity' => 1,
     ]);
 
     $user = $subscription->user;
@@ -208,35 +216,38 @@ test('user relationship on subscription works correctly', function () {
         ->and($user->email)->toBe($this->user->email);
 });
 
-test('cancelled subscriptions are not returned by subscription relationship', function () {
-    // Create cancelled subscription
-    Subscription::create([
+test('canceled subscriptions are returned by subscription relationship but invalid', function () {
+    $subscription = Subscription::create([
+        'user_id' => $this->user->id,
+        'type' => 'default',
         'billable_type' => 'user',
         'billable_id' => $this->user->id,
         'plan_id' => $this->basicPlan->id,
-        'vendor_slug' => 'stripe',
-        'vendor_customer_id' => 'cus_'.uniqid(),
-        'vendor_subscription_id' => 'sub_'.uniqid(),
+        'stripe_id' => 'sub_'.uniqid(),
+        'stripe_status' => 'canceled',
+        'stripe_price' => 'price_basic_monthly',
         'cycle' => 'month',
-        'status' => 'cancelled',
-        'seats' => 1,
+        'quantity' => 1,
+        'ends_at' => now()->subDay(),
     ]);
 
-    expect($this->user->subscription)->toBeNull();
+    expect($this->user->subscription)->not->toBeNull()
+        ->and($this->user->subscription->valid())->toBeFalse();
 });
 
 test('updating subscription plan changes user plan', function () {
     // Monthly subscription
     $subscription = Subscription::create([
+        'user_id' => $this->user->id,
+        'type' => 'default',
         'billable_type' => 'user',
         'billable_id' => $this->user->id,
         'plan_id' => $this->basicPlan->id,
-        'vendor_slug' => 'stripe',
-        'vendor_customer_id' => 'cus_'.uniqid(),
-        'vendor_subscription_id' => 'sub_'.uniqid(),
+        'stripe_id' => 'sub_'.uniqid(),
+        'stripe_status' => 'active',
+        'stripe_price' => 'price_basic_monthly',
         'cycle' => 'month',
-        'status' => 'active',
-        'seats' => 1,
+        'quantity' => 1,
     ]);
 
     expect($this->user->planInterval())->toBe('Monthly')

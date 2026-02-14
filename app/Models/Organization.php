@@ -56,7 +56,7 @@ class Organization extends Model
 
     public function activeSubscription(): ?Subscription
     {
-        return $this->subscriptions()->where('status', 'active')->orderByDesc('created_at')->first();
+        return $this->subscriptions()->where('stripe_status', 'active')->orderByDesc('created_at')->first();
     }
 
     public function activeMemberCount(): int
@@ -82,7 +82,7 @@ class Organization extends Model
             return null;
         }
 
-        return max(0, $subscription->seats - $this->occupiedSeatCount());
+        return max(0, $subscription->quantity - $this->occupiedSeatCount());
     }
 
     public function hasAvailableSeatForNewInvite(): bool
@@ -93,7 +93,7 @@ class Organization extends Model
             return true;
         }
 
-        return $this->occupiedSeatCount() < $subscription->seats;
+        return $this->occupiedSeatCount() < $subscription->quantity;
     }
 
     public function clearMembersBillingCache(?int $planId = null): void

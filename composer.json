@@ -22,8 +22,10 @@
         "guzzlehttp/guzzle": "^7.8",
         "intervention/image": "^3.11",
         "lab404/laravel-impersonate": "^1.7.5",
+        "laravel/cashier": "^16",
         "laravel/folio": "^1.1",
         "laravel/framework": "^12.51",
+        "laravel/nightwatch": "^1.22",
         "laravel/pail": "^1.2.2",
         "laravel/tinker": "^2.10.1",
         "laravel/ui": "^4.6",
@@ -88,7 +90,7 @@
         ],
         "dev": [
             "Composer\\Config::disableProcessTimeout",
-            "npx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#fdba74\" \"php artisan serve\" \"php artisan queue:listen --tries=1\" \"php artisan pail --timeout=0\" \"npm run dev\" --names=server,queue,logs,vite"
+            "npx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#fdba74,#34d399,#facc15\" \"php artisan serve --port=${APP_PORT:-8000}\" \"php artisan queue:listen --tries=1\" \"php artisan pail --timeout=0\" \"npm run dev\" \"php artisan nightwatch:agent\" \"stripe listen --forward-to http://127.0.0.1:${APP_PORT:-8000}/stripe/webhook\" --names=server,queue,logs,vite,nightwatch,stripe"
         ]
     },
     "config": {

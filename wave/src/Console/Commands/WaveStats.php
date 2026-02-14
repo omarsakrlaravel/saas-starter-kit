@@ -45,8 +45,8 @@ class WaveStats extends Command
         $verifiedUsers = User::where('verified', 1)->count();
 
         // Subscription Statistics
-        $activeSubscriptions = Subscription::where('status', 'active')->count();
-        $trialSubscriptions = Subscription::where('status', 'active')
+        $activeSubscriptions = Subscription::where('stripe_status', 'active')->count();
+        $trialSubscriptions = Subscription::where('stripe_status', 'active')
             ->whereNotNull('trial_ends_at')
             ->where('trial_ends_at', '>', $now)
             ->count();
@@ -54,7 +54,7 @@ class WaveStats extends Command
             ->where('ends_at', '>', $now)
             ->count();
 
-        $newSubscriptions = Subscription::where('status', 'active')
+        $newSubscriptions = Subscription::where('stripe_status', 'active')
             ->where('created_at', '>=', $periodStart)
             ->count();
 
@@ -68,7 +68,7 @@ class WaveStats extends Command
         // Growth Metrics
         $previousPeriodStart = $periodStart->copy()->subDays($period);
         $previousNewUsers = User::whereBetween('created_at', [$previousPeriodStart, $periodStart])->count();
-        $previousNewSubs = Subscription::where('status', 'active')
+        $previousNewSubs = Subscription::where('stripe_status', 'active')
             ->whereBetween('created_at', [$previousPeriodStart, $periodStart])
             ->count();
 
@@ -81,7 +81,7 @@ class WaveStats extends Command
             : 0;
 
         // Churn Rate (subscriptions that ended in the period / active subscriptions at start)
-        $churnedSubs = Subscription::where('status', '!=', 'active')
+        $churnedSubs = Subscription::where('stripe_status', '!=', 'active')
             ->whereBetween('updated_at', [$periodStart, $now])
             ->count();
 
@@ -118,7 +118,7 @@ class WaveStats extends Command
     {
         $monthlyRevenue = 0;
 
-        $activeSubscriptions = Subscription::where('status', 'active')->with('plan')->get();
+        $activeSubscriptions = Subscription::where('stripe_status', 'active')->with('plan')->get();
 
         foreach ($activeSubscriptions as $subscription) {
             if (! $subscription->plan) {
@@ -138,7 +138,7 @@ class WaveStats extends Command
     protected function getPlanBreakdown(): array
     {
         $plans = Plan::withCount(['subscriptions' => function ($query) {
-            $query->where('status', 'active');
+            $query->where('stripe_status', 'active');
         }])->get();
 
         return $plans->map(function ($plan) {

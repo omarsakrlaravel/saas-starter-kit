@@ -86,15 +86,16 @@ class OrganizationSeeder extends Seeder
 
         // Create active subscription for the organization (Premium plan, 5 seats)
         DB::table('subscriptions')->insert([
+            'user_id' => $ownerId,
+            'type' => 'default',
             'billable_type' => 'organization',
             'billable_id' => $organization->id,
             'plan_id' => 2,
-            'vendor_slug' => 'stripe',
-            'vendor_customer_id' => null,
-            'vendor_subscription_id' => 'sub_seed_'.uniqid(),
-            'status' => 'active',
+            'stripe_id' => 'sub_seed_'.uniqid(),
+            'stripe_status' => 'active',
+            'stripe_price' => 'price_seed_monthly',
             'cycle' => 'month',
-            'seats' => 5,
+            'quantity' => 5,
             'last_payment_at' => $now,
             'next_payment_at' => now()->addMonth(),
             'created_at' => $now,

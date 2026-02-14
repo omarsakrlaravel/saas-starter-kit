@@ -2,7 +2,6 @@
 
 namespace Wave;
 
-use Carbon\Carbon;
 use Devdojo\Auth\Models\User as AuthUser;
 use Exception;
 use Filament\Models\Contracts\FilamentUser;
@@ -16,17 +15,20 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Lab404\Impersonate\Models\Impersonate;
+use Laravel\Cashier\Billable;
+use Laravel\Cashier\Cashier;
 use Spatie\Permission\Traits\HasRoles;
-use Stripe\StripeClient;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 use Wave\Traits\HasPlanFeatures;
 
 class User extends AuthUser implements FilamentUser, HasAvatar, JWTSubject
 {
+    use Billable {
+        onTrial as cashierOnTrial;
+    }
     use HasPlanFeatures, HasRoles, Impersonate, Notifiable;
 
     /**
@@ -64,6 +66,9 @@ class User extends AuthUser implements FilamentUser, HasAvatar, JWTSubject
         'verified',
         'trial_ends_at',
         'current_organization_id',
+        'stripe_id',
+        'pm_type',
+        'pm_last_four',
     ];
 
     /**
@@ -88,16 +93,21 @@ class User extends AuthUser implements FilamentUser, HasAvatar, JWTSubject
         ];
     }
 
-    public function onTrial()
+    public function onTrial(?string $subscription = null): bool
     {
+        if ($subscription !== null) {
+            return $this->cashierOnTrial($subscription);
+        }
+
         if (is_null($this->trial_ends_at)) {
             return false;
         }
+
         if ($this->subscriber()) {
             return false;
         }
 
-        return true;
+        return $this->trial_ends_at->isFuture();
     }
 
     public function setCurrentOrganizationIdAttribute(?int $value): void
@@ -245,7 +255,7 @@ class User extends AuthUser implements FilamentUser, HasAvatar, JWTSubject
     public function activeBillingSubscription()
     {
         return $this->getResolvedActiveBillingSubscriptions()
-            ->where('status', 'active')
+            ->filter(fn (Subscription $subscription): bool => $subscription->valid())
             ->sortByDesc('created_at')
             ->first();
     }
@@ -287,7 +297,7 @@ class User extends AuthUser implements FilamentUser, HasAvatar, JWTSubject
 
     public function subscriptions(): HasMany
     {
-        return $this->hasMany(Subscription::class, 'billable_id')->where('billable_type', 'user');
+        return $this->hasMany(Subscription::class, 'user_id')->orderByDesc('created_at');
     }
 
     public function subscriber()
@@ -299,7 +309,7 @@ class User extends AuthUser implements FilamentUser, HasAvatar, JWTSubject
                 $scopedCacheKey = "user_subscriber_{$this->id}_{$this->getBillingContextCacheSuffix()}";
                 $query = function () {
                     return $this->getResolvedActiveBillingSubscriptions()
-                        ->contains(fn (Subscription $subscription): bool => $subscription->status === 'active');
+                        ->contains(fn (Subscription $subscription): bool => $subscription->valid());
                 };
 
                 if ($this->getBillingContext()['type'] === 'user') {
@@ -313,7 +323,7 @@ class User extends AuthUser implements FilamentUser, HasAvatar, JWTSubject
         }
 
         return $this->getResolvedActiveBillingSubscriptions()
-            ->contains(fn (Subscription $subscription): bool => $subscription->status === 'active');
+            ->contains(fn (Subscription $subscription): bool => $subscription->valid());
     }
 
     public function subscribedToPlan($planSlug)
@@ -331,8 +341,7 @@ class User extends AuthUser implements FilamentUser, HasAvatar, JWTSubject
 
                     return $this->getResolvedActiveBillingSubscriptions()
                         ->where('plan_id', $plan->id)
-                        ->where('status', 'active')
-                        ->isNotEmpty();
+                        ->contains(fn (Subscription $subscription): bool => $subscription->valid());
                 };
 
                 if ($this->getBillingContext()['type'] === 'user') {
@@ -352,8 +361,7 @@ class User extends AuthUser implements FilamentUser, HasAvatar, JWTSubject
 
         return $this->getResolvedActiveBillingSubscriptions()
             ->where('plan_id', $plan->id)
-            ->where('status', 'active')
-            ->isNotEmpty();
+            ->contains(fn (Subscription $subscription): bool => $subscription->valid());
     }
 
     public function plan()
@@ -383,66 +391,238 @@ class User extends AuthUser implements FilamentUser, HasAvatar, JWTSubject
 
     public function subscription(): HasOne
     {
-        return $this->hasOne(Subscription::class, 'billable_id')
+        return $this->hasOne(Subscription::class, 'user_id')
             ->where('billable_type', 'user')
-            ->where('status', 'active')
             ->orderByDesc('created_at');
     }
 
-    public function invoices()
+    public function billingInvoices(): array
     {
-        $user_invoices = [];
-        $subscriptions = $this->getResolvedActiveBillingSubscriptions()
-            ->where('status', 'active');
-
-        if ($subscriptions->isEmpty()) {
+        if (! $this->hasStripeId()) {
             return [];
         }
 
-        if (config('wave.billing_provider') == 'stripe') {
-            $stripe = new StripeClient(config('wave.stripe.secret_key'));
-            foreach ($subscriptions as $subscription) {
-                if (empty($subscription->vendor_customer_id)) {
-                    continue;
-                }
+        try {
+            $subscriptionOrgIdMap = $this->buildSubscriptionOrgIdMap();
+            $billingContext = $this->getBillingContext();
 
-                $invoices = $stripe->invoices->all(['customer' => $subscription->vendor_customer_id, 'limit' => 100]);
+            return $this->invoicesIncludingPending()->map(function ($invoice) use ($subscriptionOrgIdMap): object {
+                $stripeInvoice = $invoice->asStripeInvoice();
+                $downloadUrl = $stripeInvoice->invoice_pdf ?? $stripeInvoice->hosted_invoice_url ?? null;
+                $currency = (string) ($stripeInvoice->currency ?? 'usd');
+                $rawSubtotal = (int) ($stripeInvoice->subtotal ?? 0);
+                $rawTax = (int) ($stripeInvoice->tax ?? 0);
+                $rawDiscount = $this->extractInvoiceDiscountAmount($stripeInvoice);
+                $rawTotal = (int) ($stripeInvoice->total ?? 0);
+                $lineItems = $this->extractInvoiceLineItems($stripeInvoice, $currency);
+                $status = strtolower((string) ($stripeInvoice->status ?? 'unknown'));
+                $orgId = $this->resolveInvoiceOrgId($stripeInvoice, $subscriptionOrgIdMap);
 
-                foreach ($invoices as $invoice) {
-                    array_push($user_invoices, (object) [
-                        'id' => $invoice->id,
-                        'created' => Carbon::parse($invoice->created)->isoFormat('MMMM Do YYYY, h:mm:ss a'),
-                        'total' => number_format(($invoice->total / 100), 2, '.', ' '),
-                        'download' => $invoice->invoice_pdf,
-                    ]);
-                }
-            }
-        } else {
-            $paddle_url = (config('wave.paddle.env') == 'sandbox') ? 'https://sandbox-api.paddle.com' : 'https://api.paddle.com';
-            foreach ($subscriptions as $subscription) {
-                if (empty($subscription->vendor_subscription_id)) {
-                    continue;
-                }
+                return (object) [
+                    'id' => $invoice->id,
+                    'number' => (string) ($stripeInvoice->number ?? $invoice->id),
+                    'created' => $invoice->date()->isoFormat('MMMM Do YYYY, h:mm:ss a'),
+                    'status' => $this->humanInvoiceStatus($status),
+                    'status_value' => $status,
+                    'reason' => $this->resolveInvoiceReason($stripeInvoice, $lineItems),
+                    'line_items' => $lineItems,
+                    'subtotal' => Cashier::formatAmount($rawSubtotal, $currency),
+                    'discount' => Cashier::formatAmount($rawDiscount, $currency),
+                    'tax' => Cashier::formatAmount($rawTax, $currency),
+                    'total' => Cashier::formatAmount($rawTotal, $currency),
+                    'calculation' => $this->buildInvoiceCalculationSummary($currency, $rawSubtotal, $rawDiscount, $rawTax, $rawTotal),
+                    'download' => $downloadUrl,
+                    'organization_id' => $orgId,
+                ];
+            })->filter(fn (object $invoice): bool => is_string($invoice->download) && $invoice->download !== '')
+                ->filter(function (object $invoice) use ($billingContext): bool {
+                    if ($billingContext['type'] === 'organization') {
+                        return $invoice->organization_id === $billingContext['id'];
+                    }
 
-                $response = Http::withToken(config('wave.paddle.api_key'))->get($paddle_url.'/transactions', [
-                    'subscription_id' => $subscription->vendor_subscription_id,
-                ]);
-                $responseJson = json_decode($response->body());
-                if (empty($responseJson->data)) {
-                    continue;
-                }
-                foreach ($responseJson->data as $invoice) {
-                    array_push($user_invoices, (object) [
-                        'id' => $invoice->id,
-                        'created' => Carbon::parse($invoice->created_at)->isoFormat('MMMM Do YYYY, h:mm:ss a'),
-                        'total' => number_format(($invoice->details->totals->subtotal / 100), 2, '.', ' '),
-                        'download' => '/settings/invoices/'.$invoice->id,
-                    ]);
-                }
+                    return $invoice->organization_id === null;
+                })
+                ->values()
+                ->all();
+        } catch (\Throwable) {
+            return [];
+        }
+    }
+
+    protected function buildSubscriptionOrgIdMap(): array
+    {
+        return Subscription::query()
+            ->where('user_id', $this->id)
+            ->where('billable_type', 'organization')
+            ->whereNotNull('stripe_id')
+            ->pluck('billable_id', 'stripe_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+    }
+
+    protected function resolveInvoiceOrgId(object $stripeInvoice, array $subscriptionOrgIdMap): ?int
+    {
+        $topLevelSub = (string) ($stripeInvoice->subscription ?? '');
+        if ($topLevelSub !== '' && isset($subscriptionOrgIdMap[$topLevelSub])) {
+            return $subscriptionOrgIdMap[$topLevelSub];
+        }
+
+        $lineItems = data_get($stripeInvoice, 'lines.data', []);
+        if (! is_iterable($lineItems)) {
+            return null;
+        }
+
+        foreach ($lineItems as $lineItem) {
+            $subId = (string) (
+                data_get($lineItem, 'parent.subscription_item_details.subscription')
+                ?? data_get($lineItem, 'subscription', '')
+            );
+            if ($subId !== '' && isset($subscriptionOrgIdMap[$subId])) {
+                return $subscriptionOrgIdMap[$subId];
             }
         }
 
-        return $user_invoices;
+        return null;
+    }
+
+    protected function extractInvoiceDiscountAmount(object $stripeInvoice): int
+    {
+        $discounts = $stripeInvoice->total_discount_amounts ?? null;
+        if (! is_iterable($discounts)) {
+            return 0;
+        }
+
+        $totalDiscount = 0;
+
+        foreach ($discounts as $discount) {
+            $totalDiscount += (int) data_get($discount, 'amount', 0);
+        }
+
+        return $totalDiscount;
+    }
+
+    protected function extractInvoiceLineItems(object $stripeInvoice, string $currency): array
+    {
+        $lineItems = data_get($stripeInvoice, 'lines.data', []);
+        if (! is_iterable($lineItems)) {
+            return [];
+        }
+
+        $formattedItems = [];
+
+        foreach ($lineItems as $lineItem) {
+            $rawAmount = (int) data_get($lineItem, 'amount', 0);
+            $description = trim((string) data_get($lineItem, 'description', 'Subscription charge'));
+            $isProration = (bool) (
+                data_get($lineItem, 'parent.subscription_item_details.proration')
+                ?? data_get($lineItem, 'parent.invoice_item_details.proration', false)
+            );
+
+            $formattedItems[] = [
+                'description' => $description !== '' ? $description : 'Subscription charge',
+                'amount' => Cashier::formatAmount($rawAmount, $currency),
+                'raw_amount' => $rawAmount,
+                'is_proration' => $isProration,
+            ];
+        }
+
+        return $formattedItems;
+    }
+
+    protected function resolveInvoiceReason(object $stripeInvoice, array $lineItems): string
+    {
+        $hasProration = collect($lineItems)->contains(fn (array $lineItem): bool => $lineItem['is_proration'] === true);
+
+        if ($hasProration) {
+            return $this->summarizeProration($lineItems);
+        }
+
+        $descriptions = array_column($lineItems, 'description');
+        $firstLine = $descriptions[0] ?? '';
+
+        $billingReason = (string) ($stripeInvoice->billing_reason ?? '');
+
+        if ($billingReason === 'subscription_create' && preg_match('/(\d+)\s*[×x]\s*(.+?)\s*\(/u', $firstLine, $m)) {
+            $qty = (int) $m[1];
+            $plan = trim($m[2]);
+
+            return $qty > 1 ? "{$plan} - {$qty} seats" : $plan;
+        }
+
+        return match ($billingReason) {
+            'subscription_create' => 'New subscription',
+            'subscription_cycle' => 'Renewal',
+            'subscription_update' => 'Subscription update',
+            'manual' => 'Manual charge',
+            default => 'Subscription charge',
+        };
+    }
+
+    protected function summarizeProration(array $lineItems): string
+    {
+        $oldQty = null;
+        $newQty = null;
+        $plan = null;
+
+        foreach ($lineItems as $item) {
+            if (! $item['is_proration']) {
+                continue;
+            }
+
+            $desc = $item['description'];
+
+            if (preg_match('/Unused time on (\d+)\s*[×x]\s*(.+?)\s+after/iu', $desc, $m)) {
+                $oldQty = (int) $m[1];
+                $plan ??= trim($m[2]);
+            } elseif (preg_match('/Remaining time on (\d+)\s*[×x]\s*(.+?)\s+after/iu', $desc, $m)) {
+                $newQty = (int) $m[1];
+                $plan ??= trim($m[2]);
+            }
+        }
+
+        if ($oldQty !== null && $newQty !== null && $plan !== null) {
+            return "{$plan}: {$oldQty} to {$newQty} seats";
+        }
+
+        if ($newQty !== null && $plan !== null) {
+            return "Updated to {$newQty} seats on {$plan}";
+        }
+
+        return 'Prorated adjustment';
+    }
+
+    protected function humanInvoiceStatus(string $status): string
+    {
+        return match ($status) {
+            'paid' => 'Paid',
+            'open' => 'Open',
+            'draft' => 'Draft',
+            'void' => 'Void',
+            'uncollectible' => 'Uncollectible',
+            default => 'Unknown',
+        };
+    }
+
+    protected function buildInvoiceCalculationSummary(
+        string $currency,
+        int $rawSubtotal,
+        int $rawDiscount,
+        int $rawTax,
+        int $rawTotal
+    ): string {
+        $parts = ['Subtotal '.Cashier::formatAmount($rawSubtotal, $currency)];
+
+        if ($rawDiscount > 0) {
+            $parts[] = '- Discount '.Cashier::formatAmount($rawDiscount, $currency);
+        }
+
+        if ($rawTax > 0) {
+            $parts[] = '+ Tax '.Cashier::formatAmount($rawTax, $currency);
+        }
+
+        $parts[] = '= Total '.Cashier::formatAmount($rawTotal, $currency);
+
+        return implode(' ', $parts);
     }
 
     public function canImpersonate(): bool
