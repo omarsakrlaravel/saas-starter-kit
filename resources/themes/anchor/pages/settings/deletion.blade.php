@@ -110,12 +110,38 @@ new class extends Component
                                     <p class="mt-2 text-sm text-orange-800 dark:text-orange-200">
                                         After this date, all your data including your profile, posts, and settings will be permanently removed and cannot be recovered.
                                     </p>
-                                    <button
-                                        wire:click="cancelAccountDeletion"
-                                        wire:confirm="Are you sure you want to cancel the account deletion?"
-                                        class="mt-4 px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors">
-                                        Cancel Deletion
-                                    </button>
+                                    <x-filament::modal width="md" id="cancel-account-deletion-modal">
+                                        <x-slot name="trigger">
+                                            <button
+                                                type="button"
+                                                class="mt-4 px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
+                                            >
+                                                Cancel Deletion
+                                            </button>
+                                        </x-slot>
+                                        <div class="space-y-4">
+                                            <div>
+                                                <h3 class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Cancel scheduled account deletion?</h3>
+                                                <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Your account will remain active and deletion will be removed.</p>
+                                            </div>
+                                            <div class="flex items-center justify-end gap-2">
+                                                <x-button
+                                                    type="button"
+                                                    color="gray"
+                                                    x-on:click="$dispatch('close-modal', { id: 'cancel-account-deletion-modal' })"
+                                                >
+                                                    Keep scheduled deletion
+                                                </x-button>
+                                                <x-button
+                                                    type="button"
+                                                    color="danger"
+                                                    x-on:click="$wire.cancelAccountDeletion(); $dispatch('close-modal', { id: 'cancel-account-deletion-modal' })"
+                                                >
+                                                    Cancel deletion
+                                                </x-button>
+                                            </div>
+                                        </div>
+                                    </x-filament::modal>
                                 </div>
                             </div>
                         </x-card>

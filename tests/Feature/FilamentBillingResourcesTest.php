@@ -7,6 +7,7 @@ use App\Filament\Resources\PaymentMethods\PaymentMethodResource;
 use App\Filament\Resources\Plans\PlanResource;
 use App\Filament\Resources\Plans\RelationManagers\SubscriptionsRelationManager as PlanSubscriptionsRM;
 use App\Filament\Resources\PromotionCodes\PromotionCodeResource;
+use App\Filament\Resources\Refunds\RefundResource;
 use App\Filament\Resources\Subscriptions\RelationManagers\InvoicesRelationManager as SubInvoicesRM;
 use App\Filament\Resources\Subscriptions\RelationManagers\TransactionsRelationManager as SubTransactionsRM;
 use App\Filament\Resources\Subscriptions\SubscriptionResource;
@@ -66,6 +67,14 @@ test('PromotionCodeResource belongs to Billing navigation group', function () {
 
 test('PaymentMethodResource belongs to Billing navigation group', function () {
     $reflection = new ReflectionClass(PaymentMethodResource::class);
+    $property = $reflection->getProperty('navigationGroup');
+    $property->setAccessible(true);
+
+    expect($property->getValue())->toBe('Billing');
+});
+
+test('RefundResource belongs to Billing navigation group', function () {
+    $reflection = new ReflectionClass(RefundResource::class);
     $property = $reflection->getProperty('navigationGroup');
     $property->setAccessible(true);
 

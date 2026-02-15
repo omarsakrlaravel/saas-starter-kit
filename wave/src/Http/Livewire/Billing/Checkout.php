@@ -4,10 +4,14 @@ namespace Wave\Http\Livewire\Billing;
 
 use App\Models\Organization;
 use Filament\Notifications\Notification;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Livewire\Component;
+use Stripe\StripeClient;
 use Wave\Http\Livewire\Billing\Concerns\EnsuresBillingContextAccess;
 use Wave\Plan;
+use Wave\Services\PlanChangeResolver;
+use Wave\Subscription;
 
 class Checkout extends Component
 {
@@ -43,6 +47,10 @@ class Checkout extends Component
         if ($this->change) {
             $this->userSubscription = auth()->user()->latestSubscription();
             $this->userPlan = $this->userSubscription?->plan;
+        }
+
+        if ($this->change && $this->userSubscription) {
+            $this->billing_cycle_selected = $this->userSubscription->cycle;
         }
 
         $this->initializeSeatQuantity();
@@ -86,6 +94,7 @@ class Checkout extends Component
     public function redirectToStripeCheckout(Plan $plan)
     {
         $user = auth()->user();
+        $this->normalizeCheckoutRedisplayablePaymentMethods($user);
         $billingContext = auth()->user()->getBillingContext();
         $seatQuantity = $this->resolveSeatQuantity();
         $priceId = $this->billing_cycle_selected === 'month' ? $plan->monthly_price_id : $plan->yearly_price_id;
@@ -143,6 +152,11 @@ class Checkout extends Component
             $checkoutSession = $checkout->checkout([
                 'success_url' => route('subscription.welcome').'?session_id={CHECKOUT_SESSION_ID}',
                 'cancel_url' => route('settings.subscription'),
+                // Reuse the customer's saved default card when available.
+                'payment_method_collection' => 'if_required',
+                'saved_payment_method_options' => [
+                    'allow_redisplay_filters' => ['always', 'limited', 'unspecified'],
+                ],
                 'metadata' => $subscriptionMetadata,
             ]);
 
@@ -164,6 +178,36 @@ class Checkout extends Component
                 ->title('Unable to start checkout: '.$e->getMessage())
                 ->danger()
                 ->send();
+        }
+    }
+
+    protected function normalizeCheckoutRedisplayablePaymentMethods($user): void
+    {
+        if (! $user->hasStripeId()) {
+            return;
+        }
+
+        try {
+            $stripe = new StripeClient(config('services.stripe.secret'));
+            $paymentMethods = $stripe->customers->allPaymentMethods($user->stripe_id, [
+                'type' => 'card',
+                'limit' => 20,
+            ]);
+
+            foreach ($paymentMethods->data as $paymentMethod) {
+                $paymentMethodId = $paymentMethod->id ?? null;
+                $allowRedisplay = $paymentMethod->allow_redisplay ?? null;
+
+                if (! is_string($paymentMethodId) || $paymentMethodId === '' || $allowRedisplay === 'always') {
+                    continue;
+                }
+
+                $stripe->paymentMethods->update($paymentMethodId, [
+                    'allow_redisplay' => 'always',
+                ]);
+            }
+        } catch (\Throwable) {
+            // Do not block checkout if normalization fails.
         }
     }
 
@@ -219,11 +263,32 @@ class Checkout extends Component
         }
     }
 
-    public function switchPlan(Plan $plan)
+    /**
+     * Determine the change type for a given plan and currently selected cycle.
+     *
+     * @return 'upgrade'|'downgrade'|'same'|'cycle_change'
+     */
+    public function getChangeType(Plan $plan): string
+    {
+        if (! $this->userSubscription) {
+            return 'upgrade';
+        }
+
+        return app(PlanChangeResolver::class)->resolve(
+            $this->userSubscription,
+            $plan,
+            $this->billing_cycle_selected,
+        );
+    }
+
+    public function switchPlan(Plan $plan, ?string $targetCycle = null)
     {
         $subscription = auth()->user()->latestSubscription();
+        $selectedCycle = in_array($targetCycle, ['month', 'year'], true)
+            ? $targetCycle
+            : $this->billing_cycle_selected;
 
-        if (! $subscription || ! $subscription->valid()) {
+        if (! $subscription) {
             Notification::make()
                 ->title('No active subscription found to update.')
                 ->danger()
@@ -232,7 +297,40 @@ class Checkout extends Component
             return;
         }
 
-        $priceId = $this->billing_cycle_selected === 'month' ? $plan->monthly_price_id : $plan->yearly_price_id;
+        if ($subscription->ended()) {
+            Notification::make()
+                ->title('No active subscription found to update.')
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        if (! $subscription->valid()) {
+            Notification::make()
+                ->title('Your subscription has a payment issue. Please update your payment method and try again.')
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        $changeType = app(PlanChangeResolver::class)->resolve(
+            $subscription,
+            $plan,
+            $selectedCycle,
+        );
+
+        if ($changeType === 'same') {
+            Notification::make()
+                ->title('You are already on this plan and billing cycle.')
+                ->warning()
+                ->send();
+
+            return;
+        }
+
+        $priceId = $selectedCycle === 'month' ? $plan->monthly_price_id : $plan->yearly_price_id;
         if (empty($priceId)) {
             Notification::make()
                 ->title('This billing cycle is not available for the selected plan.')
@@ -242,12 +340,41 @@ class Checkout extends Component
             return;
         }
 
+        if ($changeType === 'upgrade') {
+            return $this->applyImmediateUpgrade($subscription, $plan, $priceId, $selectedCycle);
+        }
+
+        if ($changeType === 'cycle_change') {
+            if ($selectedCycle === 'year') {
+                return $this->applyImmediateUpgrade($subscription, $plan, $priceId, $selectedCycle);
+            }
+
+            return $this->scheduleDowngrade($subscription, $plan, $selectedCycle);
+        }
+
+        return $this->scheduleDowngrade($subscription, $plan, $selectedCycle);
+    }
+
+    protected function applyImmediateUpgrade($subscription, Plan $plan, string $priceId, string $targetCycle)
+    {
+        if (! $this->ensureReusableDefaultPaymentMethod(auth()->user())) {
+            Notification::make()
+                ->title('No usable saved card found. Please add or set a default payment method first.')
+                ->danger()
+                ->send();
+
+            return;
+        }
+
         try {
-            $subscription->swapAndInvoice($priceId);
+            $subscription->errorIfPaymentFails()->swapAndInvoice($priceId);
 
             $subscription->update([
                 'plan_id' => $plan->id,
-                'cycle' => $this->billing_cycle_selected,
+                'cycle' => $targetCycle,
+                'pending_plan_id' => null,
+                'pending_cycle' => null,
+                'pending_change_scheduled_at' => null,
             ]);
 
             $subscription->clearBillableCache();
@@ -255,10 +382,95 @@ class Checkout extends Component
             return redirect()->to('/settings/subscription')->with(['update' => true]);
         } catch (\Throwable) {
             Notification::make()
-                ->title('Unable to switch plans right now. Please try again.')
+                ->title('Unable to upgrade your plan right now. Your current subscription was not changed.')
                 ->danger()
                 ->send();
         }
+    }
+
+    protected function ensureReusableDefaultPaymentMethod($user): bool
+    {
+        if (! $user->hasStripeId()) {
+            return false;
+        }
+
+        try {
+            if ($user->defaultPaymentMethod() !== null) {
+                return true;
+            }
+        } catch (\Throwable) {
+            return false;
+        }
+
+        try {
+            $stripe = new StripeClient(config('services.stripe.secret'));
+            $paymentMethods = $stripe->paymentMethods->all([
+                'customer' => $user->stripe_id,
+                'type' => 'card',
+                'limit' => 1,
+            ]);
+
+            $fallbackPaymentMethodId = $paymentMethods->data[0]->id ?? null;
+            if (! is_string($fallbackPaymentMethodId) || $fallbackPaymentMethodId === '') {
+                return false;
+            }
+
+            $user->updateDefaultPaymentMethod($fallbackPaymentMethodId);
+
+            return true;
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    protected function scheduleDowngrade($subscription, Plan $plan, string $targetCycle)
+    {
+        $scheduledAt = $this->getScheduledChangeDate($subscription);
+        $currentCycleLabel = $subscription->cycle === 'year' ? 'yearly' : 'monthly';
+
+        $subscription->update([
+            'pending_plan_id' => $plan->id,
+            'pending_cycle' => $targetCycle,
+            'pending_change_scheduled_at' => $scheduledAt,
+        ]);
+
+        Notification::make()
+            ->title('Downgrade scheduled')
+            ->body('Your plan will change to '.$plan->name.' ('.$targetCycle.'ly) at the end of your current '.$currentCycleLabel.' billing period.')
+            ->success()
+            ->send();
+
+        return redirect()->to('/settings/subscription')->with(['downgrade_scheduled' => true]);
+    }
+
+    protected function getScheduledChangeDate(Subscription $subscription): Carbon
+    {
+        $scheduledAt = $subscription->next_payment_at ?? $subscription->ends_at;
+        if ($scheduledAt !== null) {
+            return $scheduledAt;
+        }
+
+        return match ($subscription->cycle) {
+            'year' => now()->addYear(),
+            default => now()->addMonth(),
+        };
+    }
+
+    public function cancelPendingChange()
+    {
+        $subscription = auth()->user()->latestSubscription();
+
+        if ($subscription && $subscription->hasPendingChange()) {
+            $subscription->cancelPendingChange();
+
+            Notification::make()
+                ->title('Scheduled change cancelled')
+                ->body('Your plan will remain unchanged.')
+                ->success()
+                ->send();
+        }
+
+        return redirect()->to('/settings/subscription');
     }
 
     public function render()

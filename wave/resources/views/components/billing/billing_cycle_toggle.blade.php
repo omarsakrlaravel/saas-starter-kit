@@ -1,14 +1,15 @@
 <div wire:ignore x-show="billing_cycle_available=='both'"
     x-init="
         setTimeout(function(){
-            toggleRepositionMarker($refs.monthly);
+            let initialRef = billing_cycle_selected === 'year' ? $refs.yearly : $refs.monthly;
+            toggleRepositionMarker(initialRef);
             $refs.marker.classList.remove('opacity-0');
             setTimeout(function(){
                 $refs.marker.classList.add('duration-300', 'ease-out');
             }, 10);
         }, 1);
     "
-    @reposition-interval-marker.window="toggleRepositionMarker($refs.monthly);"
+    @reposition-interval-marker.window="toggleRepositionMarker(billing_cycle_selected === 'year' ? $refs.yearly : $refs.monthly);"
     class="relative mb-5 w-40"
     x-cloak>
     <div x-ref="toggleButtons" class="relative inline-grid h-10 w-full select-none grid-cols-2 items-center justify-center rounded-full bg-white p-1 shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-800 dark:ring-zinc-700">

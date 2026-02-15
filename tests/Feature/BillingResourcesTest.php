@@ -17,6 +17,8 @@ use App\Filament\Resources\Invoices\Pages\EditInvoice;
 use App\Filament\Resources\Invoices\Pages\ListInvoices;
 use App\Filament\Resources\PaymentMethods\Pages\ListPaymentMethods;
 use App\Filament\Resources\PaymentMethods\PaymentMethodResource;
+use App\Filament\Resources\Refunds\Pages\ListRefunds;
+use App\Filament\Resources\Refunds\RefundResource;
 use App\Filament\Resources\Transactions\Pages\EditTransaction;
 use App\Filament\Resources\Transactions\Pages\ListTransactions;
 use App\Filament\Resources\Transactions\TransactionResource;
@@ -46,12 +48,28 @@ test('payment method resource is in billing navigation group', function () {
     expect(PaymentMethodResource::getNavigationGroup())->toBe('Billing');
 });
 
+test('refund resource is in billing navigation group', function () {
+    expect(RefundResource::getNavigationGroup())->toBe('Billing');
+});
+
 test('payment method resource cannot create records', function () {
     expect(PaymentMethodResource::canCreate())->toBeFalse();
 });
 
+test('refund resource cannot create records', function () {
+    expect(RefundResource::canCreate())->toBeFalse();
+});
+
 test('payment method resource has no create or edit pages', function () {
     $pages = PaymentMethodResource::getPages();
+
+    expect($pages)->toHaveKey('index')
+        ->and($pages)->not->toHaveKey('create')
+        ->and($pages)->not->toHaveKey('edit');
+});
+
+test('refund resource has no create or edit pages', function () {
+    $pages = RefundResource::getPages();
 
     expect($pages)->toHaveKey('index')
         ->and($pages)->not->toHaveKey('create')
@@ -161,4 +179,32 @@ test('payment method list page renders and shows records', function () {
     livewire(ListPaymentMethods::class)
         ->assertOk()
         ->assertCanSeeTableRecords($paymentMethods);
+});
+
+test('refund list page only shows refunded transactions', function () {
+    Transaction::where('billable_type', 'user')
+        ->where('billable_id', $this->admin->id)
+        ->delete();
+
+    $refunded = Transaction::factory()->refunded()->create([
+        'billable_type' => 'user',
+        'billable_id' => $this->admin->id,
+    ]);
+
+    $partiallyRefunded = Transaction::factory()->create([
+        'billable_type' => 'user',
+        'billable_id' => $this->admin->id,
+        'status' => 'partially_refunded',
+        'refunded_amount' => 250,
+    ]);
+
+    $succeeded = Transaction::factory()->succeeded()->create([
+        'billable_type' => 'user',
+        'billable_id' => $this->admin->id,
+    ]);
+
+    livewire(ListRefunds::class)
+        ->assertOk()
+        ->assertCanSeeTableRecords([$refunded, $partiallyRefunded])
+        ->assertCanNotSeeTableRecords([$succeeded]);
 });

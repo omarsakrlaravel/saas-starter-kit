@@ -2,10 +2,12 @@
 
 use App\Models\User;
 
-it('allows user to update notification preferences', function () {
-    $user = User::where('email', 'admin@admin.com')->first();
+beforeEach(function () {
+    $this->user = User::factory()->create();
+});
 
-    $this->actingAs($user);
+it('allows user to update notification preferences', function () {
+    $this->actingAs($this->user);
 
     $preferences = [
         'email_notifications' => false,
@@ -14,21 +16,19 @@ it('allows user to update notification preferences', function () {
         'security_alerts' => true,
     ];
 
-    $user->notification_preferences = $preferences;
-    $user->save();
+    $this->user->notification_preferences = $preferences;
+    $this->user->save();
 
-    $user->refresh();
+    $this->user->refresh();
 
-    expect($user->notification_preferences)->toEqual($preferences);
-    expect($user->notification_preferences['email_notifications'])->toBe(false);
-    expect($user->notification_preferences['marketing_emails'])->toBe(false);
-    expect($user->notification_preferences['product_updates'])->toBe(true);
+    expect($this->user->notification_preferences)->toEqual($preferences);
+    expect($this->user->notification_preferences['email_notifications'])->toBe(false);
+    expect($this->user->notification_preferences['marketing_emails'])->toBe(false);
+    expect($this->user->notification_preferences['product_updates'])->toBe(true);
 });
 
 it('security alerts preference is always enabled', function () {
-    $user = User::where('email', 'admin@admin.com')->first();
-
-    $this->actingAs($user);
+    $this->actingAs($this->user);
 
     // Try to set security_alerts to false
     $preferences = [
@@ -38,59 +38,51 @@ it('security alerts preference is always enabled', function () {
         'security_alerts' => false, // Attempt to disable
     ];
 
-    $user->notification_preferences = $preferences;
-    $user->save();
+    $this->user->notification_preferences = $preferences;
+    $this->user->save();
 
     // Security alerts should still be true in the system (enforced by the form)
-    expect($user->notification_preferences['security_alerts'])->toBe(false); // Will be false in DB
+    expect($this->user->notification_preferences['security_alerts'])->toBe(false); // Will be false in DB
     // But the UI enforces it to be true, so this tests the storage layer
 });
 
 it('returns default preferences when none are set', function () {
-    $user = User::where('email', 'admin@admin.com')->first();
-
     // Clear preferences
-    $user->notification_preferences = null;
-    $user->save();
+    $this->user->notification_preferences = null;
+    $this->user->save();
 
-    $user->refresh();
+    $this->user->refresh();
 
-    expect($user->notification_preferences)->toBeNull();
+    expect($this->user->notification_preferences)->toBeNull();
 });
 
 it('can update individual preference settings', function () {
-    $user = User::where('email', 'admin@admin.com')->first();
-    $originalPreferences = $user->notification_preferences;
+    $this->actingAs($this->user);
 
-    $this->actingAs($user);
-
-    // Update only marketing emails
-    $preferences = $user->notification_preferences ?? [
+    // Start with default preferences
+    $preferences = [
         'email_notifications' => true,
         'marketing_emails' => true,
         'product_updates' => true,
         'security_alerts' => true,
     ];
 
+    $this->user->notification_preferences = $preferences;
+    $this->user->save();
+
+    // Update only marketing emails
     $preferences['marketing_emails'] = false;
 
-    $user->notification_preferences = $preferences;
-    $user->save();
+    $this->user->notification_preferences = $preferences;
+    $this->user->save();
 
-    $user->refresh();
+    $this->user->refresh();
 
-    expect($user->notification_preferences['marketing_emails'])->toBe(false);
-    expect($user->notification_preferences['email_notifications'])->toBe(true);
-
-    // Restore
-    $user->notification_preferences = $originalPreferences;
-    $user->save();
+    expect($this->user->notification_preferences['marketing_emails'])->toBe(false);
+    expect($this->user->notification_preferences['email_notifications'])->toBe(true);
 });
 
 it('notification preferences can be stored as json', function () {
-    $user = User::where('email', 'admin@admin.com')->first();
-    $originalPreferences = $user->notification_preferences;
-
     $preferences = [
         'email_notifications' => true,
         'marketing_emails' => false,
@@ -98,31 +90,19 @@ it('notification preferences can be stored as json', function () {
         'security_alerts' => true,
     ];
 
-    $user->notification_preferences = $preferences;
-    $user->save();
+    $this->user->notification_preferences = $preferences;
+    $this->user->save();
 
     // Verify it's stored properly and can be retrieved
-    $freshUser = User::find($user->id);
+    $freshUser = User::find($this->user->id);
 
     expect($freshUser->notification_preferences)->toBeArray();
     expect($freshUser->notification_preferences['marketing_emails'])->toBe(false);
-    // Restore
-    $user->notification_preferences = $originalPreferences;
-    $user->save();
 });
 
 it('multiple users can have different notification preferences', function () {
-    // Get admin user and ensure we have a second user
-    $user1 = User::where('email', 'admin@admin.com')->first();
-
-    // Get or create a second user
-    $user2 = User::where('email', '!=', 'admin@admin.com')->first();
-    if (! $user2) {
-        $user2 = User::factory()->create(['avatar' => 'demo/default.png']);
-    }
-
-    $original1 = $user1->notification_preferences;
-    $original2 = $user2->notification_preferences;
+    $user1 = User::factory()->create();
+    $user2 = User::factory()->create();
 
     // Set different preferences for each user
     $user1->notification_preferences = [
@@ -148,36 +128,23 @@ it('multiple users can have different notification preferences', function () {
     expect($user2->notification_preferences['email_notifications'])->toBe(false);
     expect($user1->notification_preferences['marketing_emails'])->toBe(false);
     expect($user2->notification_preferences['marketing_emails'])->toBe(true);
-
-    // Restore
-    $user1->notification_preferences = $original1;
-    $user1->save();
-    $user2->notification_preferences = $original2;
-    $user2->save();
 });
 
 it('can retrieve notification preferences for checking before sending notifications', function () {
-    $user = User::where('email', 'admin@admin.com')->first();
-    $originalPreferences = $user->notification_preferences;
-
-    $user->notification_preferences = [
+    $this->user->notification_preferences = [
         'email_notifications' => false,
         'marketing_emails' => false,
         'product_updates' => true,
         'security_alerts' => true,
     ];
-    $user->save();
+    $this->user->save();
 
-    $user->refresh();
+    $this->user->refresh();
 
     // Simulate checking preferences before sending
-    $shouldSendEmail = $user->notification_preferences['email_notifications'] ?? true;
-    $shouldSendMarketing = $user->notification_preferences['marketing_emails'] ?? true;
+    $shouldSendEmail = $this->user->notification_preferences['email_notifications'] ?? true;
+    $shouldSendMarketing = $this->user->notification_preferences['marketing_emails'] ?? true;
 
     expect($shouldSendEmail)->toBe(false);
     expect($shouldSendMarketing)->toBe(false);
-
-    // Restore
-    $user->notification_preferences = $originalPreferences;
-    $user->save();
 });

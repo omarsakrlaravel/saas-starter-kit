@@ -29,6 +29,7 @@ use Stripe\Exception\ApiErrorException;
 use Stripe\StripeClient;
 use UnitEnum;
 use Wave\Plan;
+use Wave\Services\PlanChangeResolver;
 use Wave\Subscription;
 
 class SubscriptionResource extends Resource
@@ -120,6 +121,27 @@ class SubscriptionResource extends Resource
                         DateTimePicker::make('next_payment_at'),
                     ])
                     ->columns(2),
+                Section::make('Pending Plan Change')
+                    ->schema([
+                        Select::make('pending_plan_id')
+                            ->label('Pending Plan')
+                            ->relationship('pendingPlan', 'name')
+                            ->preload()
+                            ->searchable()
+                            ->placeholder('None'),
+                        Select::make('pending_cycle')
+                            ->label('Pending Cycle')
+                            ->options([
+                                'month' => 'Monthly',
+                                'year' => 'Yearly',
+                            ])
+                            ->placeholder('None'),
+                        DateTimePicker::make('pending_change_scheduled_at')
+                            ->label('Scheduled At'),
+                    ])
+                    ->columns(3)
+                    ->collapsible()
+                    ->collapsed(),
             ]);
     }
 
@@ -162,6 +184,12 @@ class SubscriptionResource extends Resource
                     ->placeholder('—'),
                 TextColumn::make('quantity')
                     ->label('Seats')
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('pendingPlan.name')
+                    ->label('Pending Change')
+                    ->placeholder('—')
+                    ->badge()
+                    ->color('warning')
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('stripe_id')
                     ->label('Stripe Subscription')
@@ -270,35 +298,78 @@ class SubscriptionResource extends Resource
                             return;
                         }
 
-                        try {
-                            $stripe = new StripeClient(config('services.stripe.secret'));
-                            $stripeSubscription = $stripe->subscriptions->retrieve($record->stripe_id);
-                            $stripe->subscriptions->update($record->stripe_id, [
-                                'items' => [
-                                    [
-                                        'id' => $stripeSubscription->items->data[0]->id,
-                                        'price' => $priceId,
-                                    ],
-                                ],
-                                'proration_behavior' => 'create_prorations',
-                            ]);
-                        } catch (ApiErrorException $e) {
+                        $changeType = app(PlanChangeResolver::class)->resolve($record, $plan, $data['cycle']);
+
+                        if ($changeType === 'same') {
                             Notification::make()
-                                ->title('Stripe error: '.$e->getMessage())
-                                ->danger()
+                                ->title('Subscription is already on this plan and cycle.')
+                                ->warning()
                                 ->send();
 
                             return;
                         }
 
-                        $record->update([
-                            'plan_id' => $plan->id,
-                            'stripe_price' => $priceId,
-                            'cycle' => $data['cycle'],
-                        ]);
+                        if ($changeType === 'upgrade') {
+                            try {
+                                $stripe = new StripeClient(config('services.stripe.secret'));
+                                $stripeSubscription = $stripe->subscriptions->retrieve($record->stripe_id);
+                                $stripe->subscriptions->update($record->stripe_id, [
+                                    'items' => [
+                                        [
+                                            'id' => $stripeSubscription->items->data[0]->id,
+                                            'price' => $priceId,
+                                        ],
+                                    ],
+                                    'proration_behavior' => 'create_prorations',
+                                ]);
+                            } catch (ApiErrorException $e) {
+                                Notification::make()
+                                    ->title('Stripe error: '.$e->getMessage())
+                                    ->danger()
+                                    ->send();
+
+                                return;
+                            }
+
+                            $record->update([
+                                'plan_id' => $plan->id,
+                                'stripe_price' => $priceId,
+                                'cycle' => $data['cycle'],
+                                'pending_plan_id' => null,
+                                'pending_cycle' => null,
+                                'pending_change_scheduled_at' => null,
+                            ]);
+
+                            Notification::make()
+                                ->title('Upgraded to '.$plan->name.' ('.$data['cycle'].'ly) immediately.')
+                                ->success()
+                                ->send();
+                        } else {
+                            $scheduledAt = $record->next_payment_at ?? $record->ends_at ?? now()->addMonth();
+
+                            $record->update([
+                                'pending_plan_id' => $plan->id,
+                                'pending_cycle' => $data['cycle'],
+                                'pending_change_scheduled_at' => $scheduledAt,
+                            ]);
+
+                            Notification::make()
+                                ->title('Downgrade to '.$plan->name.' scheduled for '.($scheduledAt instanceof \Carbon\Carbon ? $scheduledAt->format('M j, Y') : $scheduledAt).'.')
+                                ->success()
+                                ->send();
+                        }
+                    }),
+                Action::make('cancel_pending_change')
+                    ->label('Cancel Pending Change')
+                    ->icon('heroicon-o-x-mark')
+                    ->color('warning')
+                    ->requiresConfirmation()
+                    ->visible(fn (Subscription $record): bool => $record->hasPendingChange())
+                    ->action(function (Subscription $record): void {
+                        $record->cancelPendingChange();
 
                         Notification::make()
-                            ->title('Plan changed to '.$plan->name.' ('.$data['cycle'].'ly).')
+                            ->title('Pending plan change cancelled.')
                             ->success()
                             ->send();
                     }),

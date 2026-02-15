@@ -11,7 +11,11 @@ use Spatie\Permission\Models\Role;
 use function Pest\Livewire\livewire;
 
 beforeEach(function () {
-    $this->admin = User::find(1);
+    if (! Role::where('name', 'admin')->where('guard_name', 'web')->exists()) {
+        Role::create(['name' => 'admin', 'guard_name' => 'web']);
+    }
+    $this->admin = User::factory()->create();
+    $this->admin->assignRole('admin');
     $this->actingAs($this->admin);
 });
 

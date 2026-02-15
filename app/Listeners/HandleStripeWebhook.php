@@ -148,6 +148,15 @@ class HandleStripeWebhook
         if ($updatedPlan) {
             $subscription->plan_id = $updatedPlan['plan_id'];
             $subscription->cycle = $updatedPlan['cycle'];
+
+            // Clear pending change if the Stripe update matches the pending plan+cycle
+            if ($subscription->hasPendingChange()
+                && (int) $subscription->pending_plan_id === $updatedPlan['plan_id']
+                && $subscription->pending_cycle === $updatedPlan['cycle']) {
+                $subscription->pending_plan_id = null;
+                $subscription->pending_cycle = null;
+                $subscription->pending_change_scheduled_at = null;
+            }
         }
 
         // Update payment timestamps
@@ -381,6 +390,11 @@ class HandleStripeWebhook
             );
 
             $this->recordCouponRedemptionFromInvoice($invoice, $localInvoice, $localSubscription, $billable);
+
+            // Apply pending plan change if this invoice represents a new billing period
+            if ($localSubscription && $localSubscription->hasPendingChange()) {
+                $localSubscription->applyPendingChange();
+            }
         } catch (\Throwable $e) {
             Log::error('HandleStripeWebhook: invoice paid failed', ['error' => $e->getMessage()]);
         }

@@ -12,6 +12,8 @@ dataset('authroutes', function () {
         '/settings/organization',
         '/settings/api',
         '/settings/subscription',
+        '/settings/subscription/change-plan',
+        '/settings/subscription/payment-methods',
         '/settings/invoices',
 
         '/admin',

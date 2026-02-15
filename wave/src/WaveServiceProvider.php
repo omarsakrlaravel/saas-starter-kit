@@ -23,11 +23,13 @@ use Intervention\Image\Drivers\Gd\Driver;
 use Intervention\Image\ImageManager;
 use Laravel\Folio\Folio;
 use Livewire\Livewire;
+use Wave\Console\Commands\ApplyPendingPlanChanges;
 use Wave\Console\Commands\CleanOldActivityLogs;
 use Wave\Console\Commands\ProcessScheduledAccountDeletions;
 use Wave\Console\Commands\WaveStats;
 use Wave\Facades\Wave as WaveFacade;
 use Wave\Http\Livewire\Billing\Checkout;
+use Wave\Http\Livewire\Billing\PaymentMethods;
 use Wave\Http\Livewire\Billing\Update;
 use Wave\Http\Middleware\CanManageBilling;
 use Wave\Http\Middleware\HandleOrganizationInvite;
@@ -109,6 +111,7 @@ class WaveServiceProvider extends ServiceProvider
                 WaveStats::class,
                 CleanOldActivityLogs::class,
                 ProcessScheduledAccountDeletions::class,
+                ApplyPendingPlanChanges::class,
             ]);
         }
 
@@ -252,6 +255,7 @@ class WaveServiceProvider extends ServiceProvider
     private function loadLivewireComponents()
     {
         Livewire::component('billing.checkout', Checkout::class);
+        Livewire::component('billing.payment-methods', PaymentMethods::class);
         Livewire::component('billing.update', Update::class);
     }
 

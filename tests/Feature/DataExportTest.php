@@ -2,9 +2,11 @@
 
 use App\Models\User;
 use Wave\ActivityLog;
+use Wave\Plan;
+use Wave\Subscription;
 
 test('user can access export data page', function () {
-    $user = User::where('email', 'admin@admin.com')->first();
+    $user = User::factory()->create();
 
     $this->actingAs($user);
 
@@ -16,7 +18,7 @@ test('user can access export data page', function () {
 });
 
 test('user can export their data', function () {
-    $user = User::where('email', 'admin@admin.com')->first();
+    $user = User::factory()->create();
 
     $this->actingAs($user);
 
@@ -27,7 +29,7 @@ test('user can export their data', function () {
 });
 
 test('export data contains user profile information', function () {
-    $user = User::where('email', 'admin@admin.com')->first();
+    $user = User::factory()->create();
 
     $this->actingAs($user);
 
@@ -47,7 +49,7 @@ test('export data contains user profile information', function () {
 });
 
 test('export logs activity', function () {
-    $user = User::where('email', 'admin@admin.com')->first();
+    $user = User::factory()->create();
 
     $this->actingAs($user);
 
@@ -68,12 +70,10 @@ test('export logs activity', function () {
 });
 
 test('exported data masks api keys', function () {
-    $user = User::where('email', 'admin@admin.com')->first();
+    $user = User::factory()->create();
 
-    // Create a test API key if none exists
-    if ($user->apiKeys()->count() === 0) {
-        $user->createApiKey('Test Key');
-    }
+    // Create a test API key
+    $user->createApiKey('Test Key');
 
     $apiKey = $user->apiKeys()->first();
     $fullKey = $apiKey->key;
@@ -87,7 +87,7 @@ test('exported data masks api keys', function () {
 });
 
 test('export includes privacy settings', function () {
-    $user = User::where('email', 'admin@admin.com')->first();
+    $user = User::factory()->create();
 
     // Set some privacy settings
     $privacySettings = [
@@ -104,15 +104,20 @@ test('export includes privacy settings', function () {
 });
 
 test('export handles subscription with string ends_at date', function () {
-    $user = User::where('email', 'admin@admin.com')->first();
+    $user = User::factory()->create();
 
     $this->actingAs($user);
 
-    // Clean up any existing subscriptions for this test
-    \Wave\Subscription::where('billable_id', $user->id)->delete();
-
-    // Get a plan to use
-    $plan = \Wave\Plan::first();
+    $plan = Plan::create([
+        'name' => 'Export Test Plan',
+        'description' => 'Plan for export test',
+        'features' => 'Feature 1',
+        'monthly_price' => '19.00',
+        'yearly_price' => '190.00',
+        'monthly_price_id' => 'price_monthly_export_test',
+        'yearly_price_id' => 'price_yearly_export_test',
+        'active' => true,
+    ]);
 
     // Create a subscription directly in the database with ends_at as a string
     // This simulates a cancelled subscription scenario where ends_at might not be cast properly
@@ -145,7 +150,7 @@ test('export handles subscription with string ends_at date', function () {
     expect($rawSubscription->ends_at)->toBe('2026-12-31 23:59:59');
 
     // Load the subscription through Eloquent (which won't cast ends_at since it's not in casts array)
-    $subscription = \Wave\Subscription::find($subscriptionId);
+    $subscription = Subscription::find($subscriptionId);
 
     // Simulate the export logic that was causing the bug
     $exportData = [
@@ -170,5 +175,6 @@ test('export handles subscription with string ends_at date', function () {
     expect($exportData['subscription']['plan'])->toBe($plan->name);
 
     // Clean up
-    \Wave\Subscription::where('id', $subscriptionId)->delete();
+    Subscription::where('id', $subscriptionId)->delete();
+    $plan->delete();
 });
