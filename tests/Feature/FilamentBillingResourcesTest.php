@@ -3,7 +3,6 @@
 use App\Filament\Resources\Coupons\CouponResource;
 use App\Filament\Resources\Invoices\InvoiceResource;
 use App\Filament\Resources\Organizations\OrganizationResource;
-use App\Filament\Resources\PaymentMethods\PaymentMethodResource;
 use App\Filament\Resources\Plans\PlanResource;
 use App\Filament\Resources\Plans\RelationManagers\SubscriptionsRelationManager as PlanSubscriptionsRM;
 use App\Filament\Resources\PromotionCodes\PromotionCodeResource;
@@ -59,14 +58,6 @@ test('CouponResource belongs to Billing navigation group', function () {
 
 test('PromotionCodeResource belongs to Billing navigation group', function () {
     $reflection = new ReflectionClass(PromotionCodeResource::class);
-    $property = $reflection->getProperty('navigationGroup');
-    $property->setAccessible(true);
-
-    expect($property->getValue())->toBe('Billing');
-});
-
-test('PaymentMethodResource belongs to Billing navigation group', function () {
-    $reflection = new ReflectionClass(PaymentMethodResource::class);
     $property = $reflection->getProperty('navigationGroup');
     $property->setAccessible(true);
 
@@ -169,10 +160,4 @@ test('Subscription model has transactions relationship method', function () {
 
 test('Plan model has subscriptions relationship method', function () {
     expect(method_exists(\Wave\Plan::class, 'subscriptions'))->toBeTrue();
-});
-
-// --- PaymentMethodResource is read-only ---
-
-test('PaymentMethodResource does not allow creation', function () {
-    expect(PaymentMethodResource::canCreate())->toBeFalse();
 });

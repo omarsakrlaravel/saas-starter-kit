@@ -9,7 +9,6 @@ use Laravel\Cashier\Events\WebhookReceived;
 use Wave\Coupon;
 use Wave\CouponRedemption;
 use Wave\Invoice;
-use Wave\PaymentMethod;
 use Wave\Plan;
 use Wave\PromotionCode;
 use Wave\Subscription;
@@ -59,14 +58,6 @@ class HandleStripeWebhook
             // Promotion code events
             'promotion_code.created',
             'promotion_code.updated' => $this->handlePromotionCodeUpsert($event->payload),
-
-            // Payment method events
-            'payment_method.attached' => $this->handlePaymentMethodAttached($event->payload),
-            'payment_method.detached' => $this->handlePaymentMethodDetached($event->payload),
-            'payment_method.updated' => $this->handlePaymentMethodUpdated($event->payload),
-
-            // Customer events
-            'customer.updated' => $this->handleCustomerUpdated($event->payload),
 
             default => null,
         };
@@ -681,121 +672,6 @@ class HandleStripeWebhook
             );
         } catch (\Throwable $e) {
             Log::error('HandleStripeWebhook: promotion code upsert failed', ['error' => $e->getMessage()]);
-        }
-    }
-
-    // ──────────────────────────────────────────────────────────────
-    // Payment method events
-    // ──────────────────────────────────────────────────────────────
-
-    protected function handlePaymentMethodAttached(array $payload): void
-    {
-        try {
-            $this->upsertPaymentMethod($payload);
-        } catch (\Throwable $e) {
-            Log::error('HandleStripeWebhook: payment_method attached failed', ['error' => $e->getMessage()]);
-        }
-    }
-
-    protected function handlePaymentMethodUpdated(array $payload): void
-    {
-        try {
-            $this->upsertPaymentMethod($payload);
-        } catch (\Throwable $e) {
-            Log::error('HandleStripeWebhook: payment_method updated failed', ['error' => $e->getMessage()]);
-        }
-    }
-
-    protected function handlePaymentMethodDetached(array $payload): void
-    {
-        try {
-            $pm = $payload['data']['object'] ?? null;
-            if (! is_array($pm)) {
-                return;
-            }
-
-            $stripeId = $pm['id'] ?? null;
-            if (! is_string($stripeId) || $stripeId === '') {
-                return;
-            }
-
-            PaymentMethod::query()->where('stripe_id', $stripeId)->delete();
-        } catch (\Throwable $e) {
-            Log::error('HandleStripeWebhook: payment_method detached failed', ['error' => $e->getMessage()]);
-        }
-    }
-
-    /**
-     * Create or update a local PaymentMethod record from a Stripe payload.
-     */
-    protected function upsertPaymentMethod(array $payload): void
-    {
-        $pm = $payload['data']['object'] ?? null;
-        if (! is_array($pm)) {
-            return;
-        }
-
-        $stripeId = $pm['id'] ?? null;
-        if (! is_string($stripeId) || $stripeId === '') {
-            return;
-        }
-
-        $customerId = $pm['customer'] ?? null;
-        $billable = is_string($customerId) ? $this->resolveBillable($customerId) : null;
-
-        $cardDetails = $pm['card'] ?? [];
-
-        PaymentMethod::query()->updateOrCreate(
-            ['stripe_id' => $stripeId],
-            [
-                'stripe_customer_id' => is_string($customerId) ? $customerId : null,
-                'billable_type' => $billable['type'] ?? null,
-                'billable_id' => $billable['id'] ?? null,
-                'type' => $pm['type'] ?? null,
-                'brand' => is_array($cardDetails) ? ($cardDetails['brand'] ?? null) : null,
-                'last4' => is_array($cardDetails) ? ($cardDetails['last4'] ?? null) : null,
-                'exp_month' => is_array($cardDetails) ? ($cardDetails['exp_month'] ?? null) : null,
-                'exp_year' => is_array($cardDetails) ? ($cardDetails['exp_year'] ?? null) : null,
-                'is_default' => false,
-                'metadata' => is_array($pm['metadata'] ?? null) ? $pm['metadata'] : null,
-            ],
-        );
-    }
-
-    // ──────────────────────────────────────────────────────────────
-    // Customer events
-    // ──────────────────────────────────────────────────────────────
-
-    protected function handleCustomerUpdated(array $payload): void
-    {
-        try {
-            $customer = $payload['data']['object'] ?? null;
-            if (! is_array($customer)) {
-                return;
-            }
-
-            $customerId = $customer['id'] ?? null;
-            if (! is_string($customerId) || $customerId === '') {
-                return;
-            }
-
-            $defaultPmId = $customer['invoice_settings']['default_payment_method'] ?? null;
-            if (! is_string($defaultPmId) || $defaultPmId === '') {
-                return;
-            }
-
-            // Reset all payment methods for this customer to non-default
-            PaymentMethod::query()
-                ->where('stripe_customer_id', $customerId)
-                ->update(['is_default' => false]);
-
-            // Set the default payment method
-            PaymentMethod::query()
-                ->where('stripe_customer_id', $customerId)
-                ->where('stripe_id', $defaultPmId)
-                ->update(['is_default' => true]);
-        } catch (\Throwable $e) {
-            Log::error('HandleStripeWebhook: customer updated failed', ['error' => $e->getMessage()]);
         }
     }
 

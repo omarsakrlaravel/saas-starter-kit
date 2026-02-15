@@ -75,9 +75,9 @@
             <x-phosphor-arrows-clockwise class="mr-1.5 h-4 w-4" />
             Change Plan
         </x-button>
-        <x-button :href="route('settings.subscription.payment-methods')" tag="a" color="gray">
-            <x-phosphor-credit-card class="mr-1.5 h-4 w-4" />
-            Payment Methods
+        <x-button :href="route('stripe.portal')" tag="a" color="gray">
+            <x-phosphor-credit-card-duotone class="mr-1.5 h-4 w-4" />
+            Open Stripe Billing
         </x-button>
     </div>
 

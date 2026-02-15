@@ -3,7 +3,6 @@
 use App\Models\User;
 use Wave\Coupon;
 use Wave\Invoice;
-use Wave\PaymentMethod;
 use Wave\Plan;
 use Wave\PromotionCode;
 use Wave\Subscription;
@@ -50,7 +49,6 @@ beforeEach(function () {
     PromotionCode::query()->delete();
     Coupon::query()->delete();
     Invoice::query()->delete();
-    PaymentMethod::query()->delete();
 });
 
 afterEach(function () {
@@ -58,7 +56,6 @@ afterEach(function () {
     PromotionCode::query()->delete();
     Coupon::query()->delete();
     Invoice::query()->delete();
-    PaymentMethod::query()->delete();
 });
 
 // ──────────────────────────────────────────────
@@ -67,13 +64,22 @@ afterEach(function () {
 
 test('sync invoices creates new invoices from Stripe data', function () {
     $user = User::factory()->create(['stripe_id' => 'cus_sinv_001']);
-    $plan = Plan::first();
+    $plan = Plan::first() ?? Plan::create([
+        'name' => 'Starter',
+        'description' => 'Starter plan',
+        'features' => 'Feature 1',
+        'monthly_price' => '10.00',
+        'yearly_price' => '100.00',
+        'monthly_price_id' => 'price_starter_monthly',
+        'yearly_price_id' => 'price_starter_yearly',
+        'active' => true,
+    ]);
     $subscription = Subscription::create([
         'user_id' => $user->id,
         'type' => 'default',
         'billable_type' => 'user',
         'billable_id' => $user->id,
-        'plan_id' => $plan?->id ?? 1,
+        'plan_id' => $plan->id,
         'stripe_id' => 'sub_sinv_001',
         'stripe_status' => 'active',
         'stripe_price' => 'price_test_monthly',
@@ -360,161 +366,10 @@ test('sync coupons skips promo code when local coupon is missing', function () {
 });
 
 // ──────────────────────────────────────────────
-// stripe:sync-payment-methods
-// ──────────────────────────────────────────────
-
-test('sync payment methods creates new payment methods', function () {
-    $user = User::factory()->create(['stripe_id' => 'cus_spm_001']);
-
-    $stripePaymentMethod = fakeStripeObject([
-        'id' => 'pm_spm_001',
-        'customer' => 'cus_spm_001',
-        'type' => 'card',
-        'card' => [
-            'brand' => 'visa',
-            'last4' => '4242',
-            'exp_month' => 12,
-            'exp_year' => 2028,
-        ],
-    ]);
-
-    $stripeCustomer = fakeStripeObject([
-        'id' => 'cus_spm_001',
-        'invoice_settings' => [
-            'default_payment_method' => 'pm_spm_001',
-        ],
-    ]);
-
-    $mockStripe = Mockery::mock(\Stripe\StripeClient::class);
-    $mockCustomersService = Mockery::mock();
-    $mockCustomersService->shouldReceive('retrieve')
-        ->with('cus_spm_001')
-        ->andReturn($stripeCustomer);
-    $mockStripe->customers = $mockCustomersService;
-    $mockPaymentMethodsService = Mockery::mock();
-    $mockPaymentMethodsService->shouldReceive('all')
-        ->with(['customer' => 'cus_spm_001', 'limit' => 100])
-        ->andReturn(fakeStripeCollection([$stripePaymentMethod]));
-    $mockStripe->paymentMethods = $mockPaymentMethodsService;
-    bindMockStripe($mockStripe);
-
-    artisan('stripe:sync-payment-methods', ['--customer' => 'cus_spm_001'])
-        ->assertSuccessful()
-        ->expectsOutputToContain('1 created, 0 updated, 0 removed');
-
-    $pm = PaymentMethod::where('stripe_id', 'pm_spm_001')->first();
-    expect($pm)->not->toBeNull()
-        ->and($pm->stripe_customer_id)->toBe('cus_spm_001')
-        ->and($pm->billable_type)->toBe('user')
-        ->and($pm->billable_id)->toBe($user->id)
-        ->and($pm->type)->toBe('card')
-        ->and($pm->brand)->toBe('visa')
-        ->and($pm->last4)->toBe('4242')
-        ->and($pm->exp_month)->toBe(12)
-        ->and($pm->exp_year)->toBe(2028)
-        ->and($pm->is_default)->toBeTrue();
-
-    $user->forceDelete();
-});
-
-test('sync payment methods removes detached payment methods', function () {
-    $user = User::factory()->create(['stripe_id' => 'cus_spm_002']);
-
-    PaymentMethod::create([
-        'stripe_id' => 'pm_spm_old_001',
-        'stripe_customer_id' => 'cus_spm_002',
-        'billable_type' => 'user',
-        'billable_id' => $user->id,
-        'type' => 'card',
-        'brand' => 'mastercard',
-        'last4' => '5555',
-        'is_default' => false,
-    ]);
-
-    $stripeCustomer = fakeStripeObject([
-        'id' => 'cus_spm_002',
-        'invoice_settings' => ['default_payment_method' => null],
-    ]);
-
-    $mockStripe = Mockery::mock(\Stripe\StripeClient::class);
-    $mockCustomersService = Mockery::mock();
-    $mockCustomersService->shouldReceive('retrieve')->andReturn($stripeCustomer);
-    $mockStripe->customers = $mockCustomersService;
-    $mockPaymentMethodsService = Mockery::mock();
-    $mockPaymentMethodsService->shouldReceive('all')->andReturn(fakeStripeCollection([]));
-    $mockStripe->paymentMethods = $mockPaymentMethodsService;
-    bindMockStripe($mockStripe);
-
-    artisan('stripe:sync-payment-methods', ['--customer' => 'cus_spm_002'])
-        ->assertSuccessful()
-        ->expectsOutputToContain('1 removed');
-
-    expect(PaymentMethod::where('stripe_id', 'pm_spm_old_001')->exists())->toBeFalse();
-
-    $user->forceDelete();
-});
-
-test('sync payment methods marks correct default', function () {
-    $user = User::factory()->create(['stripe_id' => 'cus_spm_003']);
-
-    $pm1 = fakeStripeObject([
-        'id' => 'pm_spm_default',
-        'customer' => 'cus_spm_003',
-        'type' => 'card',
-        'card' => ['brand' => 'visa', 'last4' => '1111', 'exp_month' => 6, 'exp_year' => 2027],
-    ]);
-
-    $pm2 = fakeStripeObject([
-        'id' => 'pm_spm_secondary',
-        'customer' => 'cus_spm_003',
-        'type' => 'card',
-        'card' => ['brand' => 'amex', 'last4' => '2222', 'exp_month' => 9, 'exp_year' => 2029],
-    ]);
-
-    $stripeCustomer = fakeStripeObject([
-        'id' => 'cus_spm_003',
-        'invoice_settings' => ['default_payment_method' => 'pm_spm_default'],
-    ]);
-
-    $mockStripe = Mockery::mock(\Stripe\StripeClient::class);
-    $mockCustomersService = Mockery::mock();
-    $mockCustomersService->shouldReceive('retrieve')->andReturn($stripeCustomer);
-    $mockStripe->customers = $mockCustomersService;
-    $mockPaymentMethodsService = Mockery::mock();
-    $mockPaymentMethodsService->shouldReceive('all')->andReturn(fakeStripeCollection([$pm1, $pm2]));
-    $mockStripe->paymentMethods = $mockPaymentMethodsService;
-    bindMockStripe($mockStripe);
-
-    artisan('stripe:sync-payment-methods', ['--customer' => 'cus_spm_003'])
-        ->assertSuccessful();
-
-    expect(PaymentMethod::where('stripe_id', 'pm_spm_default')->first()->is_default)->toBeTrue()
-        ->and(PaymentMethod::where('stripe_id', 'pm_spm_secondary')->first()->is_default)->toBeFalse();
-
-    $user->forceDelete();
-});
-
-test('sync payment methods warns when no users have stripe ids', function () {
-    $mockStripe = Mockery::mock(\Stripe\StripeClient::class);
-    bindMockStripe($mockStripe);
-
-    $originalIds = User::query()->whereNotNull('stripe_id')->where('stripe_id', '!=', '')->pluck('stripe_id', 'id');
-    User::query()->whereNotNull('stripe_id')->update(['stripe_id' => null]);
-
-    artisan('stripe:sync-payment-methods')
-        ->assertSuccessful()
-        ->expectsOutputToContain('No users with a Stripe customer ID found');
-
-    foreach ($originalIds as $id => $stripeId) {
-        User::where('id', $id)->update(['stripe_id' => $stripeId]);
-    }
-});
-
-// ──────────────────────────────────────────────
 // stripe:sync-all
 // ──────────────────────────────────────────────
 
-test('sync all calls all three sync commands', function () {
+test('sync all calls both sync commands', function () {
     $mockStripe = Mockery::mock(\Stripe\StripeClient::class);
     $mockCouponsService = Mockery::mock();
     $mockCouponsService->shouldReceive('all')->andReturn(fakeStripeCollection([]));

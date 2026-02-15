@@ -6,7 +6,6 @@
  * Tests the subscription settings pages including:
  * - Subscription overview for subscribed users
  * - Change plan sub-page rendering
- * - Payment methods sub-page rendering
  * - Authentication requirements for all sub-pages
  */
 
@@ -78,19 +77,7 @@ it('shows change plan page for subscribed user', function () {
         ->assertSee('Back to Subscription');
 });
 
-it('shows payment methods page', function () {
-    $user = User::factory()->create();
-
-    $this->actingAs($user)
-        ->get('/settings/subscription/payment-methods')
-        ->assertOk()
-        ->assertSee('Payment Methods');
-});
-
 it('requires auth for subscription sub-pages', function () {
     $this->get('/settings/subscription/change-plan')
-        ->assertRedirect();
-
-    $this->get('/settings/subscription/payment-methods')
         ->assertRedirect();
 });

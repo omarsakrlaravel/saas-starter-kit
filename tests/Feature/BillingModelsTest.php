@@ -3,16 +3,15 @@
 /**
  * Billing Models Test Suite
  *
- * Tests the Invoice, Transaction, and PaymentMethod models including:
+ * Tests the Invoice and Transaction models including:
  * - Model creation via factories
  * - Relationship definitions (morphTo, belongsTo, hasMany)
  * - Attribute casting (dates, integers, arrays, booleans)
- * - Factory states (paid, open, void, succeeded, failed, refunded, default)
+ * - Factory states (paid, open, void, succeeded, failed, refunded)
  */
 
 use App\Models\User;
 use Wave\Invoice;
-use Wave\PaymentMethod;
 use Wave\Subscription;
 use Wave\Transaction;
 
@@ -24,7 +23,6 @@ afterEach(function () {
     // Clean up test records
     Transaction::query()->delete();
     Invoice::query()->delete();
-    PaymentMethod::query()->delete();
 });
 
 // --- Invoice Model Tests ---
@@ -271,75 +269,4 @@ test('transaction factory refunded state works', function () {
 
     expect($transaction->status)->toBe('refunded')
         ->and($transaction->refunded_amount)->toBe($transaction->amount);
-});
-
-// --- PaymentMethod Model Tests ---
-
-test('payment method can be created via factory', function () {
-    $paymentMethod = PaymentMethod::factory()->create([
-        'billable_type' => 'user',
-        'billable_id' => $this->user->id,
-    ]);
-
-    expect($paymentMethod)->toBeInstanceOf(PaymentMethod::class)
-        ->and($paymentMethod->exists)->toBeTrue()
-        ->and($paymentMethod->stripe_id)->toStartWith('pm_')
-        ->and($paymentMethod->stripe_customer_id)->toStartWith('cus_');
-});
-
-test('payment method casts fields correctly', function () {
-    $paymentMethod = PaymentMethod::factory()->create([
-        'billable_type' => 'user',
-        'billable_id' => $this->user->id,
-        'exp_month' => 12,
-        'exp_year' => 2028,
-        'is_default' => true,
-        'metadata' => ['billing_address' => '123 Main St'],
-    ]);
-
-    expect($paymentMethod->exp_month)->toBeInt()
-        ->and($paymentMethod->exp_year)->toBeInt()
-        ->and($paymentMethod->is_default)->toBeBool()->toBeTrue()
-        ->and($paymentMethod->metadata)->toBeArray();
-});
-
-test('payment method belongs to billable via morph', function () {
-    $paymentMethod = PaymentMethod::factory()->create([
-        'billable_type' => 'user',
-        'billable_id' => $this->user->id,
-    ]);
-
-    expect($paymentMethod->billable)->toBeInstanceOf(User::class)
-        ->and($paymentMethod->billable->id)->toBe($this->user->id);
-});
-
-test('payment method factory default state works', function () {
-    $paymentMethod = PaymentMethod::factory()->default()->create([
-        'billable_type' => 'user',
-        'billable_id' => $this->user->id,
-    ]);
-
-    expect($paymentMethod->is_default)->toBeTrue();
-});
-
-test('payment method factory sepa debit state works', function () {
-    $paymentMethod = PaymentMethod::factory()->sepaDebit()->create([
-        'billable_type' => 'user',
-        'billable_id' => $this->user->id,
-    ]);
-
-    expect($paymentMethod->type)->toBe('sepa_debit')
-        ->and($paymentMethod->brand)->toBeNull()
-        ->and($paymentMethod->exp_month)->toBeNull()
-        ->and($paymentMethod->exp_year)->toBeNull();
-});
-
-test('payment method factory bank transfer state works', function () {
-    $paymentMethod = PaymentMethod::factory()->bankTransfer()->create([
-        'billable_type' => 'user',
-        'billable_id' => $this->user->id,
-    ]);
-
-    expect($paymentMethod->type)->toBe('bank_transfer')
-        ->and($paymentMethod->brand)->toBeNull();
 });

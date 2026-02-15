@@ -311,11 +311,6 @@ class User extends AuthUser implements FilamentUser, HasAvatar, JWTSubject
         return $this->morphMany(Transaction::class, 'billable');
     }
 
-    public function paymentMethods(): MorphMany
-    {
-        return $this->morphMany(PaymentMethod::class, 'billable');
-    }
-
     public function activities(): HasMany
     {
         return $this->hasMany(ActivityLog::class, 'user_id')->orderByDesc('created_at');

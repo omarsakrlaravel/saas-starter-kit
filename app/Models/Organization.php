@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Wave\Invoice;
-use Wave\PaymentMethod;
 use Wave\Subscription;
 use Wave\Transaction;
 
@@ -65,11 +64,6 @@ class Organization extends Model
     public function transactions(): MorphMany
     {
         return $this->morphMany(Transaction::class, 'billable');
-    }
-
-    public function paymentMethods(): MorphMany
-    {
-        return $this->morphMany(PaymentMethod::class, 'billable');
     }
 
     public function activeSubscription(): ?Subscription

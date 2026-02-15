@@ -8,7 +8,7 @@ class StripeSyncAll extends Command
 {
     protected $signature = 'stripe:sync-all';
 
-    protected $description = 'Backfill all Stripe data (coupons, invoices, payment methods) into the local database';
+    protected $description = 'Backfill all Stripe data (coupons, invoices) into the local database';
 
     public function handle(): int
     {
@@ -18,7 +18,6 @@ class StripeSyncAll extends Command
         $commands = [
             'stripe:sync-coupons',
             'stripe:sync-invoices',
-            'stripe:sync-payment-methods',
         ];
 
         $failed = false;

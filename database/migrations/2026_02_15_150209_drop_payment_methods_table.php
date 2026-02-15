@@ -11,6 +11,14 @@ return new class() extends Migration
      */
     public function up(): void
     {
+        Schema::dropIfExists('payment_methods');
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
         Schema::create('payment_methods', function (Blueprint $table): void {
             $table->id();
             $table->string('stripe_id')->unique()->index();
@@ -28,13 +36,5 @@ return new class() extends Migration
 
             $table->index(['billable_type', 'billable_id']);
         });
-    }
-
-    /**
-     * Reverse the migrations.
-     */
-    public function down(): void
-    {
-        Schema::dropIfExists('payment_methods');
     }
 };
