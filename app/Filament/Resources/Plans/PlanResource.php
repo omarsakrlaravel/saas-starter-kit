@@ -5,7 +5,9 @@ namespace App\Filament\Resources\Plans;
 use App\Filament\Resources\Plans\Pages\CreatePlan;
 use App\Filament\Resources\Plans\Pages\EditPlan;
 use App\Filament\Resources\Plans\Pages\ListPlans;
+use App\Filament\Resources\Plans\RelationManagers\SubscriptionsRelationManager;
 use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -15,13 +17,18 @@ use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\BooleanColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Stripe\Exception\ApiErrorException;
+use Stripe\StripeClient;
+use UnitEnum;
 use Wave\Plan;
 
 class PlanResource extends Resource
@@ -31,6 +38,8 @@ class PlanResource extends Resource
     protected static BackedEnum|string|null $navigationIcon = 'phosphor-credit-card-duotone';
 
     protected static ?int $navigationSort = 3;
+
+    protected static string|UnitEnum|null $navigationGroup = 'Billing';
 
     public static function form(Schema $schema): Schema
     {
@@ -160,10 +169,51 @@ class PlanResource extends Resource
             ])
             ->defaultSort('sort_order')
             ->filters([
-                //
+                SelectFilter::make('active')
+                    ->options(['1' => 'Active', '0' => 'Inactive']),
             ])
             ->recordActions([
                 EditAction::make(),
+                Action::make('sync_stripe')
+                    ->label('Verify Stripe')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('info')
+                    ->action(function (Plan $record): void {
+                        $stripe = new StripeClient(config('services.stripe.secret'));
+                        $issues = [];
+
+                        foreach (['monthly_price_id', 'yearly_price_id', 'onetime_price_id'] as $field) {
+                            $priceId = $record->{$field};
+
+                            if (empty($priceId)) {
+                                continue;
+                            }
+
+                            try {
+                                $price = $stripe->prices->retrieve($priceId);
+
+                                if (! $price->active) {
+                                    $issues[] = $field.' ('.$priceId.') exists but is inactive';
+                                }
+                            } catch (ApiErrorException) {
+                                $issues[] = $field.' ('.$priceId.') not found in Stripe';
+                            }
+                        }
+
+                        if (empty($issues)) {
+                            Notification::make()
+                                ->title('All Stripe price IDs are valid and active.')
+                                ->success()
+                                ->send();
+                        } else {
+                            Notification::make()
+                                ->title('Stripe sync issues found')
+                                ->body(implode("\n", $issues))
+                                ->danger()
+                                ->persistent()
+                                ->send();
+                        }
+                    }),
                 DeleteAction::make(),
             ])
             ->toolbarActions([
@@ -176,7 +226,7 @@ class PlanResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            SubscriptionsRelationManager::class,
         ];
     }
 

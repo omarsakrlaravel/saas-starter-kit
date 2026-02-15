@@ -28,36 +28,4 @@
             </div>
         </x-filament::section>
     </section>
-    <section class="flex gap-5 mb-5">
-        <section class="flex flex-col gap-5 items-center w-full xl:flex-row">
-            <x-filament::section class="w-full">
-                <div class="flex gap-x-5 items-center">
-                    <div class="flex-">
-                        <x-phosphor-users-duotone class="h-10 text-blue-600 fill-current" />
-                    </div>
-                    <div class="flex flex-col w-full">
-                        <div class="mt-1 text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-200">{{ \Wave\User::count() }}</div>
-                    </div>
-                </div>
-                <div class="mt-2 text-xs font-medium text-gray-500 truncate">User Accounts</div>
-            </x-filament::section>
-            <x-filament::section class="w-full">
-                <div class="flex gap-x-5 items-center">
-                    <div class="flex-">
-                        <x-phosphor-credit-card-duotone class="h-10 text-blue-600 fill-current" />
-                    </div>
-                    <div class="flex flex-col w-full">
-                        <div class="mt-1 text-xl font-semibold tracking-tight text-gray-900 dark:text-gray-200">{{ \Wave\Subscription::where('stripe_status', 'active')->count() }}</div>
-                    </div>
-                </div>
-                <div class="mt-2 text-xs font-medium text-gray-500 truncate">Subscribers</div>
-            </x-filament::section>
-        </section>
-    </section>
-    <x-filament::section>
-        <div class="flex flex-col relative gap-x-3 justify-center space-y-2 items-center min-h-[400px] w-full ">
-            <p class="text-center text-gray-400 dark:text-gray-500">Welcome to your Admin Dashboard. Modify this page at:</p> 
-            <code class="px-2 py-1 text-xs text-center text-gray-500 rounded-lg dark:text-gray-400 bg-stone-200 dark:bg-stone-800">resources/views/filament/widgets/dashboard-placeholder-widget.blade.php</code>
-        </div>
-    </x-filament::section>
 </x-filament-widgets::widget>

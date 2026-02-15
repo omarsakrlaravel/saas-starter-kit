@@ -156,6 +156,20 @@
                                 <livewire:billing.update />
                             </div>
                         </div>
+
+                        {{-- Switch Plan Section --}}
+                        <div id="available-plans" class="mt-8">
+                            <div class="mb-5 flex items-center gap-3">
+                                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-100 dark:bg-zinc-800">
+                                    <x-phosphor-arrows-clockwise-duotone class="h-5 w-5 text-zinc-500 dark:text-zinc-400" />
+                                </div>
+                                <div>
+                                    <h3 class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Switch Plan</h3>
+                                    <p class="text-xs text-zinc-500 dark:text-zinc-400">Compare plans and switch anytime. Changes are prorated.</p>
+                                </div>
+                            </div>
+                            <livewire:billing.checkout :change="true" />
+                        </div>
                     @endsubscriber
 
                     @notsubscriber

@@ -5,6 +5,8 @@ namespace Wave;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Laravel\Cashier\Subscription as CashierSubscription;
 
@@ -93,5 +95,21 @@ class Subscription extends CashierSubscription
     public function plan(): BelongsTo
     {
         return $this->belongsTo(Plan::class, 'plan_id');
+    }
+
+    /**
+     * The local invoice records for this subscription.
+     */
+    public function localInvoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
+    /**
+     * The transactions for this subscription via invoices.
+     */
+    public function transactions(): HasManyThrough
+    {
+        return $this->hasManyThrough(Transaction::class, Invoice::class);
     }
 }

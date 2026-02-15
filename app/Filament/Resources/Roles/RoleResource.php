@@ -176,7 +176,7 @@ class RoleResource extends Resource
 
     public static function getNavigationGroup(): string|UnitEnum|null
     {
-        return null;
+        return 'Settings';
     }
 
     public static function getEssentialsPlugin(): ?FilamentShieldPlugin

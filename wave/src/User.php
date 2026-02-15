@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
@@ -298,6 +299,26 @@ class User extends AuthUser implements FilamentUser, HasAvatar, JWTSubject
     public function subscriptions(): HasMany
     {
         return $this->hasMany(Subscription::class, 'user_id')->orderByDesc('created_at');
+    }
+
+    public function invoices(): MorphMany
+    {
+        return $this->morphMany(Invoice::class, 'billable');
+    }
+
+    public function transactions(): MorphMany
+    {
+        return $this->morphMany(Transaction::class, 'billable');
+    }
+
+    public function paymentMethods(): MorphMany
+    {
+        return $this->morphMany(PaymentMethod::class, 'billable');
+    }
+
+    public function activities(): HasMany
+    {
+        return $this->hasMany(ActivityLog::class, 'user_id')->orderByDesc('created_at');
     }
 
     public function subscriber()

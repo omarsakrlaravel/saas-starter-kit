@@ -6,7 +6,7 @@ use Filament\Widgets\Widget;
 
 class DashboardWidget extends Widget
 {
-    protected static ?int $sort = 10;
+    protected static ?int $sort = 0;
 
     protected int|string|array $columnSpan = 'full';
 

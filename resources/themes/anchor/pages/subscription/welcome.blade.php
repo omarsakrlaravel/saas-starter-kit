@@ -9,9 +9,17 @@
     // The welcome page is loaded right after Stripe redirects — the webhook
     // that creates the subscription may arrive seconds later, so we must
     // never serve a stale cached "not subscribed" response here.
+    $canManageBilling = auth()->user()->canManageBillingContext();
+    $isSessionBasedAccess = request()->has('session_id');
+    $isSubscriber = auth()->user()->subscriber();
+
+    if (! $canManageBilling || (! $isSessionBasedAccess && ! $isSubscriber)) {
+        redirect()->route('settings.subscription')->send();
+        exit;
+    }
+
     auth()->user()->clearUserCache();
 
-    $isSubscriber = auth()->user()->subscriber();
     $plan = $isSubscriber ? auth()->user()->plan() : null;
     $subscription = $isSubscriber ? auth()->user()->latestSubscription() : null;
     $interval = $isSubscriber ? auth()->user()->planInterval() : null;
@@ -73,7 +81,7 @@
                 let check = setInterval(async () => {
                     attempts++;
                     try {
-                        let res = await fetch('/subscription/welcome', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                        let res = await fetch(window.location.pathname + window.location.search, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
                         let html = await res.text();
                         if (html.includes('all set')) {
                             clearInterval(check);

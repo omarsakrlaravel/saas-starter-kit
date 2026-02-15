@@ -25,6 +25,8 @@ class ChangelogResource extends Resource
 
     protected static BackedEnum|string|null $navigationIcon = 'phosphor-book-open-text-duotone';
 
+    protected static string|\UnitEnum|null $navigationGroup = 'Content';
+
     protected static ?int $navigationSort = 7;
 
     public static function form(Schema $schema): Schema

@@ -5,6 +5,11 @@ namespace App\Filament\Resources\Users;
 use App\Filament\Resources\Users\Pages\CreateUser;
 use App\Filament\Resources\Users\Pages\EditUser;
 use App\Filament\Resources\Users\Pages\ListUsers;
+use App\Filament\Resources\Users\RelationManagers\ActivityRelationManager;
+use App\Filament\Resources\Users\RelationManagers\ApiKeysRelationManager;
+use App\Filament\Resources\Users\RelationManagers\InvoicesRelationManager;
+use App\Filament\Resources\Users\RelationManagers\OrganizationsRelationManager;
+use App\Filament\Resources\Users\RelationManagers\SubscriptionsRelationManager;
 use App\Models\User;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -23,6 +28,8 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Hash;
@@ -34,6 +41,8 @@ class UserResource extends Resource
     protected static string|BackedEnum|null $navigationIcon = 'phosphor-user-duotone';
 
     protected static ?int $navigationSort = 2;
+
+    protected static string|\UnitEnum|null $navigationGroup = 'People';
 
     public static function getEloquentQuery(): Builder
     {
@@ -107,9 +116,33 @@ class UserResource extends Resource
                     ->defaultImageUrl(url('storage/demo/default.png')),
                 TextColumn::make('username')
                     ->searchable(),
+                TextColumn::make('created_at')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                //
+                SelectFilter::make('subscription_status')
+                    ->label('Subscription Status')
+                    ->options([
+                        'subscribed' => 'Subscribed',
+                        'trial' => 'Trial',
+                        'expired' => 'Expired',
+                        'none' => 'None',
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return match ($data['value'] ?? null) {
+                            'subscribed' => $query->whereHas('subscriptions', fn (Builder $q) => $q->where('stripe_status', 'active')),
+                            'trial' => $query->whereHas('subscriptions', fn (Builder $q) => $q->where('stripe_status', 'trialing')),
+                            'expired' => $query->whereHas('subscriptions', fn (Builder $q) => $q->where('stripe_status', 'canceled')),
+                            'none' => $query->whereDoesntHave('subscriptions'),
+                            default => $query,
+                        };
+                    }),
+                Filter::make('has_organization')
+                    ->label('Has Organization')
+                    ->toggle()
+                    ->query(fn (Builder $query): Builder => $query->whereHas('organizations')),
             ])
             ->recordActions([
                 EditAction::make(),
@@ -128,7 +161,11 @@ class UserResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            SubscriptionsRelationManager::class,
+            InvoicesRelationManager::class,
+            OrganizationsRelationManager::class,
+            ActivityRelationManager::class,
+            ApiKeysRelationManager::class,
         ];
     }
 
