@@ -25,6 +25,27 @@ return [
         'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
     ],
 
+    'checkout' => [
+        'faq' => [
+            [
+                'question' => 'Can I cancel anytime?',
+                'answer' => 'Yes, you can cancel at any time from your account settings. Your access continues until the end of your current billing period.',
+            ],
+            [
+                'question' => 'How does billing work?',
+                'answer' => 'You\'ll be charged at the start of each billing cycle. Upgrades are prorated immediately, and downgrades take effect at the end of your current period.',
+            ],
+            [
+                'question' => 'Can I change my plan later?',
+                'answer' => 'Absolutely. You can upgrade or downgrade your plan at any time from your subscription settings.',
+            ],
+            [
+                'question' => 'Is my payment information secure?',
+                'answer' => 'Yes, all payments are processed securely through Stripe. We never store your card details on our servers.',
+            ],
+        ],
+    ],
+
     'settings' => [
         'site.title' => env('SITE_TITLE', 'Wave'),
         'site.description' => env('SITE_DESCRIPTION', 'The Software as a Service Starter Kit built with Laravel'),

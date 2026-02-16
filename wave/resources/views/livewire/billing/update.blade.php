@@ -70,20 +70,19 @@
     @endif
 
     {{-- Action buttons --}}
-    <div class="flex flex-wrap items-center gap-2">
-        <x-button :href="route('settings.subscription.change-plan')" tag="a">
-            <x-phosphor-arrows-clockwise class="mr-1.5 h-4 w-4" />
-            Change Plan
-        </x-button>
-        <x-button :href="route('stripe.portal')" tag="a" color="gray">
-            <x-phosphor-credit-card-duotone class="mr-1.5 h-4 w-4" />
-            Open Stripe Billing
-        </x-button>
-    </div>
+    <div class="flex flex-wrap items-center justify-between gap-2">
+        <div class="flex flex-wrap items-center gap-2">
+            <x-button :href="route('settings.subscription.change-plan')" tag="a">
+                <x-phosphor-arrows-clockwise class="mr-1.5 h-4 w-4" />
+                Change Plan
+            </x-button>
+            <x-button :href="route('stripe.portal')" tag="a" color="gray">
+                <x-phosphor-credit-card-duotone class="mr-1.5 h-4 w-4" />
+                Manage Subscription
+            </x-button>
+        </div>
 
-    {{-- Cancel subscription link --}}
-    @if(! $cancellation_scheduled)
-        <div class="pt-1">
+        @if(! $cancellation_scheduled)
             <x-filament::modal width="lg" id="cancel-subscription-modal">
                 <x-slot name="trigger">
                     <button type="button" class="text-sm text-zinc-400 underline-offset-2 transition-colors hover:text-red-500 hover:underline dark:text-zinc-500 dark:hover:text-red-400">
@@ -106,6 +105,6 @@
                     </div>
                 </div>
             </x-filament::modal>
-        </div>
-    @endif
+        @endif
+    </div>
 </div>

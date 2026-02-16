@@ -4,7 +4,7 @@ use App\Models\User;
 use Wave\Http\Livewire\Billing\Checkout;
 use Wave\Plan;
 
-test('immediate upgrade uses error-if-incomplete payment behavior', function () {
+test('upgrade falls back to stripe checkout when no saved payment method', function () {
     $user = User::factory()->create();
     $this->actingAs($user);
 
@@ -14,17 +14,16 @@ test('immediate upgrade uses error-if-incomplete payment behavior', function () 
     ]);
 
     $subscription = Mockery::mock();
-    $subscription->shouldReceive('errorIfPaymentFails')->once()->andReturnSelf();
-    $subscription->shouldReceive('swapAndInvoice')->once()->with('price_pro_yearly')->andThrow(new RuntimeException('Payment failed'));
-    $subscription->shouldNotReceive('update');
-    $subscription->shouldNotReceive('clearBillableCache');
 
     $component = Mockery::mock(Checkout::class)->makePartial();
     $component->shouldAllowMockingProtectedMethods();
-    $component->shouldReceive('ensureReusableDefaultPaymentMethod')
+    $component->shouldReceive('trySwapWithSavedMethod')
         ->once()
-        ->with($user)
-        ->andReturn(true);
+        ->andReturn(false);
+    $component->shouldReceive('redirectToStripeCheckoutForSwap')
+        ->once()
+        ->with($user, $plan, 'price_pro_yearly', 'year')
+        ->andReturn(null);
 
     $method = new ReflectionMethod(Checkout::class, 'applyImmediateUpgrade');
     $method->setAccessible(true);
@@ -34,18 +33,29 @@ test('immediate upgrade uses error-if-incomplete payment behavior', function () 
     expect($result)->toBeNull();
 });
 
-test('default payment method check passes when customer already has one', function () {
-    $user = Mockery::mock();
-    $defaultPaymentMethod = new stdClass();
+test('upgrade succeeds immediately when saved payment method works', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user);
 
-    $user->shouldReceive('hasStripeId')->once()->andReturn(true);
-    $user->shouldReceive('defaultPaymentMethod')->once()->andReturn($defaultPaymentMethod);
+    $plan = new Plan([
+        'id' => 123,
+        'name' => 'Pro',
+    ]);
 
-    $component = app(Checkout::class);
-    $method = new ReflectionMethod(Checkout::class, 'ensureReusableDefaultPaymentMethod');
+    $subscription = Mockery::mock();
+
+    $component = Mockery::mock(Checkout::class)->makePartial();
+    $component->shouldAllowMockingProtectedMethods();
+    $component->shouldReceive('trySwapWithSavedMethod')
+        ->once()
+        ->andReturn(true);
+    $component->shouldNotReceive('redirectToStripeCheckoutForSwap');
+
+    $method = new ReflectionMethod(Checkout::class, 'applyImmediateUpgrade');
     $method->setAccessible(true);
 
-    $result = $method->invoke($component, $user);
+    $result = $method->invoke($component, $subscription, $plan, 'price_pro_yearly', 'year');
 
-    expect($result)->toBeTrue();
+    // Returns a redirect when swap succeeds
+    expect($result)->not->toBeNull();
 });

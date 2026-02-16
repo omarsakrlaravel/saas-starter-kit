@@ -424,7 +424,7 @@ class User extends AuthUser implements FilamentUser, HasAvatar, JWTSubject
 
             return $this->invoicesIncludingPending()->map(function ($invoice) use ($subscriptionOrgIdMap): object {
                 $stripeInvoice = $invoice->asStripeInvoice();
-                $downloadUrl = $stripeInvoice->invoice_pdf ?? $stripeInvoice->hosted_invoice_url ?? null;
+                $downloadUrl = $stripeInvoice->hosted_invoice_url ?? $stripeInvoice->invoice_pdf ?? null;
                 $currency = (string) ($stripeInvoice->currency ?? 'usd');
                 $rawSubtotal = (int) ($stripeInvoice->subtotal ?? 0);
                 $rawTax = (int) ($stripeInvoice->tax ?? 0);
@@ -460,7 +460,9 @@ class User extends AuthUser implements FilamentUser, HasAvatar, JWTSubject
                 })
                 ->values()
                 ->all();
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
+            logger()->error('billingInvoices failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+
             return [];
         }
     }

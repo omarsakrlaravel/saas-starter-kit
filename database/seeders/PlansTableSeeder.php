@@ -21,6 +21,7 @@ class PlansTableSeeder extends Seeder
             [
                 'id' => 1,
                 'name' => 'Basic',
+                'stripe_product_id' => 'prod_TyJPoGuYkQuCii',
                 'description' => 'Everything you need to get started.',
                 'features' => json_encode(['5 Projects', '1 Team Member', '5GB Storage', 'Email Support']),
                 'limits' => json_encode([
@@ -32,8 +33,8 @@ class PlansTableSeeder extends Seeder
                 'default' => 1,
                 'sort_order' => 1,
                 'active' => 1,
-                'monthly_price_id' => 'price_basic_monthly',
-                'yearly_price_id' => 'price_basic_yearly',
+                'monthly_price_id' => 'price_1T0Mn7P9lS19VIQQsm4gXt42',
+                'yearly_price_id' => 'price_1T0Mn9P9lS19VIQQNgGXAJtT',
                 'monthly_price' => '9',
                 'yearly_price' => '90',
                 'created_at' => $now,
@@ -42,6 +43,7 @@ class PlansTableSeeder extends Seeder
             [
                 'id' => 2,
                 'name' => 'Premium',
+                'stripe_product_id' => 'prod_TyJPG1DsinOeri',
                 'description' => 'For growing teams that need more power.',
                 'features' => json_encode(['25 Projects', '5 Team Members', '50GB Storage', 'Priority Support', 'API Access']),
                 'limits' => json_encode([
@@ -53,8 +55,8 @@ class PlansTableSeeder extends Seeder
                 'default' => 0,
                 'sort_order' => 2,
                 'active' => 1,
-                'monthly_price_id' => 'price_premium_monthly',
-                'yearly_price_id' => 'price_premium_yearly',
+                'monthly_price_id' => 'price_1T0MnBP9lS19VIQQRlC6oCwR',
+                'yearly_price_id' => 'price_1T0MnCP9lS19VIQQtXQlwiCT',
                 'monthly_price' => '29',
                 'yearly_price' => '290',
                 'created_at' => $now,
@@ -63,6 +65,7 @@ class PlansTableSeeder extends Seeder
             [
                 'id' => 3,
                 'name' => 'Pro',
+                'stripe_product_id' => 'prod_TyJP13Rtgpsuh3',
                 'description' => 'Unlimited access for scaling businesses.',
                 'features' => json_encode(['Unlimited Projects', 'Unlimited Team Members', '500GB Storage', 'Priority Support', 'API Access', 'Custom Integrations']),
                 'limits' => json_encode([
@@ -74,8 +77,8 @@ class PlansTableSeeder extends Seeder
                 'default' => 0,
                 'sort_order' => 3,
                 'active' => 1,
-                'monthly_price_id' => 'price_pro_monthly',
-                'yearly_price_id' => 'price_pro_yearly',
+                'monthly_price_id' => 'price_1T0MnEP9lS19VIQQvtxHhfPX',
+                'yearly_price_id' => 'price_1T0MnGP9lS19VIQQM46WPeFY',
                 'monthly_price' => '49',
                 'yearly_price' => '490',
                 'created_at' => $now,

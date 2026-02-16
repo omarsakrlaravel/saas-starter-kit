@@ -24,63 +24,6 @@
             <x-billing.billing_cycle_toggle />
 
             <div class="space-y-4">
-                {{-- Seat quantity (new checkout + org billing only) --}}
-                @if(! $change && auth()->user()->getBillingContext()['type'] === 'organization')
-                    <div class="w-full rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-800">
-                        <div class="flex items-center justify-between">
-                            <label class="text-sm font-medium text-zinc-700 dark:text-zinc-200">Seats</label>
-                            <span class="text-xs text-zinc-500 dark:text-zinc-400" x-text="minimum_seat_quantity + ' min'"></span>
-                        </div>
-                        <div class="mt-2 flex items-center gap-3">
-                            <button
-                                type="button"
-                                @click="seat_quantity = Math.max(minimum_seat_quantity, seat_quantity - 1)"
-                                :disabled="seat_quantity <= minimum_seat_quantity"
-                                class="flex h-9 w-9 items-center justify-center rounded-md border border-zinc-300 bg-white text-zinc-700 transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-700"
-                            >
-                                -
-                            </button>
-                            <input
-                                x-model.number="seat_quantity"
-                                type="number"
-                                :min="minimum_seat_quantity"
-                                max="{{ $maximum_seat_quantity }}"
-                                class="w-28 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-center text-lg font-semibold text-zinc-900 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100"
-                            />
-                            <button
-                                type="button"
-                                @click="seat_quantity = Math.min({{ $maximum_seat_quantity }}, seat_quantity + 1)"
-                                :disabled="seat_quantity >= {{ $maximum_seat_quantity }}"
-                                class="flex h-9 w-9 items-center justify-center rounded-md border border-zinc-300 bg-white text-zinc-700 transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-700"
-                            >
-                                +
-                            </button>
-                        </div>
-                        @error('seat_quantity')
-                            <p class="mt-2 text-xs text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-                @endif
-
-                {{-- Coupon code (new checkout only) --}}
-                @if(! $change)
-                    <div class="w-full rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-800">
-                        <label for="coupon_code" class="text-sm font-medium text-zinc-700 dark:text-zinc-200">Coupon code (optional)</label>
-                        <div class="mt-2">
-                            <input
-                                id="coupon_code"
-                                type="text"
-                                wire:model.defer="coupon_code"
-                                placeholder="SUMMERSALE"
-                                class="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100"
-                            />
-                        </div>
-                        <p class="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
-                            You can also redeem promotion codes directly in Stripe Checkout.
-                        </p>
-                    </div>
-                @endif
-
                 {{-- Info banner for plan change mode --}}
                 @if($change)
                 <div class="flex items-start gap-2.5 rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-800/60">
@@ -327,9 +270,11 @@
                                         </x-filament::modal>
                                     @endif
                                 @else
-                                    <button wire:click="redirectToStripeCheckout('{{ $plan->id }}')" class="w-full cursor-pointer rounded-lg bg-zinc-900 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-zinc-800 hover:shadow-md dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white">
+                                    <a href="{{ route('settings.subscription.checkout', ['plan' => $plan->id, 'cycle' => $this->billing_cycle_selected]) }}"
+                                        x-bind:href="'{{ route('settings.subscription.checkout') }}?plan={{ $plan->id }}&cycle=' + billing_cycle_selected"
+                                        class="block w-full cursor-pointer rounded-lg bg-zinc-900 py-2.5 text-center text-sm font-semibold text-white shadow-sm transition-all hover:bg-zinc-800 hover:shadow-md dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white">
                                         Subscribe to {{ $plan->name }}
-                                    </button>
+                                    </a>
                                 @endif
                             </div>
                         </div>

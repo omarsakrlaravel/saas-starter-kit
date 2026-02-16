@@ -29,6 +29,7 @@ use Wave\Console\Commands\ProcessScheduledAccountDeletions;
 use Wave\Console\Commands\WaveStats;
 use Wave\Facades\Wave as WaveFacade;
 use Wave\Http\Livewire\Billing\Checkout;
+use Wave\Http\Livewire\Billing\CheckoutReview;
 use Wave\Http\Livewire\Billing\Update;
 use Wave\Http\Middleware\CanManageBilling;
 use Wave\Http\Middleware\HandleOrganizationInvite;
@@ -254,6 +255,7 @@ class WaveServiceProvider extends ServiceProvider
     private function loadLivewireComponents()
     {
         Livewire::component('billing.checkout', Checkout::class);
+        Livewire::component('billing.checkout-review', CheckoutReview::class);
         Livewire::component('billing.update', Update::class);
     }
 

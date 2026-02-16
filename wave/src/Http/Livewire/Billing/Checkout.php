@@ -357,13 +357,23 @@ class Checkout extends Component
 
     protected function applyImmediateUpgrade($subscription, Plan $plan, string $priceId, string $targetCycle)
     {
-        if (! $this->ensureReusableDefaultPaymentMethod(auth()->user())) {
-            Notification::make()
-                ->title('No usable saved card found. Please add or set a default payment method first.')
-                ->danger()
-                ->send();
+        $user = auth()->user();
 
-            return;
+        // Try charging the saved payment method first.
+        if ($this->trySwapWithSavedMethod($subscription, $plan, $priceId, $targetCycle)) {
+            return redirect()->to('/settings/subscription')->with(['update' => true]);
+        }
+
+        // No saved card or payment failed — fall back to Stripe Checkout.
+        return $this->redirectToStripeCheckoutForSwap($user, $plan, $priceId, $targetCycle);
+    }
+
+    protected function trySwapWithSavedMethod($subscription, Plan $plan, string $priceId, string $targetCycle): bool
+    {
+        $user = auth()->user();
+
+        if (! $user->hasStripeId() || $user->defaultPaymentMethod() === null) {
+            return false;
         }
 
         try {
@@ -379,47 +389,59 @@ class Checkout extends Component
 
             $subscription->clearBillableCache();
 
-            return redirect()->to('/settings/subscription')->with(['update' => true]);
-        } catch (\Throwable) {
-            Notification::make()
-                ->title('Unable to upgrade your plan right now. Your current subscription was not changed.')
-                ->danger()
-                ->send();
-        }
-    }
-
-    protected function ensureReusableDefaultPaymentMethod($user): bool
-    {
-        if (! $user->hasStripeId()) {
-            return false;
-        }
-
-        try {
-            if ($user->defaultPaymentMethod() !== null) {
-                return true;
-            }
-        } catch (\Throwable) {
-            return false;
-        }
-
-        try {
-            $stripe = new StripeClient(config('services.stripe.secret'));
-            $paymentMethods = $stripe->paymentMethods->all([
-                'customer' => $user->stripe_id,
-                'type' => 'card',
-                'limit' => 1,
-            ]);
-
-            $fallbackPaymentMethodId = $paymentMethods->data[0]->id ?? null;
-            if (! is_string($fallbackPaymentMethodId) || $fallbackPaymentMethodId === '') {
-                return false;
-            }
-
-            $user->updateDefaultPaymentMethod($fallbackPaymentMethodId);
-
             return true;
         } catch (\Throwable) {
             return false;
+        }
+    }
+
+    protected function redirectToStripeCheckoutForSwap($user, Plan $plan, string $priceId, string $targetCycle)
+    {
+        $this->normalizeCheckoutRedisplayablePaymentMethods($user);
+        $billingContext = $user->getBillingContext();
+        $seatQuantity = (int) ($user->latestSubscription()?->quantity ?? 1);
+
+        $subscriptionMetadata = [
+            'user_id' => (string) $user->id,
+            'billable_type' => $billingContext['type'],
+            'billable_id' => (string) $billingContext['id'],
+            'plan_id' => (string) $plan->id,
+            'billing_cycle' => $targetCycle,
+            'seat_quantity' => (string) $seatQuantity,
+        ];
+
+        try {
+            $checkout = $user->newSubscription('default', $priceId)
+                ->quantity($seatQuantity)
+                ->withMetadata($subscriptionMetadata);
+
+            $checkoutSession = $checkout->checkout([
+                'success_url' => route('subscription.welcome').'?session_id={CHECKOUT_SESSION_ID}',
+                'cancel_url' => route('settings.subscription'),
+                'payment_method_collection' => 'if_required',
+                'saved_payment_method_options' => [
+                    'allow_redisplay_filters' => ['always', 'limited', 'unspecified'],
+                ],
+                'metadata' => $subscriptionMetadata,
+            ]);
+
+            $checkoutUrl = $checkoutSession->url;
+            if (! is_string($checkoutUrl) || $checkoutUrl === '') {
+                throw new \RuntimeException('Stripe checkout session URL was not returned.');
+            }
+
+            return redirect()->away($checkoutUrl);
+        } catch (\Throwable $e) {
+            logger()->error('Stripe checkout for plan upgrade failed', [
+                'user_id' => $user->id,
+                'plan_id' => $plan->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            Notification::make()
+                ->title('Unable to upgrade your plan right now. Please try again.')
+                ->danger()
+                ->send();
         }
     }
 
