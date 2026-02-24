@@ -56,7 +56,7 @@ class Organization extends Model
         return $this->morphMany(Subscription::class, 'billable');
     }
 
-    public function invoices(): MorphMany
+    public function localInvoices(): MorphMany
     {
         return $this->morphMany(Invoice::class, 'billable');
     }

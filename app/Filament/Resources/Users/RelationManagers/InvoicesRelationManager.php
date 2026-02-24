@@ -10,7 +10,7 @@ use Wave\Invoice;
 
 class InvoicesRelationManager extends RelationManager
 {
-    protected static string $relationship = 'invoices';
+    protected static string $relationship = 'localInvoices';
 
     public function table(Table $table): Table
     {

@@ -39,7 +39,7 @@ class User extends WaveUser
         return $this->hasMany(ActivityLog::class);
     }
 
-    public function invoices(): MorphMany
+    public function localInvoices(): MorphMany
     {
         return $this->morphMany(Invoice::class, 'billable');
     }

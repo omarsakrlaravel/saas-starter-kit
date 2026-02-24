@@ -39,11 +39,11 @@ test('subscriptions relation manager targets subscriptions relationship', functi
     expect($property->getDefaultValue())->toBe('subscriptions');
 });
 
-test('invoices relation manager targets invoices relationship', function () {
+test('invoices relation manager targets localInvoices relationship', function () {
     $reflection = new ReflectionClass(InvoicesRelationManager::class);
     $property = $reflection->getProperty('relationship');
 
-    expect($property->getDefaultValue())->toBe('invoices');
+    expect($property->getDefaultValue())->toBe('localInvoices');
 });
 
 test('organizations relation manager targets organizations relationship', function () {
@@ -67,10 +67,10 @@ test('activity relation manager has custom title', function () {
     expect($property->getDefaultValue())->toBe('Activity');
 });
 
-test('user model defines invoices method', function () {
-    expect(method_exists(User::class, 'invoices'))->toBeTrue();
+test('user model defines localInvoices method', function () {
+    expect(method_exists(User::class, 'localInvoices'))->toBeTrue();
 
-    $reflection = new ReflectionMethod(User::class, 'invoices');
+    $reflection = new ReflectionMethod(User::class, 'localInvoices');
 
     expect($reflection->getReturnType()?->getName())
         ->toBe('Illuminate\Database\Eloquent\Relations\MorphMany');

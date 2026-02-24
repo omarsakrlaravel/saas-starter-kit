@@ -301,7 +301,7 @@ class User extends AuthUser implements FilamentUser, HasAvatar, JWTSubject
         return $this->hasMany(Subscription::class, 'user_id')->orderByDesc('created_at');
     }
 
-    public function invoices(): MorphMany
+    public function localInvoices(): MorphMany
     {
         return $this->morphMany(Invoice::class, 'billable');
     }
