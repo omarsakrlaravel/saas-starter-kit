@@ -57,7 +57,7 @@ None
 
 Plans:
 - [x] 01-01: BelongsToTenant trait + migrations (add organization_id to tenant-owned tables)
-- [ ] 01-02: TenantAware middleware + automatic query scoping via global scopes
+- [x] 01-02: TenantAware middleware + automatic query scoping via global scopes
 - [ ] 01-03: Tenant isolation tests + audit existing queries for scope gaps
 
 ### Phase 2: Account Suspension
@@ -163,7 +163,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9
 
 | Phase | Plans Complete | Status | Completed |
 |-------|---------------|--------|-----------|
-| 1. Tenant Data Scoping | 1/3 | In progress | - |
+| 1. Tenant Data Scoping | 2/3 | In progress | - |
 | 2. Account Suspension | 0/3 | Not started | - |
 | 3. Private File URLs | 0/3 | Not started | - |
 | 4. Credits/Token System | 0/4 | Not started | - |
