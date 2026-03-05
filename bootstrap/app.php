@@ -30,6 +30,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->web(\RalphJSmit\Livewire\Urls\Middleware\LivewireUrlsMiddleware::class);
         $middleware->web(\Wave\Http\Middleware\HandleOrganizationInvite::class);
+        $middleware->web(\Wave\Http\Middleware\TenantAware::class);
 
         $middleware->throttleApi();
     })
