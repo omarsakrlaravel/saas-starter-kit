@@ -12,6 +12,7 @@
 */
 
 use Illuminate\Http\Request;
+use App\Http\Controllers\AccountRestrictedController;
 use Wave\Facades\Wave;
 
 // Email verification notice (overrides the vendor Folio page)
@@ -33,6 +34,11 @@ Route::post('auth/verify/resend', function (Request $request) {
 
     return back();
 })->middleware(['auth', 'throttle:6,1'])->name('verification.send');
+
+Route::get('account/restricted', [AccountRestrictedController::class, 'show'])->name('account.restricted');
+Route::get('data-export', function () {
+    return redirect()->route('settings.export');
+})->name('account.data-export');
 
 // Wave routes
 Wave::routes();
