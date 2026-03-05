@@ -10,28 +10,28 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 ## Current Position
 
 Phase: 1 of 9 (Tenant Data Scoping)
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-02-26 -- Project initialized
+Plan: 1 of 3 in current phase
+Status: In progress
+Last activity: 2026-03-05 -- Completed 01-01-PLAN.md
 
-Progress: ░░░░░░░░░░ 0%
+Progress: █░░░░░░░░░ 4%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 0
-- Average duration: --
-- Total execution time: 0 hours
+- Total plans completed: 1
+- Average duration: 36 min
+- Total execution time: 0.6 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| -- | -- | -- | -- |
+| 1. Tenant Data Scoping | 1 | 36 min | 36 min |
 
 **Recent Trend:**
-- Last 5 plans: --
-- Trend: --
+- Last 5 plans: 36 min
+- Trend: Baseline established
 
 ## Accumulated Context
 
@@ -40,18 +40,19 @@ Progress: ░░░░░░░░░░ 0%
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-(None yet)
+- 01-01: Tenant scoping applies only when TenantContext has an organization id; no context leaves models unscoped.
+- 01-01: Tenant-owned `organization_id` columns remain nullable with `nullOnDelete` for legacy and personal-context records.
 
 ### Deferred Issues
 
-None yet.
+None logged from 01-01.
 
 ### Blockers/Concerns
 
-None yet.
+- Test execution currently depends on MySQL-specific assumptions in `phpunit.xml` and parts of the suite. PostgreSQL execution completes but reports existing cross-database failures.
 
 ## Session Continuity
 
-Last session: 2026-02-26
-Stopped at: Project initialization complete
+Last session: 2026-03-05 16:37 +03
+Stopped at: Completed 01-01-PLAN.md
 Resume file: None

@@ -4,6 +4,28 @@
 
 Transform Wave from a billing-ready SaaS framework into a correctness-by-default platform. The first five phases establish architectural foundations -- tenant isolation, suspension, private files, credits, and feature flags -- that shape how every future feature behaves. The final four phases layer on additive capabilities: real-time updates, branded emails, support tickets, and onboarding.
 
+## Package Strategy
+
+**Principle:** Use packages when they solve the problem better than custom code. Roll your own when the problem is simple or needs tight integration with existing systems.
+
+**Already installed:**
+- `spatie/laravel-permission` -- RBAC with teams mode, wired up with Filament Shield
+- `laravel/cashier-stripe` -- Stripe billing, subscriptions, invoices, webhooks
+- Custom activity logging (`wave/src/ActivityLog.php`) -- queued writes, auto-cleanup, retention config
+
+**Adding (4 packages):**
+- `laravel/pennant` -- Feature flags (Phase 5). First-party, DB driver, scopes by tenant/user, cached per-request
+- `laravel/reverb` -- Real-time broadcasting (Phase 6). First-party WebSocket server, no vendor dependency
+- `spatie/laravel-database-mail-templates` -- Email templates (Phase 7). DB-stored with Mustache placeholders, correct security boundary for user-editable templates
+- `spatie/laravel-onboard` -- Onboarding (Phase 9). Define steps as `completeIf` closures, lightweight computation-only
+
+**Rolling your own (5 features):**
+- Tenant data scoping -- Packages solve multi-DB problems we do not have
+- Account suspension -- A column, a middleware, a history table
+- Private file URLs -- Laravel built-ins: `Storage::temporaryUrl()` + `URL::temporarySignedRoute()`
+- Credits ledger -- Needs tight integration with billing + tenant scoping
+- Support tickets -- Two tables + a form, lighter than adopting a package
+
 ## Domain Expertise
 
 None
@@ -14,33 +36,35 @@ None
 - Integer phases (1, 2, 3): Planned milestone work
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
-- [ ] **Phase 1: Tenant Data Scoping** - BelongsToTenant trait, TenantAware middleware, automatic org-scoped queries
-- [ ] **Phase 2: Account Suspension** - Status enum on users/orgs, middleware guards, admin controls
-- [ ] **Phase 3: Private File URLs** - Ownership-checked access with PrivateFile middleware and signed URLs
-- [ ] **Phase 4: Credits/Token System** - Ledger, transactions, consumption, top-ups, auto-refill, plan integration
-- [ ] **Phase 5: Feature Flags** - Polymorphic feature_flags table, @featureEnabled directive, admin UI
-- [ ] **Phase 6: Real-time Broadcasting** - Laravel Reverb setup, tenant-aware channels, notification integration
-- [ ] **Phase 7: Email Template System** - Branded base layout, Blade templates, test-send in admin
-- [ ] **Phase 8: Support Tickets** - Submission form, database storage, email notification, admin view
-- [ ] **Phase 9: Onboarding Checklist** - JSON on user, dismissible Livewire component, configurable steps
+- [ ] **Phase 1: Tenant Data Scoping** - BelongsToTenant trait, TenantAware middleware, automatic org-scoped queries `[custom]`
+- [ ] **Phase 2: Account Suspension** - Status enum on users/orgs, middleware guards, admin controls `[custom]`
+- [ ] **Phase 3: Private File URLs** - Ownership-checked access with signed URLs via Laravel built-ins `[custom]`
+- [ ] **Phase 4: Credits/Token System** - Ledger, transactions, consumption, top-ups, auto-refill, plan integration `[custom]`
+- [ ] **Phase 5: Feature Flags** - Laravel Pennant with DB driver, tenant/user scoping, admin UI `[laravel/pennant]`
+- [ ] **Phase 6: Real-time Broadcasting** - Laravel Reverb setup, tenant-aware channels, notification integration `[laravel/reverb]`
+- [ ] **Phase 7: Email Template System** - DB-stored templates with Mustache placeholders, test-send in admin `[spatie/laravel-database-mail-templates]`
+- [ ] **Phase 8: Support Tickets** - Submission form, database storage, email notification, admin view `[custom]`
+- [ ] **Phase 9: Onboarding Checklist** - completeIf closures, dismissible Livewire component, configurable steps `[spatie/laravel-onboard]`
 
 ## Phase Details
 
 ### Phase 1: Tenant Data Scoping
 **Goal**: Every database query automatically scopes to the current organization, preventing cross-tenant data leaks
 **Depends on**: Nothing (foundation phase)
-**Research**: Unlikely (Eloquent global scopes, middleware -- established Laravel patterns)
+**Approach**: Custom. Multi-tenant packages solve multi-DB problems we do not have. Eloquent global scopes + middleware are established Laravel patterns.
+**Research**: Unlikely
 **Plans**: 3 plans
 
 Plans:
-- [ ] 01-01: BelongsToTenant trait + migrations (add organization_id to tenant-owned tables)
+- [x] 01-01: BelongsToTenant trait + migrations (add organization_id to tenant-owned tables)
 - [ ] 01-02: TenantAware middleware + automatic query scoping via global scopes
 - [ ] 01-03: Tenant isolation tests + audit existing queries for scope gaps
 
 ### Phase 2: Account Suspension
 **Goal**: Suspended users/orgs are blocked from accessing the application with clear messaging and admin controls
 **Depends on**: Phase 1
-**Research**: Unlikely (enum column, middleware guard, Filament actions -- standard patterns)
+**Approach**: Custom. A status column, a middleware, a history table. Package adds polymorphic abstraction we will not use.
+**Research**: Unlikely
 **Plans**: 3 plans
 
 Plans:
@@ -51,7 +75,8 @@ Plans:
 ### Phase 3: Private File URLs
 **Goal**: Files are served through ownership-checked routes with signed URLs, preventing unauthorized access
 **Depends on**: Phase 1
-**Research**: Unlikely (Laravel signed URLs, Storage facade, middleware -- established patterns)
+**Approach**: Custom using Laravel built-ins. `Storage::temporaryUrl()` + `URL::temporarySignedRoute()` are first-party -- no package needed.
+**Research**: Unlikely
 **Plans**: 3 plans
 
 Plans:
@@ -62,6 +87,7 @@ Plans:
 ### Phase 4: Credits/Token System
 **Goal**: Organizations can consume, purchase, and auto-refill credits alongside their subscription plan
 **Depends on**: Phase 1
+**Approach**: Custom. Needs tight integration with billing (Cashier) + tenant scoping. Packages fight you here.
 **Research**: Likely (ledger pattern design decisions, Cashier integration for credits-included-with-plan)
 **Research topics**: Single-entry vs double-entry ledger, credit balance caching strategy, Cashier metered billing vs custom ledger, top-up checkout flow via Stripe
 **Plans**: 4 plans
@@ -75,18 +101,20 @@ Plans:
 ### Phase 5: Feature Flags
 **Goal**: Features can be toggled per organization or user at runtime via admin panel
 **Depends on**: Phase 1
-**Research**: Unlikely (polymorphic table, Blade directive, Filament resource -- standard patterns)
+**Approach**: `laravel/pennant` -- First-party feature flags. DB driver, scopes by tenant or user, cached per-request. No reason to roll your own when Laravel ships one.
+**Research**: Unlikely (Pennant is well-documented, standard integration)
 **Plans**: 3 plans
 
 Plans:
-- [ ] 05-01: Feature flags model + migration + HasFeatureFlags trait (polymorphic org/user)
-- [ ] 05-02: @featureEnabled Blade directive + featureEnabled() helper + middleware
+- [ ] 05-01: Install Pennant + configure DB driver + define feature classes scoped to org/user
+- [ ] 05-02: Blade directive + middleware + helper integration with Pennant API
 - [ ] 05-03: Feature flags admin UI in Filament (toggle per org/user, bulk operations)
 
 ### Phase 6: Real-time Broadcasting
 **Goal**: Users receive instant notifications and live updates via Laravel Reverb
 **Depends on**: Phase 1
-**Research**: Likely (Laravel Reverb is newer, need current setup docs and tenant-aware channel patterns)
+**Approach**: `laravel/reverb` -- First-party WebSocket server. Notification system is already built -- Reverb makes it real-time. No vendor dependency (Pusher/Ably), runs on your own infra.
+**Research**: Likely (Reverb is newer, need current setup docs and tenant-aware channel patterns)
 **Research topics**: Reverb installation and configuration, private/presence channel authorization with tenant scoping, Echo client setup, notification channel integration
 **Plans**: 3 plans
 
@@ -98,17 +126,19 @@ Plans:
 ### Phase 7: Email Template System
 **Goal**: Branded, consistent email templates with admin test-send capability
 **Depends on**: Nothing (additive feature)
-**Research**: Unlikely (Laravel Mail, Blade components, Filament admin -- standard patterns)
+**Approach**: `spatie/laravel-database-mail-templates` -- DB-stored templates with Mustache placeholders. Avoids Blade/PHP execution in user-editable templates, which is the correct security boundary.
+**Research**: Unlikely (package is straightforward, standard integration)
 **Plans**: 2 plans
 
 Plans:
-- [ ] 07-01: Branded base email layout + common transactional email templates
+- [ ] 07-01: Install package + branded base layout + common transactional email templates in DB
 - [ ] 07-02: Test-send functionality in Filament admin (preview + send test email)
 
 ### Phase 8: Support Tickets
 **Goal**: Users can submit support requests that are stored and forwarded to the support email
 **Depends on**: Phase 1
-**Research**: Unlikely (model + form + mail notification -- standard CRUD)
+**Approach**: Custom. Two tables + a form. Lighter than adopting and then patching an unmaintained package.
+**Research**: Unlikely
 **Plans**: 2 plans
 
 Plans:
@@ -118,11 +148,12 @@ Plans:
 ### Phase 9: Onboarding Checklist
 **Goal**: New users see a dismissible checklist guiding them through initial setup steps
 **Depends on**: Nothing (additive feature)
-**Research**: Unlikely (JSON column, Livewire component -- standard patterns)
+**Approach**: `spatie/laravel-onboard` -- Define onboarding steps as `completeIf` closures on the User model. Lightweight computation-only, no heavy schema or admin UI to maintain. Rolling your own would be more code for the same result.
+**Research**: Unlikely (package is straightforward)
 **Plans**: 2 plans
 
 Plans:
-- [ ] 09-01: Onboarding data model (JSON on user) + configurable step definitions
+- [ ] 09-01: Install package + define onboarding step closures on User model + configurable steps
 - [ ] 09-02: Dismissible Livewire checklist component + dashboard integration
 
 ## Progress
@@ -132,7 +163,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9
 
 | Phase | Plans Complete | Status | Completed |
 |-------|---------------|--------|-----------|
-| 1. Tenant Data Scoping | 0/3 | Not started | - |
+| 1. Tenant Data Scoping | 1/3 | In progress | - |
 | 2. Account Suspension | 0/3 | Not started | - |
 | 3. Private File URLs | 0/3 | Not started | - |
 | 4. Credits/Token System | 0/4 | Not started | - |
