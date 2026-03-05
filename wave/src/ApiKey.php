@@ -4,9 +4,12 @@ namespace Wave;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Wave\Traits\BelongsToTenant;
 
 class ApiKey extends Model
 {
+    use BelongsToTenant;
+
     protected $table = 'api_keys';
 
     /**
@@ -16,6 +19,7 @@ class ApiKey extends Model
      */
     protected $fillable = [
         'user_id',
+        'organization_id',
         'name',
         'key',
         'last_used_at',

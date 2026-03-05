@@ -6,10 +6,13 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Wave\Jobs\CreateActivityLog;
+use Wave\TenantContext;
+use Wave\Traits\BelongsToTenant;
 
 /**
  * @property int $id
  * @property int $user_id
+ * @property int|null $organization_id
  * @property string $action
  * @property string|null $description
  * @property string|null $ip_address
@@ -24,8 +27,11 @@ use Wave\Jobs\CreateActivityLog;
  */
 class ActivityLog extends Model
 {
+    use BelongsToTenant;
+
     protected $fillable = [
         'user_id',
+        'organization_id',
         'action',
         'description',
         'ip_address',
@@ -71,6 +77,11 @@ class ActivityLog extends Model
             'user_agent' => request()->userAgent(),
             'metadata' => $metadata,
         ];
+
+        $context = app(TenantContext::class);
+        if ($context->has()) {
+            $data['organization_id'] = $context->get();
+        }
 
         // If queueing is enabled, dispatch to queue
         if (config('activity.queue', false)) {
