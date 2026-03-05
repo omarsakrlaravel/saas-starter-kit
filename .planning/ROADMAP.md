@@ -68,8 +68,8 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 02-01: Status enum + migrations on users and organizations tables
-- [ ] 02-02: Suspension middleware + route guards + user-facing suspension page
+- [x] 02-01: Status enum + migrations on users and organizations tables
+- [x] 02-02: Suspension middleware + route guards + user-facing suspension page
 - [ ] 02-03: Admin suspension controls in Filament (suspend/unsuspend actions, reason field)
 
 ### Phase 3: Private File URLs
@@ -164,7 +164,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9
 | Phase | Plans Complete | Status | Completed |
 |-------|---------------|--------|-----------|
 | 1. Tenant Data Scoping | 2/3 | In progress | - |
-| 2. Account Suspension | 0/3 | Not started | - |
+| 2. Account Suspension | 2/3 | In progress | - |
 | 3. Private File URLs | 0/3 | Not started | - |
 | 4. Credits/Token System | 0/4 | Not started | - |
 | 5. Feature Flags | 0/3 | Not started | - |
