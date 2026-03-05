@@ -1,6 +1,7 @@
 <?php
 
 use App\Providers\AppServiceProvider;
+use App\Http\Middleware\AccountStatusMiddleware;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -13,8 +14,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
         api: __DIR__.'/../routes/api.php',
+        channels: __DIR__.'/../routes/channels.php',
         commands: __DIR__.'/../routes/console.php',
-        // channels: __DIR__.'/../routes/channels.php',
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
@@ -28,9 +29,11 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->append(\Filament\Http\Middleware\DisableBladeIconComponents::class);
 
+        $middleware->web(AccountStatusMiddleware::class);
         $middleware->web(\RalphJSmit\Livewire\Urls\Middleware\LivewireUrlsMiddleware::class);
         $middleware->web(\Wave\Http\Middleware\HandleOrganizationInvite::class);
         $middleware->web(\Wave\Http\Middleware\TenantAware::class);
+        $middleware->appendToGroup('api', AccountStatusMiddleware::class);
 
         $middleware->throttleApi();
     })
