@@ -37,6 +37,7 @@ use Wave\Http\Middleware\InstallMiddleware;
 use Wave\Http\Middleware\Subscribed;
 use Wave\Http\Middleware\TokenMiddleware;
 use Wave\Overrides\Vite;
+use Wave\TenantContext;
 
 class WaveServiceProvider extends ServiceProvider
 {
@@ -49,6 +50,8 @@ class WaveServiceProvider extends ServiceProvider
         $this->app->singleton('wave', function () {
             return new Wave();
         });
+
+        $this->app->singleton(TenantContext::class);
 
         // Register Intervention Image Manager
         $this->app->singleton('image', function () {
