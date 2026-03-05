@@ -70,6 +70,14 @@
 - `laravel/pail ^1.2.2` - Log tailing
 - `spatie/laravel-ignition ^2.9` - Error page enhancement
 
+## Planned Dependencies
+
+**Adding in upcoming phases (4 packages):**
+- `laravel/pennant` -- Feature flags with DB driver (Phase 5)
+- `laravel/reverb` -- First-party WebSocket server (Phase 6)
+- `spatie/laravel-database-mail-templates` -- DB-stored email templates with Mustache (Phase 7)
+- `spatie/laravel-onboard` -- Onboarding step definitions as closures (Phase 9)
+
 ## Configuration
 
 **Environment:**

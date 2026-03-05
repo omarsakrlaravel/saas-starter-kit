@@ -30,15 +30,15 @@ Every SaaS built on this kit inherits correctness by default -- tenant data isol
 
 ### Active
 
-- [ ] Tenant data scoping (BelongsToTenant trait + TenantAware middleware + automatic org-scoped queries)
-- [ ] Credits/token system (ledger, transactions, consumption, top-ups, auto-refill, credits-included-with-plan)
-- [ ] Feature flags per org/user (polymorphic feature_flags table + @featureEnabled directive + admin UI)
-- [ ] Account suspension (status enum on users/orgs + middleware + admin controls)
-- [ ] Private/signed file URLs (ownership-checked access + PrivateFile middleware pattern)
-- [ ] Real-time broadcasting via Laravel Reverb (wire up existing notification system)
-- [ ] Email template system (branded base layout + Blade templates + test-send in admin)
-- [ ] Minimal support tickets (form -> DB -> email to support, no assignment/routing)
-- [ ] Onboarding checklist (JSON on user, dismissible component, configurable steps)
+- [ ] Tenant data scoping -- custom BelongsToTenant trait + TenantAware middleware + automatic org-scoped queries
+- [ ] Account suspension -- custom status enum on users/orgs + middleware + admin controls
+- [ ] Private/signed file URLs -- custom using Laravel built-ins (Storage::temporaryUrl, URL::temporarySignedRoute)
+- [ ] Credits/token system -- custom ledger, transactions, consumption, top-ups, auto-refill, Cashier integration
+- [ ] Feature flags per org/user -- `laravel/pennant` with DB driver, tenant/user scoping, admin UI
+- [ ] Real-time broadcasting -- `laravel/reverb` WebSocket server, tenant-aware channels, notification integration
+- [ ] Email template system -- `spatie/laravel-database-mail-templates` with Mustache, test-send in admin
+- [ ] Minimal support tickets -- custom form -> DB -> email to support, no assignment/routing
+- [ ] Onboarding checklist -- `spatie/laravel-onboard` with completeIf closures, dismissible Livewire component
 
 ### Out of Scope
 
@@ -63,8 +63,37 @@ Every SaaS built on this kit inherits correctness by default -- tenant data isol
 ## Constraints
 
 - **Backward compatible**: Existing migrations and data must not break -- changes are additive
-- **Laravel first-party preferred**: Use Reverb for broadcasting, Cashier for billing, built-in features where possible
+- **Laravel first-party preferred**: Use Reverb for broadcasting, Pennant for feature flags, Cashier for billing
 - **Starter kit philosophy**: Features should be foundational patterns, not full products; keep implementations lean
+- **Package vs custom**: Use packages when they solve the problem better than custom code. Roll your own when the problem is simple (~50-200 lines) or needs tight integration with existing systems.
+
+## Package Strategy
+
+**Already installed (3):**
+- `spatie/laravel-permission` -- RBAC with teams mode, wired up with Filament Shield
+- `laravel/cashier-stripe` -- Stripe billing, subscriptions, invoices, webhooks
+- Custom activity logging (`wave/src/ActivityLog.php`) -- queued writes, auto-cleanup, retention config
+
+**Adding (4):**
+
+| Package | Phase | Why package over custom |
+|---------|-------|----------------------|
+| `laravel/pennant` | 5: Feature Flags | First-party, DB driver, tenant/user scoping, cached per-request |
+| `laravel/reverb` | 6: Broadcasting | First-party WebSocket server, no vendor dependency (Pusher/Ably) |
+| `spatie/laravel-database-mail-templates` | 7: Email Templates | DB-stored Mustache templates, correct security boundary for user-editable content |
+| `spatie/laravel-onboard` | 9: Onboarding | `completeIf` closures, lightweight -- rolling your own would be more code |
+
+**Rolling your own (5):**
+
+| Feature | Phase | Why custom over package |
+|---------|-------|----------------------|
+| Tenant data scoping | 1 | Packages solve multi-DB problems we do not have |
+| Account suspension | 2 | A column, a middleware, a history table |
+| Private file URLs | 3 | Laravel built-ins: `Storage::temporaryUrl()` + `URL::temporarySignedRoute()` |
+| Credits ledger | 4 | Needs tight integration with Cashier + tenant scoping |
+| Support tickets | 8 | Two tables + a form. Lighter than adopting an unmaintained package |
+
+All four new packages are free and open source.
 
 ## Key Decisions
 
@@ -72,8 +101,10 @@ Every SaaS built on this kit inherits correctness by default -- tenant data isol
 |----------|-----------|---------|
 | Correctness over features | Tenant scoping, suspension, private files before polish features | -- Pending |
 | Credits as billing primitive | Alongside subscriptions, not replacing them | -- Pending |
-| Feature flags over config | Runtime toggleable per org/user, not deploy-time config | -- Pending |
-| Reverb for broadcasting | First-party Laravel, replaces need for Pusher | -- Pending |
+| Pennant for feature flags | First-party, runtime toggleable per org/user, not deploy-time config | Decided |
+| Reverb for broadcasting | First-party Laravel, replaces Pusher, runs on own infra | Decided |
+| DB mail templates via Spatie | Mustache placeholders avoid Blade/PHP execution in user content | Decided |
+| Onboarding via spatie/laravel-onboard | Lighter than custom, computation-only closures | Decided |
 | No outgoing webhooks | Domain events instead; defer webhook delivery infrastructure | -- Pending |
 
 ---

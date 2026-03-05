@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
+use Wave\ApiKey;
 
 class ApiKeysTableSeeder extends Seeder
 {
@@ -12,8 +12,6 @@ class ApiKeysTableSeeder extends Seeder
      */
     public function run(): void
     {
-
-        DB::table('api_keys')->delete();
-
+        ApiKey::query()->delete();
     }
 }

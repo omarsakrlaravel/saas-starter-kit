@@ -19,7 +19,6 @@ class PlansTableSeeder extends Seeder
 
         DB::table('plans')->insert([
             [
-                'id' => 1,
                 'name' => 'Basic',
                 'stripe_product_id' => 'prod_TyJPoGuYkQuCii',
                 'description' => 'Everything you need to get started.',
@@ -41,7 +40,6 @@ class PlansTableSeeder extends Seeder
                 'updated_at' => $now,
             ],
             [
-                'id' => 2,
                 'name' => 'Premium',
                 'stripe_product_id' => 'prod_TyJPG1DsinOeri',
                 'description' => 'For growing teams that need more power.',
@@ -63,7 +61,6 @@ class PlansTableSeeder extends Seeder
                 'updated_at' => $now,
             ],
             [
-                'id' => 3,
                 'name' => 'Pro',
                 'stripe_product_id' => 'prod_TyJP13Rtgpsuh3',
                 'description' => 'Unlimited access for scaling businesses.',

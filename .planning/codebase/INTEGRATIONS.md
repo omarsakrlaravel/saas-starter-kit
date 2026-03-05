@@ -119,10 +119,11 @@
 - Cleanup: `php artisan activity:clean`
 - Events logged: `Login`, `Logout` via `app/Listeners/LogSuccessfulLogin.php`, `LogSuccessfulLogout.php`
 
-## Broadcasting (Optional)
+## Broadcasting (Planned)
 
-- Pusher - Configured but disabled by default
-  - Env vars: `PUSHER_APP_ID`, `PUSHER_APP_KEY`, `PUSHER_APP_SECRET`, `PUSHER_APP_CLUSTER`
+- Laravel Reverb -- First-party WebSocket server (Phase 6). Replaces Pusher configuration.
+  - Current state: Pusher env vars configured but disabled by default
+  - Plan: Install `laravel/reverb`, remove Pusher dependency, run on own infra
 
 ---
 

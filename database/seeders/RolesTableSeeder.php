@@ -17,7 +17,6 @@ class RolesTableSeeder extends Seeder
 
         DB::table('roles')->insert([
             0 => [
-                'id' => 1,
                 'guard_name' => 'web',
                 'name' => 'admin',
                 'description' => 'The admin user has full access to all features including the ability to access the admin panel.',
