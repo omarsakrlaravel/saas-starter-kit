@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Enums\AccountStatus;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
@@ -17,6 +19,9 @@ class Organization extends Model
         'slug',
         'owner_user_id',
         'active',
+        'status',
+        'status_reason',
+        'status_expires_at',
     ];
 
     protected static function booted(): void
@@ -36,7 +41,54 @@ class Organization extends Model
     {
         return [
             'active' => 'boolean',
+            'status' => AccountStatus::class,
+            'status_expires_at' => 'datetime',
         ];
+    }
+
+    public function isActiveAccount(): bool
+    {
+        return ! $this->isRestricted() && ! $this->isSuspended();
+    }
+
+    public function isRestricted(): bool
+    {
+        return $this->status?->isRestricted() ?? false;
+    }
+
+    public function isSuspended(): bool
+    {
+        return $this->status?->isSuspended() ?? false;
+    }
+
+    public function isBlockedFromSession(): bool
+    {
+        return $this->isRestricted() || $this->isSuspended();
+    }
+
+    public function statusDisplay(): string
+    {
+        return $this->status?->label() ?? AccountStatus::Active->label();
+    }
+
+    public function organizationIsBlocked(): bool
+    {
+        return $this->isBlockedFromSession();
+    }
+
+    public function activeOrganizationOrSelf(): self
+    {
+        return $this;
+    }
+
+    public function scopeWithStatus(Builder $query, string $status): Builder
+    {
+        return $query->where('status', $status);
+    }
+
+    public function scopeActiveOrRestricted(Builder $query): Builder
+    {
+        return $query->whereIn('status', [AccountStatus::Active->value, AccountStatus::Restricted->value]);
     }
 
     public function owner(): BelongsTo
