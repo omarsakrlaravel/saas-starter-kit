@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Users;
 
+use App\Enums\AccountStatus;
 use App\Filament\Resources\Users\Pages\CreateUser;
 use App\Filament\Resources\Users\Pages\EditUser;
 use App\Filament\Resources\Users\Pages\ListUsers;
@@ -19,9 +20,12 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
@@ -98,6 +102,17 @@ class UserResource extends Resource
                                 TextInput::make('verification_code')
                                     ->maxLength(191),
                             ]),
+                        Section::make('Account Status')
+                            ->description('Current account status (change via table actions)')
+                            ->schema([
+                                Placeholder::make('status_display')
+                                    ->label('Status')
+                                    ->content(fn (?User $record): string => $record?->statusDisplay() ?? AccountStatus::Active->label()),
+                                Placeholder::make('status_reason_display')
+                                    ->label('Reason')
+                                    ->content(fn (?User $record): string => $record?->status_reason ?? '—')
+                                    ->visible(fn (?User $record): bool => filled($record?->status_reason)),
+                            ]),
                     ])
                     ->columnSpan(1),
             ]);
@@ -116,12 +131,24 @@ class UserResource extends Resource
                     ->defaultImageUrl(url('storage/demo/default.png')),
                 TextColumn::make('username')
                     ->searchable(),
+                TextColumn::make('status')
+                    ->badge()
+                    ->color(fn (AccountStatus $state): string => match ($state) {
+                        AccountStatus::Active => 'success',
+                        AccountStatus::Restricted => 'warning',
+                        AccountStatus::Suspended => 'danger',
+                    })
+                    ->formatStateUsing(fn (AccountStatus $state): string => $state->label()),
+                TextColumn::make('status_reason')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
+                SelectFilter::make('status')
+                    ->options(collect(AccountStatus::cases())->mapWithKeys(fn (AccountStatus $status) => [$status->value => $status->label()])->all()),
                 SelectFilter::make('subscription_status')
                     ->label('Subscription Status')
                     ->options([
@@ -145,6 +172,57 @@ class UserResource extends Resource
                     ->query(fn (Builder $query): Builder => $query->whereHas('organizations')),
             ])
             ->recordActions([
+                Action::make('suspend')
+                    ->icon('heroicon-o-no-symbol')
+                    ->color('danger')
+                    ->visible(fn (User $record): bool => ! $record->isSuspended())
+                    ->requiresConfirmation()
+                    ->modalDescription('This will change the user account status. Restricted users can access billing and support. Suspended users are fully blocked.')
+                    ->form([
+                        Textarea::make('reason')
+                            ->label('Suspension Reason')
+                            ->required()
+                            ->maxLength(1000),
+                        Select::make('status')
+                            ->options([
+                                'restricted' => 'Restrict (billing/warning)',
+                                'suspended' => 'Suspend (full block)',
+                            ])
+                            ->required()
+                            ->default('suspended'),
+                    ])
+                    ->action(function (User $record, array $data): void {
+                        $targetStatus = AccountStatus::from($data['status']);
+
+                        $record->recordStatusTransition(
+                            toStatus: $targetStatus,
+                            reason: $data['reason'],
+                            appliedById: auth()->id(),
+                        );
+
+                        Notification::make()
+                            ->title($record->name.' is now '.$targetStatus->label().'.')
+                            ->success()
+                            ->send();
+                    }),
+                Action::make('unsuspend')
+                    ->icon('heroicon-o-check-circle')
+                    ->color('success')
+                    ->visible(fn (User $record): bool => $record->isRestricted() || $record->isSuspended())
+                    ->requiresConfirmation()
+                    ->modalDescription('This will restore the user to active status.')
+                    ->action(function (User $record): void {
+                        $record->recordStatusTransition(
+                            toStatus: AccountStatus::Active,
+                            reason: 'Unsuspended by admin',
+                            appliedById: auth()->id(),
+                        );
+
+                        Notification::make()
+                            ->title($record->name.' has been restored to active status.')
+                            ->success()
+                            ->send();
+                    }),
                 EditAction::make(),
                 DeleteAction::make(),
                 Action::make('Impersonate')
