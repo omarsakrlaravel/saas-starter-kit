@@ -21,6 +21,7 @@ class UserFactory extends Factory
             'email_verified_at' => now(),
             'password' => $password ?: $password = bcrypt('secret'),
             'avatar' => 'demo/default.png',
+            'status' => 'active',
             'remember_token' => Str::random(10),
         ];
     }

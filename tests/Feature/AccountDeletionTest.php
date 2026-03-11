@@ -4,7 +4,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 
 beforeEach(function () {
-    $this->user = User::where('email', 'admin@admin.com')->first();
+    $this->user = User::where('email', 'admin@demo.com')->first();
     // Ensure user starts with no scheduled deletion
     $this->user->deletion_scheduled_at = null;
     $this->user->save();
@@ -147,7 +147,7 @@ it('deletion scheduled date is properly formatted', function () {
 });
 
 it('multiple users can have different deletion schedules', function () {
-    $user1 = User::where('email', 'admin@admin.com')->first();
+    $user1 = User::where('email', 'admin@demo.com')->first();
     $user2 = User::factory()->create();
 
     // Schedule deletion for user1

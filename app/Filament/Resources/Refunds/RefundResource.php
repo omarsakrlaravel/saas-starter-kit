@@ -20,7 +20,7 @@ class RefundResource extends Resource
 {
     protected static ?string $model = Transaction::class;
 
-    protected static string|BackedEnum|null $navigationIcon = 'phosphor-receipt-refund-duotone';
+    protected static string|BackedEnum|null $navigationIcon = 'phosphor-receipt-x-duotone';
 
     protected static ?int $navigationSort = 8;
 

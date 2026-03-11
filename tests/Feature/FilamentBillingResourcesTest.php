@@ -13,6 +13,7 @@ use App\Filament\Resources\Subscriptions\SubscriptionResource;
 use App\Filament\Resources\Transactions\TransactionResource;
 use App\Filament\Resources\Users\RelationManagers\ApiKeysRelationManager;
 use App\Filament\Resources\Users\UserResource;
+use BladeUI\Icons\Exceptions\SvgNotFound;
 
 // --- Navigation Group Tests ---
 
@@ -70,6 +71,11 @@ test('RefundResource belongs to Billing navigation group', function () {
     $property->setAccessible(true);
 
     expect($property->getValue())->toBe('Billing');
+});
+
+test('RefundResource navigation icon exists', function () {
+    expect(RefundResource::getNavigationIcon())->toBe('phosphor-receipt-x-duotone');
+    expect(fn () => svg((string) RefundResource::getNavigationIcon())->toHtml())->not->toThrow(SvgNotFound::class);
 });
 
 test('UserResource belongs to People navigation group', function () {

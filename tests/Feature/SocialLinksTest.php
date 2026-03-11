@@ -3,7 +3,7 @@
 use App\Models\User;
 
 it('allows user to add social media links', function () {
-    $user = User::where('email', 'admin@admin.com')->first();
+    $user = User::where('email', 'admin@demo.com')->first();
     $originalLinks = $user->social_links;
 
     $this->actingAs($user);
@@ -30,7 +30,7 @@ it('allows user to add social media links', function () {
 });
 
 it('returns null when no social links are set', function () {
-    $user = User::where('email', 'admin@admin.com')->first();
+    $user = User::where('email', 'admin@demo.com')->first();
     $originalLinks = $user->social_links;
 
     // Clear links
@@ -47,7 +47,7 @@ it('returns null when no social links are set', function () {
 });
 
 it('can update individual social links', function () {
-    $user = User::where('email', 'admin@admin.com')->first();
+    $user = User::where('email', 'admin@demo.com')->first();
     $originalLinks = $user->social_links;
 
     $this->actingAs($user);
@@ -77,7 +77,7 @@ it('can update individual social links', function () {
 });
 
 it('social links can be stored as json', function () {
-    $user = User::where('email', 'admin@admin.com')->first();
+    $user = User::where('email', 'admin@demo.com')->first();
     $originalLinks = $user->social_links;
 
     $links = [
@@ -105,7 +105,7 @@ it('social links can be stored as json', function () {
 });
 
 it('can remove social links by setting to null', function () {
-    $user = User::where('email', 'admin@admin.com')->first();
+    $user = User::where('email', 'admin@demo.com')->first();
     $originalLinks = $user->social_links;
 
     // Set some links
@@ -130,10 +130,10 @@ it('can remove social links by setting to null', function () {
 
 it('multiple users can have different social links', function () {
     // Get admin user and ensure we have a second user
-    $user1 = User::where('email', 'admin@admin.com')->first();
+    $user1 = User::where('email', 'admin@demo.com')->first();
 
     // Get or create a second user
-    $user2 = User::where('email', '!=', 'admin@admin.com')->first();
+    $user2 = User::where('email', '!=', 'admin@demo.com')->first();
     if (! $user2) {
         $user2 = User::factory()->create(['avatar' => 'demo/default.png']);
     }
@@ -170,7 +170,7 @@ it('multiple users can have different social links', function () {
 });
 
 it('can check if user has any social links', function () {
-    $user = User::where('email', 'admin@admin.com')->first();
+    $user = User::where('email', 'admin@demo.com')->first();
     $originalLinks = $user->social_links;
 
     // User with links

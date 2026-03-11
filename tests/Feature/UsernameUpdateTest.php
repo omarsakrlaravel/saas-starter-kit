@@ -4,7 +4,7 @@ use App\Models\User;
 
 it('allows user to update their username', function () {
     // Use an existing seeded user (admin user from seed)
-    $user = User::where('email', 'admin@admin.com')->first();
+    $user = User::where('email', 'admin@demo.com')->first();
     $originalUsername = $user->username;
 
     $this->actingAs($user);
@@ -39,7 +39,7 @@ it('validates username is unique when updating', function () {
 });
 
 it('allows username with dashes and underscores', function () {
-    $user = User::where('email', 'admin@admin.com')->first();
+    $user = User::where('email', 'admin@demo.com')->first();
     $originalUsername = $user->username;
 
     $this->actingAs($user);
@@ -57,7 +57,7 @@ it('allows username with dashes and underscores', function () {
 });
 
 it('user can keep their current username when updating profile', function () {
-    $user = User::where('email', 'admin@admin.com')->first();
+    $user = User::where('email', 'admin@demo.com')->first();
     $currentUsername = $user->username;
     $originalName = $user->name;
 
@@ -111,7 +111,7 @@ it('username field is included in user model fillable attributes', function () {
 });
 
 it('username can be updated through mass assignment', function () {
-    $user = User::where('email', 'admin@admin.com')->first();
+    $user = User::where('email', 'admin@demo.com')->first();
     $originalUsername = $user->username;
 
     $newUsername = 'mass_assigned_'.time();

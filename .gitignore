@@ -5,6 +5,7 @@
 /storage/pail
 /vendor
 .env
+.env.testing
 .env.backup
 .phpunit.result.cache
 .phpunit.cache
@@ -44,3 +45,4 @@ resources/plugins/*
 # But do not ignore the resources/plugins folder itself
 !resources/plugins/
 !resources/plugins/installed.json
+.playwright-mcp/

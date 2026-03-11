@@ -13,24 +13,20 @@ use Symfony\Component\HttpFoundation\Response;
 
 class AccountStatusMiddleware
 {
+    private const RESTRICTED_ALLOWED_ROUTES = [
+        'account/restricted',
+        'auth/*',
+        'settings/subscription*',
+        'settings/export',
+        'livewire*',
+        'broadcasting/auth',
+    ];
+
     /**
      * Handle an incoming request.
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $allowed = $request->is(
-            'account/restricted',
-            'billing*',
-            'support*',
-            'data-export',
-            'livewire*',
-            'broadcasting/auth',
-        );
-
-        if ($allowed) {
-            return $next($request);
-        }
-
         $user = $request->user();
 
         if (! $user instanceof User) {
@@ -44,14 +40,7 @@ class AccountStatusMiddleware
         }
 
         if ($status['state']->isRestricted()) {
-            if ($request->is(
-                'account/restricted',
-                'billing*',
-                'support*',
-                'data-export',
-                'livewire*',
-                'broadcasting/auth',
-            )) {
+            if ($request->is(...self::RESTRICTED_ALLOWED_ROUTES)) {
                 return $next($request);
             }
 

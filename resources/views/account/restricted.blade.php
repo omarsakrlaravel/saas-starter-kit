@@ -38,9 +38,8 @@
                 <p class="body">{{ $action_hint }}</p>
                 <p class="muted">What you can do next:</p>
                 <div class="links">
-                    <a class="link" href="/billing">Update billing</a>
-                    <a class="link" href="/support">Contact support</a>
-                    <a class="link" href="/data-export">Export data</a>
+                    <a class="link" href="/settings/subscription">Update billing</a>
+                    <a class="link" href="/settings/export">Export data</a>
                 </div>
             </main>
         </div>

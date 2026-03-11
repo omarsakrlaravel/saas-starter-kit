@@ -26,8 +26,8 @@ use Wave\Transaction;
 use function Pest\Livewire\livewire;
 
 beforeEach(function () {
-    $this->admin = User::where('email', 'admin@admin.com')->first()
-        ?? User::factory()->create(['email' => 'admin@admin.com']);
+    $this->admin = User::where('email', 'admin@demo.com')->first()
+        ?? User::factory()->create(['email' => 'admin@demo.com']);
     $this->actingAs($this->admin);
 });
 

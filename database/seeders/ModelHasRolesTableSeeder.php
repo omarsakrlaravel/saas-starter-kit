@@ -16,7 +16,7 @@ class ModelHasRolesTableSeeder extends Seeder
         DB::table('model_has_roles')->delete();
 
         $adminRole = DB::table('roles')->where('name', 'admin')->first();
-        $adminUser = DB::table('users')->where('email', 'admin@admin.com')->first();
+        $adminUser = DB::table('users')->where('email', 'admin@demo.com')->first();
 
         if ($adminRole && $adminUser) {
             DB::table('model_has_roles')->insert([

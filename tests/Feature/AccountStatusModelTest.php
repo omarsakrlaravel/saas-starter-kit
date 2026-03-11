@@ -90,7 +90,7 @@ it('filters users and organizations with status scopes', function () {
     $suspendedUser = User::factory()->create(['status' => AccountStatus::Suspended->value]);
 
     $userStatuses = User::query()
-        ->scopeActiveOrRestricted()
+        ->activeOrRestricted()
         ->orderBy('id')
         ->pluck('id')
         ->all();
@@ -120,7 +120,7 @@ it('filters users and organizations with status scopes', function () {
     ]);
 
     $orgStatuses = Organization::query()
-        ->scopeActiveOrRestricted()
+        ->activeOrRestricted()
         ->orderBy('id')
         ->pluck('id')
         ->all();
@@ -128,6 +128,6 @@ it('filters users and organizations with status scopes', function () {
     expect($orgStatuses)->toContain($activeOrg->id, $restrictedOrg->id)
         ->and($orgStatuses)->not()->toContain($suspendedOrg->id);
 
-    expect(User::query()->scopeWithStatus(AccountStatus::Suspended->value)->count())->toBe(1)
-        ->and(Organization::query()->scopeWithStatus(AccountStatus::Active->value)->count())->toBe(1);
+    expect(User::query()->withStatus(AccountStatus::Suspended->value)->count())->toBe(1)
+        ->and(Organization::query()->withStatus(AccountStatus::Active->value)->count())->toBe(1);
 });

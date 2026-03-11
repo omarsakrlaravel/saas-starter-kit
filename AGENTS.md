@@ -65,6 +65,10 @@ This project has domain-specific skills available. You MUST activate the relevan
 
 - Be concise in your explanations - focus on what's important rather than explaining obvious details.
 
+## Global Testing Preference
+
+- Prefer browser-based validation through Playwright whenever a behavior is verifiable in the UI.
+
 === boost rules ===
 
 # Laravel Boost
@@ -148,6 +152,7 @@ protected function isAccessible(User $user, ?string $path = null): bool
 
 - Every change must be programmatically tested. Write a new test or update an existing test, then run the affected tests to make sure they pass.
 - Run the minimum number of tests needed to ensure code quality and speed. Use `php artisan test --compact` with a specific filename or filter.
+- When a change is testable in a browser, use Playwright for browser testing.
 
 === folio/core rules ===
 

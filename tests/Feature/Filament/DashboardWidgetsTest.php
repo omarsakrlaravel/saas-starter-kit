@@ -20,6 +20,8 @@ use App\Filament\Widgets\RecentTransactionsWidget;
 use App\Filament\Widgets\RevenueChartWidget;
 use App\Filament\Widgets\StatsOverviewWidget;
 use App\Models\User;
+use Illuminate\Support\Carbon;
+use Wave\Invoice;
 use Wave\Plan;
 use Wave\Subscription;
 
@@ -185,6 +187,79 @@ test('revenue chart widget returns 12 months of labels', function () {
     expect($data['labels'])->toHaveCount(12)
         ->and($data['datasets'])->toHaveCount(1)
         ->and($data['datasets'][0]['data'])->toHaveCount(12);
+});
+
+test('revenue chart widget aggregates paid invoices by month', function () {
+    Carbon::setTestNow('2026-03-11 12:00:00');
+
+    try {
+        Invoice::query()->delete();
+
+        Invoice::factory()->create([
+            'billable_type' => 'user',
+            'billable_id' => $this->admin->id,
+            'status' => 'paid',
+            'amount_due' => 1500,
+            'amount_paid' => 1500,
+            'amount_remaining' => 0,
+            'subtotal' => 1500,
+            'tax' => 0,
+            'total' => 1500,
+            'paid_at' => Carbon::parse('2026-03-05 10:00:00'),
+        ]);
+
+        Invoice::factory()->create([
+            'billable_type' => 'user',
+            'billable_id' => $this->admin->id,
+            'status' => 'paid',
+            'amount_due' => 500,
+            'amount_paid' => 500,
+            'amount_remaining' => 0,
+            'subtotal' => 500,
+            'tax' => 0,
+            'total' => 500,
+            'paid_at' => Carbon::parse('2026-03-08 10:00:00'),
+        ]);
+
+        Invoice::factory()->create([
+            'billable_type' => 'user',
+            'billable_id' => $this->admin->id,
+            'status' => 'paid',
+            'amount_due' => 1000,
+            'amount_paid' => 1000,
+            'amount_remaining' => 0,
+            'subtotal' => 1000,
+            'tax' => 0,
+            'total' => 1000,
+            'paid_at' => Carbon::parse('2026-02-10 10:00:00'),
+        ]);
+
+        Invoice::factory()->open()->create([
+            'billable_type' => 'user',
+            'billable_id' => $this->admin->id,
+            'amount_due' => 2500,
+            'amount_paid' => 0,
+            'amount_remaining' => 2500,
+            'subtotal' => 2500,
+            'tax' => 0,
+            'total' => 2500,
+            'paid_at' => null,
+        ]);
+
+        $widget = new RevenueChartWidget();
+        $data = invade($widget)->getData();
+        $labels = collect($data['labels']);
+        $revenues = collect($data['datasets'][0]['data']);
+        $februaryIndex = $labels->search('Feb 2026');
+        $marchIndex = $labels->search('Mar 2026');
+
+        expect($februaryIndex)->not->toBeFalse()
+            ->and($marchIndex)->not->toBeFalse()
+            ->and($revenues[$februaryIndex])->toBe(10.0)
+            ->and($revenues[$marchIndex])->toBe(20.0);
+    } finally {
+        Carbon::setTestNow();
+    }
 });
 
 test('plan distribution widget returns doughnut type', function () {

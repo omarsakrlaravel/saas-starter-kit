@@ -14,7 +14,7 @@ return [
     ],
     'background' => [
         'color' => '#ffffff',
-        'image' => '/storage/auth/background.jpg',
+        'image' => '/themes/tailwind/images/authentication.png',
         'image_overlay_color' => '#ffffff',
         'image_overlay_opacity' => '1',
     ],

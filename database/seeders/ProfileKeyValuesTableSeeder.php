@@ -15,7 +15,7 @@ class ProfileKeyValuesTableSeeder extends Seeder
 
         DB::table('profile_key_values')->delete();
 
-        $adminUser = DB::table('users')->where('email', 'admin@admin.com')->first();
+        $adminUser = DB::table('users')->where('email', 'admin@demo.com')->first();
 
         if ($adminUser) {
             DB::table('profile_key_values')->insert([

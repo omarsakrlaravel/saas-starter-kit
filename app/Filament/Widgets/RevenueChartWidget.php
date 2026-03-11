@@ -4,7 +4,7 @@ namespace App\Filament\Widgets;
 
 use Filament\Widgets\ChartWidget;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
 use Wave\Invoice;
 use Wave\Plan;
@@ -48,7 +48,7 @@ class RevenueChartWidget extends ChartWidget
         ];
     }
 
-    protected function getRevenueData($months): array
+    protected function getRevenueData(Collection $months): array
     {
         if (Schema::hasTable('invoices')) {
             return $this->getInvoiceBasedRevenue($months);
@@ -60,26 +60,21 @@ class RevenueChartWidget extends ChartWidget
     /**
      * Revenue from paid invoices grouped by month.
      */
-    protected function getInvoiceBasedRevenue($months): array
+    protected function getInvoiceBasedRevenue(Collection $months): array
     {
         $invoiceRevenue = Invoice::query()
             ->where('status', 'paid')
-            ->where('paid_at', '>=', now()->subMonths(12)->startOfMonth())
-            ->select(
-                DB::raw('YEAR(paid_at) as year'),
-                DB::raw('MONTH(paid_at) as month'),
-                DB::raw('SUM(total) as total_revenue'),
-            )
-            ->groupBy(DB::raw('YEAR(paid_at)'), DB::raw('MONTH(paid_at)'))
-            ->get()
-            ->keyBy(fn ($item): string => $item->year.'-'.str_pad($item->month, 2, '0', STR_PAD_LEFT));
+            ->whereNotNull('paid_at')
+            ->whereBetween('paid_at', [
+                now()->subMonths(12)->startOfMonth(),
+                now()->endOfMonth(),
+            ])
+            ->get(['paid_at', 'total'])
+            ->groupBy(fn (Invoice $invoice): string => $invoice->paid_at->format('Y-m'))
+            ->map(fn (Collection $invoices): float => round($invoices->sum('total') / 100, 2));
 
-        return $months->map(function (Carbon $date) use ($invoiceRevenue) {
-            $key = $date->format('Y-m');
-            $revenue = $invoiceRevenue->get($key);
-
-            // Invoice totals are stored in cents
-            return $revenue ? round($revenue->total_revenue / 100, 2) : 0;
+        return $months->map(function (Carbon $date) use ($invoiceRevenue): float {
+            return (float) ($invoiceRevenue->get($date->format('Y-m')) ?? 0);
         })->toArray();
     }
 
