@@ -57,6 +57,8 @@ class AppServiceProvider extends ServiceProvider
 
         $this->setSchemaDefaultLength();
 
+        Feature::discover();
+
         Feature::resolveScopeUsing(function ($driver) {
             $organizationId = app(\Wave\TenantContext::class)->get();
             if ($organizationId) {
