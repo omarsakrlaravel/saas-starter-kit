@@ -10,6 +10,7 @@ use App\Filament\Resources\Users\RelationManagers\ActivityRelationManager;
 use App\Filament\Resources\Users\RelationManagers\ApiKeysRelationManager;
 use App\Filament\Resources\Users\RelationManagers\InvoicesRelationManager;
 use App\Filament\Resources\Users\RelationManagers\OrganizationsRelationManager;
+use App\Filament\Resources\Users\RelationManagers\StatusHistoryRelationManager;
 use App\Filament\Resources\Users\RelationManagers\SubscriptionsRelationManager;
 use App\Models\User;
 use BackedEnum;
@@ -244,6 +245,7 @@ class UserResource extends Resource
             OrganizationsRelationManager::class,
             ActivityRelationManager::class,
             ApiKeysRelationManager::class,
+            StatusHistoryRelationManager::class,
         ];
     }
 

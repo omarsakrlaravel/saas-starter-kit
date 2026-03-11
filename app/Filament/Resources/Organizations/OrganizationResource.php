@@ -8,6 +8,7 @@ use App\Filament\Resources\Organizations\Pages\EditOrganization;
 use App\Filament\Resources\Organizations\Pages\ListOrganizations;
 use App\Filament\Resources\Organizations\RelationManagers\InvoicesRelationManager;
 use App\Filament\Resources\Organizations\RelationManagers\MembersRelationManager;
+use App\Filament\Resources\Organizations\RelationManagers\StatusHistoryRelationManager;
 use App\Filament\Resources\Organizations\RelationManagers\SubscriptionsRelationManager;
 use App\Models\Organization;
 use BackedEnum;
@@ -311,6 +312,7 @@ class OrganizationResource extends Resource
             MembersRelationManager::class,
             SubscriptionsRelationManager::class,
             InvoicesRelationManager::class,
+            StatusHistoryRelationManager::class,
         ];
     }
 
