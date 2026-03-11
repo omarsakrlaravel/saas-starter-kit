@@ -22,6 +22,7 @@ use Illuminate\Support\ServiceProvider;
 use Laravel\Cashier\Cashier;
 use Laravel\Cashier\Events\WebhookHandled;
 use Laravel\Cashier\Events\WebhookReceived;
+use Laravel\Pennant\Feature;
 use Wave\File;
 
 class AppServiceProvider extends ServiceProvider
@@ -55,6 +56,15 @@ class AppServiceProvider extends ServiceProvider
         }
 
         $this->setSchemaDefaultLength();
+
+        Feature::resolveScopeUsing(function ($driver) {
+            $organizationId = app(\Wave\TenantContext::class)->get();
+            if ($organizationId) {
+                return \App\Models\Organization::find($organizationId);
+            }
+
+            return auth()->user();
+        });
 
         Gate::policy(File::class, FilePolicy::class);
 

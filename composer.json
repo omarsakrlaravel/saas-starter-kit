@@ -27,6 +27,7 @@
         "laravel/framework": "^12.51",
         "laravel/nightwatch": "^1.22",
         "laravel/pail": "^1.2.2",
+        "laravel/pennant": "^1.21",
         "laravel/tinker": "^2.10.1",
         "laravel/ui": "^4.6",
         "livewire/livewire": "^3.6.4",
