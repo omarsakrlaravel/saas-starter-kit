@@ -5,33 +5,33 @@
 See: .planning/PROJECT.md (updated 2026-02-26)
 
 **Core value:** Every SaaS built on this kit inherits correctness by default -- tenant data isolation, secure file access, and proper account lifecycle management are baked in, not bolted on.
-**Current focus:** Phase 2 -- Account Suspension
+**Current focus:** Phase 2 -- Account Suspension (COMPLETE)
 
 ## Current Position
 
-Phase: 2 of 9 (Account Suspension)
-Plan: 2 of 3 in current phase
-Status: In progress
-Last activity: 2026-03-11 -- Completed 01-03-PLAN.md (Phase 1 now fully complete)
+Phase: 2 of 9 (Account Suspension) -- COMPLETE
+Plan: 3 of 3 in current phase (all done)
+Status: Phase complete
+Last activity: 2026-03-11 -- Completed 02-03-PLAN.md
 
-Progress: ████████░░ 80%
+Progress: ██████████ 100% (phase 2)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 5
-- Average duration: 17 min
-- Total execution time: 1.4 hours
+- Total plans completed: 6
+- Average duration: 16 min
+- Total execution time: 1.6 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1. Tenant Data Scoping | 3 | 62 min | 21 min |
-| 2. Account Suspension | 2 | 16 min | 8 min |
+| 2. Account Suspension | 3 | 28 min | 9 min |
 
 **Recent Trend:**
-- Last 5 plans: 36 min, 14 min, 8 min, 8 min, 12 min
+- Last 5 plans: 14 min, 8 min, 8 min, 12 min, 12 min
 - Trend: Stable
 
 ## Accumulated Context
@@ -53,10 +53,13 @@ Recent decisions affecting current work:
 - 02-02: Centralized web/API/broadcast/queue access checks in a single status middleware and shared queue middleware pattern.
 - 02-02: Restricted users receive a dedicated landing page via allowlisted routes; suspended users are terminally blocked.
 - 02-02: Activity log job execution now re-checks account status to protect asynchronous work.
+- 02-03: Status transitions go through table actions only, not form edits, to enforce history recording.
+- 02-03: recordStatusTransition lives directly on User and Organization models rather than a trait.
+- 02-03: Relation managers tested directly as Livewire components due to Filament v4 lazy loading of tabs.
 
 ### Deferred Issues
 
-None logged from 01-03.
+None logged from 02-03.
 
 ### Blockers/Concerns
 
@@ -65,6 +68,6 @@ None logged from 01-03.
 
 ## Session Continuity
 
-Last session: 2026-03-11 21:42 +03
-Stopped at: Completed 01-03-PLAN.md
+Last session: 2026-03-11 21:57 +03
+Stopped at: Completed 02-03-PLAN.md (Phase 2 fully complete)
 Resume file: None
