@@ -1,6 +1,7 @@
 <?php
 
     use function Laravel\Folio\{middleware, name};
+    use App\Enums\FileAccessLevel;
     use Filament\Forms\Concerns\InteractsWithForms;
     use Filament\Forms\Contracts\HasForms;
     use Filament\Forms\Form;
@@ -10,6 +11,7 @@
 	use Wave\Traits\HasDynamicFields;
     use Wave\ApiKey;
     use Wave\ActivityLog;
+    use Wave\Services\FileService;
 
 	middleware(['auth', 'verified']);
     name('settings.profile');
@@ -73,15 +75,34 @@
 		}
 
 	private function saveNewUserAvatar(){
-		$path = 'avatars/' . auth()->user()->username . '.png';
 		$image = app('image')->read($this->avatar)->resize(800, 800);
-		Storage::disk('public')->put($path, $image->encode());
-		auth()->user()->avatar = $path;
-		auth()->user()->save();
-		
+		$encoded = (string) $image->encode();
+
+		$fileService = app(FileService::class);
+		$user = auth()->user();
+
+		// Delete previous avatar file if exists
+		$oldFile = $user->avatarFile;
+		if ($oldFile) {
+			$fileService->delete($oldFile);
+		}
+
+		$file = $fileService->storeFromContent(
+			content: $encoded,
+			filename: $user->username . '.png',
+			mimeType: 'image/png',
+			user: $user,
+			directory: 'avatars',
+			accessLevel: FileAccessLevel::AppPublic,
+			fileable: $user,
+		);
+
+		$user->avatar = $file->uuid;
+		$user->save();
+
 		// Log avatar update
 		ActivityLog::log('avatar_updated', 'Profile avatar was updated');
-		
+
 		// This will update/refresh the avatar in the sidebar
 		$this->js('window.dispatchEvent(new CustomEvent("refresh-avatar"));');
 	}	private function saveFormFields($state){
