@@ -83,7 +83,7 @@
 		@endfor
 	@else
 		<x-filament::avatar
-            x-data="{ src: '', refreshAvatarSrc(){ this.src='{{ $src }}' + '?' + new Date().getTime() } }" 
+            x-data="{ src: '', refreshAvatarSrc(){ const base = '{!! $src !!}'; this.src = base.includes('signature=') ? base : (base.includes('?') ? base + '&_=' + new Date().getTime() : base + '?' + new Date().getTime()) } }" 
             x-init="refreshAvatarSrc(); $nextTick(function(){ $el.style.display='block'; })" 
             @refresh-avatar.window="refreshAvatarSrc()" 
             x-bind:src="src"

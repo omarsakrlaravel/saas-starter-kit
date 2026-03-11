@@ -220,7 +220,7 @@
 			<form wire:submit="save" class="w-full">
 				<div class="relative flex flex-col mt-5 lg:px-10">
 					<div class="relative flex-shrink-0 w-32 h-32 cursor-pointer group">
-						<img id="preview" src="{{ auth()->user()->avatar() . '?' . time() }}" class="w-32 h-32 rounded-full">
+						<img id="preview" src="{{ auth()->user()->avatar() }}" class="w-32 h-32 rounded-full">
 
 						<div class="absolute inset-0 w-full h-full">
 							<input type="file" id="upload" class="absolute inset-0 z-20 w-full h-full opacity-0 cursor-pointer group">

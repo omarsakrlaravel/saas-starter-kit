@@ -56,7 +56,7 @@
         <div @click.away="open = false" class="flex relative items-center ml-3 h-full" x-data="{ open: false }">
             <div>
                 <button @click="open = !open" class="flex text-sm rounded-full border-2 border-transparent transition duration-150 ease-in-out focus:outline-none focus:border-zinc-300" id="user-menu" aria-label="User menu" aria-haspopup="true" x-bind:aria-expanded="open" aria-expanded="true">
-                    <img class="w-8 h-8 rounded-full" src="{{ auth()->user()->avatar() . '?' . time() }}" alt="{{ auth()->user()->name }}'s Avatar">
+                    <img class="w-8 h-8 rounded-full" src="{{ auth()->user()->avatar() }}" alt="{{ auth()->user()->name }}'s Avatar">
                 </button>
             </div>
 
