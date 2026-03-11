@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-26)
 
 **Core value:** Every SaaS built on this kit inherits correctness by default -- tenant data isolation, secure file access, and proper account lifecycle management are baked in, not bolted on.
-**Current focus:** Phase 3 -- Private File URLs (IN PROGRESS)
+**Current focus:** Phase 5 -- Feature Flags (IN PROGRESS)
 
 ## Current Position
 
-Phase: 3 of 9 (Private File URLs) -- COMPLETE
-Plan: 4 of 4 in current phase (all complete)
-Status: Phase 3 complete, ready for phase 4 transition
-Last activity: 2026-03-11 -- Completed 03-03-PLAN.md (final plan in phase 3)
+Phase: 5 of 9 (Feature Flags) -- IN PROGRESS
+Plan: 1 of 3 in current phase (complete)
+Status: Plan 05-01 complete, ready for Plan 05-02 (admin UI)
+Last activity: 2026-03-12 -- Completed 05-01-PLAN.md (Pennant infrastructure)
 
-Progress: ██████████ 100% (phase 3)
+Progress: ███░░░░░░░ 33% (phase 5)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 10
-- Average duration: 12 min
-- Total execution time: 2.0 hours
+- Total plans completed: 11
+- Average duration: 11 min
+- Total execution time: 2.1 hours
 
 **By Phase:**
 
@@ -30,10 +30,11 @@ Progress: ██████████ 100% (phase 3)
 | 1. Tenant Data Scoping | 3 | 62 min | 21 min |
 | 2. Account Suspension | 3 | 28 min | 9 min |
 | 3. Private File URLs | 4 | 29 min | 7 min |
+| 5. Feature Flags | 1 | 8 min | 8 min |
 
 **Recent Trend:**
-- Last 5 plans: 5 min, 8 min, 8 min, 8 min, 8 min
-- Trend: Stable/Accelerating
+- Last 5 plans: 8 min, 8 min, 8 min, 8 min, 8 min
+- Trend: Stable
 
 ## Accumulated Context
 
@@ -65,10 +66,14 @@ Recent decisions affecting current work:
 - 03-03: User::avatar() handles only two cases (avatarFile signed URL or default) -- no legacy path handling since this is a new project.
 - 03-03: Filament FileUpload uses saveUploadedFileUsing/getUploadedFileUsing callbacks for FileService integration instead of direct disk storage.
 - 03-03: MembersRelationManager also updated for consistent avatar display across all admin surfaces (not originally in plan).
+- 05-01: Feature::resolveScopeUsing resolves to Organization via TenantContext, falling back to auth user when no org context.
+- 05-01: Kill switches use Feature::for(null)->active() for global scope, not tenant scope.
+- 05-01: Feature classes use #[Name] attribute (Laravel 12 convention) not $name property.
+- 05-01: FeatureDefinition stores admin metadata separately from Pennant's resolved values table.
 
 ### Deferred Issues
 
-None logged from 03-01, 03-02, 03-03, or 03-04.
+None logged from 03-01, 03-02, 03-03, 03-04, or 05-01.
 
 ### Blockers/Concerns
 
@@ -77,6 +82,6 @@ None logged from 03-01, 03-02, 03-03, or 03-04.
 
 ## Session Continuity
 
-Last session: 2026-03-11
-Stopped at: Phase 3 complete (all 4 plans done), ready for phase 4 transition
+Last session: 2026-03-12
+Stopped at: Plan 05-01 complete, ready for Plan 05-02 (admin UI)
 Resume file: None
