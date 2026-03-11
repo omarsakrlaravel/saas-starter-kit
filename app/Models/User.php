@@ -3,12 +3,13 @@
 namespace App\Models;
 
 use App\Enums\AccountStatus;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 use Wave\ActivityLog;
 use Wave\Invoice;
@@ -114,6 +115,32 @@ class User extends WaveUser
     public function scopeActiveOrRestricted(Builder $query): Builder
     {
         return $query->whereIn('status', [AccountStatus::Active->value, AccountStatus::Restricted->value]);
+    }
+
+    public function statusHistories(): MorphMany
+    {
+        return $this->morphMany(AccountStatusHistory::class, 'suspendable');
+    }
+
+    public function recordStatusTransition(AccountStatus $toStatus, ?string $reason = null, ?int $appliedById = null, ?Carbon $expiresAt = null): AccountStatusHistory
+    {
+        $history = $this->statusHistories()->create([
+            'from_status' => $this->status?->value,
+            'to_status' => $toStatus->value,
+            'reason' => $reason,
+            'applied_by' => $appliedById,
+            'expires_at' => $expiresAt,
+            'applied_at' => now(),
+            'reference_code' => 'ACCT-'.strtoupper(Str::random(10)),
+        ]);
+
+        $this->update([
+            'status' => $toStatus->value,
+            'status_reason' => $reason,
+            'status_expires_at' => $expiresAt,
+        ]);
+
+        return $history;
     }
 
     public function activityLogs(): HasMany
