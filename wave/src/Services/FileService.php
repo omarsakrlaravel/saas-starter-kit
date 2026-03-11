@@ -3,6 +3,7 @@
 namespace Wave\Services;
 
 use App\Enums\FileAccessLevel;
+use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
@@ -10,7 +11,6 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Wave\File;
-use Wave\Organization;
 
 class FileService
 {

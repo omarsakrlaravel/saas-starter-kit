@@ -17,6 +17,11 @@ Route::get('organization/invite/{organization}/accept', '\Wave\Http\Controllers\
 
 Route::view('install', 'wave::install')->name('wave.install');
 
+/********** File Download Route ***********/
+Route::get('files/{file}/download', \Wave\Http\Controllers\FileDownloadController::class)
+    ->name('files.download')
+    ->middleware(['auth', 'signed']);
+
 Route::group(['middleware' => 'auth'], function () {
     Route::redirect('settings', 'settings/profile')->name('settings');
 
