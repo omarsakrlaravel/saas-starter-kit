@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 ## Current Position
 
 Phase: 5 of 9 (Feature Flags) -- IN PROGRESS
-Plan: 1 of 3 in current phase (complete)
-Status: Plan 05-01 complete, ready for Plan 05-02 (admin UI)
-Last activity: 2026-03-12 -- Completed 05-01-PLAN.md (Pennant infrastructure)
+Plan: 2 of 3 in current phase (complete)
+Status: Plan 05-02 complete, ready for Plan 05-03 (Blade/middleware integration)
+Last activity: 2026-03-12 -- Completed 05-02-PLAN.md (admin UI)
 
-Progress: ███░░░░░░░ 33% (phase 5)
+Progress: ██████░░░░ 67% (phase 5)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 11
+- Total plans completed: 12
 - Average duration: 11 min
-- Total execution time: 2.1 hours
+- Total execution time: 2.3 hours
 
 **By Phase:**
 
@@ -30,10 +30,10 @@ Progress: ███░░░░░░░ 33% (phase 5)
 | 1. Tenant Data Scoping | 3 | 62 min | 21 min |
 | 2. Account Suspension | 3 | 28 min | 9 min |
 | 3. Private File URLs | 4 | 29 min | 7 min |
-| 5. Feature Flags | 1 | 8 min | 8 min |
+| 5. Feature Flags | 2 | 20 min | 10 min |
 
 **Recent Trend:**
-- Last 5 plans: 8 min, 8 min, 8 min, 8 min, 8 min
+- Last 5 plans: 8 min, 8 min, 8 min, 8 min, 12 min
 - Trend: Stable
 
 ## Accumulated Context
@@ -70,10 +70,13 @@ Recent decisions affecting current work:
 - 05-01: Kill switches use Feature::for(null)->active() for global scope, not tenant scope.
 - 05-01: Feature classes use #[Name] attribute (Laravel 12 convention) not $name property.
 - 05-01: FeatureDefinition stores admin metadata separately from Pennant's resolved values table.
+- 05-02: Kill switch section uses wire:confirm for browser-native confirmation, not Filament requiresConfirmation().
+- 05-02: ToggleColumn afterStateUpdated calls Feature::purge on activate and Feature::deactivateForEveryone on deactivate.
+- 05-02: Filament v4 $view property is non-static; $navigationGroup type includes UnitEnum.
 
 ### Deferred Issues
 
-None logged from 03-01, 03-02, 03-03, 03-04, or 05-01.
+None logged from 03-01, 03-02, 03-03, 03-04, 05-01, or 05-02.
 
 ### Blockers/Concerns
 
@@ -83,5 +86,5 @@ None logged from 03-01, 03-02, 03-03, 03-04, or 05-01.
 ## Session Continuity
 
 Last session: 2026-03-12
-Stopped at: Plan 05-01 complete, ready for Plan 05-02 (admin UI)
+Stopped at: Plan 05-02 complete, ready for Plan 05-03 (Blade/middleware integration)
 Resume file: None
