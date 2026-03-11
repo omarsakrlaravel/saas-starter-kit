@@ -3,6 +3,7 @@
 use App\Enums\FeatureFlagType;
 use App\Filament\Pages\FeatureFlagsPage;
 use App\Models\FeatureDefinition;
+use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Pennant\Feature;
@@ -13,6 +14,8 @@ use function Pest\Livewire\livewire;
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
+    Feature::flushCache();
+
     if (! Role::where('name', 'admin')->where('guard_name', 'web')->exists()) {
         Role::create(['name' => 'admin', 'guard_name' => 'web']);
     }
@@ -144,4 +147,96 @@ test('feature table has override for org action', function () {
 
     livewire(FeatureFlagsPage::class)
         ->assertTableActionExists('override_for_org');
+});
+
+test('feature table toggle column updates is_active and records last_changed_by', function () {
+    $feature = FeatureDefinition::create([
+        'name' => 'test-plan-feature',
+        'type' => FeatureFlagType::PlanGated,
+        'description' => 'Plan-gated feature',
+        'is_active' => false,
+    ]);
+
+    livewire(FeatureFlagsPage::class)
+        ->assertTableColumnStateSet('is_active', false, $feature)
+        ->call('updateTableColumnState', 'is_active', (string) $feature->getKey(), true);
+
+    $feature->refresh();
+    expect($feature->is_active)->toBeTrue()
+        ->and($feature->last_changed_by)->toBe($this->admin->id);
+
+    $this->assertDatabaseHas('activity_logs', [
+        'action' => 'feature_flag_toggled',
+        'user_id' => $this->admin->id,
+    ]);
+});
+
+test('per-org override action activates feature for specific organization', function () {
+    $feature = FeatureDefinition::create([
+        'name' => 'test-rollout-override',
+        'type' => FeatureFlagType::Rollout,
+        'description' => 'A rollout feature for override test',
+        'is_active' => true,
+    ]);
+
+    $org = Organization::create([
+        'name' => 'Override Test Org',
+        'slug' => 'override-test-org',
+        'owner_user_id' => $this->admin->id,
+    ]);
+
+    // First deactivate the feature for this org explicitly
+    Feature::for($org)->deactivate('test-rollout-override');
+    Feature::flushCache();
+    expect(Feature::for($org)->active('test-rollout-override'))->toBeFalse();
+
+    // Now use the override action to activate it
+    livewire(FeatureFlagsPage::class)
+        ->callTableAction('override_for_org', $feature->id, [
+            'organization_id' => $org->id,
+            'is_active' => true,
+        ])
+        ->assertNotified();
+
+    Feature::flushCache();
+    expect(Feature::for($org)->active('test-rollout-override'))->toBeTrue();
+
+    $feature->refresh();
+    expect($feature->last_changed_by)->toBe($this->admin->id);
+
+    $this->assertDatabaseHas('activity_logs', [
+        'action' => 'feature_flag_override',
+        'user_id' => $this->admin->id,
+    ]);
+});
+
+test('per-org override action deactivates feature for specific organization', function () {
+    $feature = FeatureDefinition::create([
+        'name' => 'test-rollout-deactivate',
+        'type' => FeatureFlagType::Rollout,
+        'description' => 'A rollout feature for deactivation override',
+        'is_active' => true,
+    ]);
+
+    $org = Organization::create([
+        'name' => 'Deactivate Override Org',
+        'slug' => 'deactivate-override-org',
+        'owner_user_id' => $this->admin->id,
+    ]);
+
+    // Activate the feature for this org first
+    Feature::for($org)->activate('test-rollout-deactivate');
+    Feature::flushCache();
+    expect(Feature::for($org)->active('test-rollout-deactivate'))->toBeTrue();
+
+    // Use the override action to deactivate it
+    livewire(FeatureFlagsPage::class)
+        ->callTableAction('override_for_org', $feature->id, [
+            'organization_id' => $org->id,
+            'is_active' => false,
+        ])
+        ->assertNotified();
+
+    Feature::flushCache();
+    expect(Feature::for($org)->active('test-rollout-deactivate'))->toBeFalse();
 });
