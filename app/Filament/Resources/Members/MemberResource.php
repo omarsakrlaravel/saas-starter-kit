@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Members;
 
+use App\Enums\FileAccessLevel;
 use App\Filament\Clusters\MembersManager;
 use App\Filament\Resources\Members\Pages\CreateMember;
 use App\Filament\Resources\Members\Pages\EditMember;
@@ -25,6 +26,8 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Hash;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
+use Wave\Services\FileService;
 
 class MemberResource extends Resource
 {
@@ -78,7 +81,58 @@ class MemberResource extends Resource
                                     ->required(fn (string $context): bool => $context === 'create'),
                                 FileUpload::make('avatar')
                                     ->image()
+                                    ->disk('local')
+                                    ->directory('avatars')
+                                    ->visibility('private')
                                     ->dehydrated(fn ($state) => filled($state))
+                                    ->saveUploadedFileUsing(function (TemporaryUploadedFile $file, ?User $record) {
+                                        if (! $record) {
+                                            return null;
+                                        }
+
+                                        $fileService = app(FileService::class);
+
+                                        $oldFile = $record->avatarFile;
+                                        if ($oldFile) {
+                                            $fileService->delete($oldFile);
+                                            $record->unsetRelation('avatarFile');
+                                        }
+
+                                        $uploadedFile = new \Illuminate\Http\UploadedFile(
+                                            $file->getRealPath(),
+                                            $file->getClientOriginalName(),
+                                            $file->getMimeType(),
+                                        );
+
+                                        $fileRecord = $fileService->store(
+                                            file: $uploadedFile,
+                                            user: $record,
+                                            directory: 'avatars',
+                                            accessLevel: FileAccessLevel::AppPublic,
+                                            fileable: $record,
+                                        );
+
+                                        return $fileRecord->uuid;
+                                    })
+                                    ->getUploadedFileUsing(function (?User $record): ?array {
+                                        if (! $record) {
+                                            return null;
+                                        }
+
+                                        $file = $record->avatarFile;
+                                        if (! $file) {
+                                            return null;
+                                        }
+
+                                        $fileService = app(FileService::class);
+
+                                        return [
+                                            'name' => $file->original_name,
+                                            'size' => $file->size_bytes,
+                                            'type' => $file->mime_type,
+                                            'url' => $fileService->signedUrl($file),
+                                        ];
+                                    })
                                     ->columnSpanFull(),
                             ])
                             ->columns(2),
@@ -107,7 +161,8 @@ class MemberResource extends Resource
                     ->searchable(),
                 ImageColumn::make('avatar')
                     ->circular()
-                    ->defaultImageUrl(url('storage/demo/default.png')),
+                    ->defaultImageUrl(url('storage/demo/default.png'))
+                    ->getStateUsing(fn (User $record): string => $record->avatar()),
                 TextColumn::make('username')
                     ->searchable(),
             ])

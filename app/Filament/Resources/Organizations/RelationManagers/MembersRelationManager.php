@@ -50,7 +50,8 @@ class MembersRelationManager extends RelationManager
             ->columns([
                 ImageColumn::make('avatar')
                     ->circular()
-                    ->defaultImageUrl(url('storage/demo/default.png')),
+                    ->defaultImageUrl(url('storage/demo/default.png'))
+                    ->getStateUsing(fn ($record): string => $record->avatar()),
                 TextColumn::make('name')
                     ->searchable(),
                 TextColumn::make('email')

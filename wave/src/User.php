@@ -14,9 +14,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Lab404\Impersonate\Models\Impersonate;
 use Laravel\Cashier\Billable;
@@ -751,9 +751,28 @@ class User extends AuthUser implements FilamentUser, HasAvatar, JWTSubject
         }
     }
 
-    public function avatar()
+    public function avatarFile(): MorphOne
     {
-        return Storage::url($this->avatar);
+        return $this->morphOne(File::class, 'fileable');
+    }
+
+    public function avatar(): string
+    {
+        if (empty($this->attributes['avatar'])) {
+            return url('storage/demo/default.png');
+        }
+
+        $file = $this->avatarFile;
+        if ($file) {
+            return app(\Wave\Services\FileService::class)->signedUrl($file);
+        }
+
+        return url('storage/demo/default.png');
+    }
+
+    public function scopeWithAvatarFile(Builder $query): Builder
+    {
+        return $query->with('avatarFile');
     }
 
     /**
