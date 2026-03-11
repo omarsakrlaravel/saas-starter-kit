@@ -6,12 +6,14 @@ use App\Listeners\ApplySubscriptionMetadata;
 use App\Listeners\HandleStripeWebhook;
 use App\Listeners\LogSuccessfulLogin;
 use App\Listeners\LogSuccessfulLogout;
+use App\Policies\FilePolicy;
 use Exception;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
@@ -20,6 +22,7 @@ use Illuminate\Support\ServiceProvider;
 use Laravel\Cashier\Cashier;
 use Laravel\Cashier\Events\WebhookHandled;
 use Laravel\Cashier\Events\WebhookReceived;
+use Wave\File;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -52,6 +55,8 @@ class AppServiceProvider extends ServiceProvider
         }
 
         $this->setSchemaDefaultLength();
+
+        Gate::policy(File::class, FilePolicy::class);
 
         // Register activity log event listeners
         Event::listen(Login::class, LogSuccessfulLogin::class);
