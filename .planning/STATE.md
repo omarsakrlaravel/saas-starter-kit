@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-26)
 
 **Core value:** Every SaaS built on this kit inherits correctness by default -- tenant data isolation, secure file access, and proper account lifecycle management are baked in, not bolted on.
-**Current focus:** Phase 2 -- Account Suspension (COMPLETE)
+**Current focus:** Phase 3 -- Private File URLs (IN PROGRESS)
 
 ## Current Position
 
-Phase: 2 of 9 (Account Suspension) -- COMPLETE
-Plan: 3 of 3 in current phase (all done)
-Status: Phase complete
-Last activity: 2026-03-11 -- Completed 02-03-PLAN.md
+Phase: 3 of 9 (Private File URLs) -- IN PROGRESS
+Plan: 1 of 4 in current phase (complete)
+Status: Plan 03-01 complete, proceeding to 03-02
+Last activity: 2026-03-11 -- Completed 03-01-PLAN.md
 
-Progress: ██████████ 100% (phase 2)
+Progress: ██▌░░░░░░░ 25% (phase 3)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 6
-- Average duration: 16 min
-- Total execution time: 1.6 hours
+- Total plans completed: 7
+- Average duration: 14 min
+- Total execution time: 1.7 hours
 
 **By Phase:**
 
@@ -29,9 +29,10 @@ Progress: ██████████ 100% (phase 2)
 |-------|-------|-------|----------|
 | 1. Tenant Data Scoping | 3 | 62 min | 21 min |
 | 2. Account Suspension | 3 | 28 min | 9 min |
+| 3. Private File URLs | 1 | 8 min | 8 min |
 
 **Recent Trend:**
-- Last 5 plans: 14 min, 8 min, 8 min, 12 min, 12 min
+- Last 5 plans: 8 min, 8 min, 12 min, 12 min, 8 min
 - Trend: Stable
 
 ## Accumulated Context
@@ -56,10 +57,12 @@ Recent decisions affecting current work:
 - 02-03: Status transitions go through table actions only, not form edits, to enforce history recording.
 - 02-03: recordStatusTransition lives directly on User and Organization models rather than a trait.
 - 02-03: Relation managers tested directly as Livewire components due to Filament v4 lazy loading of tabs.
+- 03-01: FileFactory defaults organization_id to null because Organization lacks HasFactory trait; forOrganization() state handles explicit assignment.
+- 03-01: Wave model policies registered via Gate::policy() in AppServiceProvider since auto-discovery fails for non-App namespace models.
 
 ### Deferred Issues
 
-None logged from 02-03.
+None logged from 03-01.
 
 ### Blockers/Concerns
 
@@ -68,6 +71,6 @@ None logged from 02-03.
 
 ## Session Continuity
 
-Last session: 2026-03-11 21:57 +03
-Stopped at: Completed 02-03-PLAN.md (Phase 2 fully complete)
+Last session: 2026-03-11
+Stopped at: Completed 03-01-PLAN.md (Phase 3, plan 1 of 4)
 Resume file: None
