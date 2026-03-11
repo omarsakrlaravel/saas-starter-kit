@@ -36,9 +36,9 @@ None
 - Integer phases (1, 2, 3): Planned milestone work
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
-- [ ] **Phase 1: Tenant Data Scoping** - BelongsToTenant trait, TenantAware middleware, automatic org-scoped queries `[custom]`
-- [ ] **Phase 2: Account Suspension** - Status enum on users/orgs, middleware guards, admin controls `[custom]`
-- [ ] **Phase 3: Private File URLs** - Ownership-checked access with signed URLs via Laravel built-ins `[custom]`
+- [x] **Phase 1: Tenant Data Scoping** - BelongsToTenant trait, TenantAware middleware, automatic org-scoped queries `[custom]`
+- [x] **Phase 2: Account Suspension** - Status enum on users/orgs, middleware guards, admin controls `[custom]`
+- [x] **Phase 3: Private File URLs** - Ownership-checked access with signed URLs via Laravel built-ins `[custom]`
 - [ ] **Phase 4: Credits/Token System** - Ledger, transactions, consumption, top-ups, auto-refill, plan integration `[custom]`
 - [ ] **Phase 5: Feature Flags** - Laravel Pennant with DB driver, tenant/user scoping, admin UI `[laravel/pennant]`
 - [ ] **Phase 6: Real-time Broadcasting** - Laravel Reverb setup, tenant-aware channels, notification integration `[laravel/reverb]`
@@ -58,7 +58,7 @@ None
 Plans:
 - [x] 01-01: BelongsToTenant trait + migrations (add organization_id to tenant-owned tables)
 - [x] 01-02: TenantAware middleware + automatic query scoping via global scopes
-- [ ] 01-03: Tenant isolation tests + audit existing queries for scope gaps
+- [x] 01-03: Tenant isolation tests + audit existing queries for scope gaps
 
 ### Phase 2: Account Suspension
 **Goal**: Suspended users/orgs are blocked from accessing the application with clear messaging and admin controls
@@ -70,19 +70,20 @@ Plans:
 Plans:
 - [x] 02-01: Status enum + migrations on users and organizations tables
 - [x] 02-02: Suspension middleware + route guards + user-facing suspension page
-- [ ] 02-03: Admin suspension controls in Filament (suspend/unsuspend actions, reason field)
+- [x] 02-03: Admin suspension controls in Filament (suspend/unsuspend actions, reason field)
 
 ### Phase 3: Private File URLs
 **Goal**: Files are served through ownership-checked routes with signed URLs, preventing unauthorized access
 **Depends on**: Phase 1
 **Approach**: Custom using Laravel built-ins. `Storage::temporaryUrl()` + `URL::temporarySignedRoute()` are first-party -- no package needed.
 **Research**: Unlikely
-**Plans**: 3 plans
+**Plans**: 4 plans
 
 Plans:
-- [ ] 03-01: File ownership model + PrivateFile middleware (verify tenant ownership)
-- [ ] 03-02: Signed URL generation + storage integration + download routes
-- [ ] 03-03: File access authorization tests + edge cases (expired URLs, wrong tenant)
+- [x] 03-01: File model + FileAccessLevel enum + migration + factory + FilePolicy
+- [x] 03-02: FileService + FileDownloadController + signed download route
+- [x] 03-03: Avatar system wired through private file infrastructure
+- [x] 03-04: File access authorization tests + edge cases (expired URLs, wrong tenant)
 
 ### Phase 4: Credits/Token System
 **Goal**: Organizations can consume, purchase, and auto-refill credits alongside their subscription plan
@@ -163,9 +164,9 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9
 
 | Phase | Plans Complete | Status | Completed |
 |-------|---------------|--------|-----------|
-| 1. Tenant Data Scoping | 2/3 | In progress | - |
-| 2. Account Suspension | 2/3 | In progress | - |
-| 3. Private File URLs | 0/3 | Not started | - |
+| 1. Tenant Data Scoping | 3/3 | Complete | 2026-03-04 |
+| 2. Account Suspension | 3/3 | Complete | 2026-03-11 |
+| 3. Private File URLs | 4/4 | Complete | 2026-03-11 |
 | 4. Credits/Token System | 0/4 | Not started | - |
 | 5. Feature Flags | 0/3 | Not started | - |
 | 6. Real-time Broadcasting | 0/3 | Not started | - |
