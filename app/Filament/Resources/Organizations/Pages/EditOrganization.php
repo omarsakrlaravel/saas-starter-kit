@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Organizations\Pages;
 
 use App\Filament\Resources\Organizations\OrganizationResource;
+use App\Filament\Widgets\OrganizationFeaturesWidget;
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 
@@ -15,5 +16,17 @@ class EditOrganization extends EditRecord
         return [
             DeleteAction::make(),
         ];
+    }
+
+    protected function getFooterWidgets(): array
+    {
+        return [
+            OrganizationFeaturesWidget::class,
+        ];
+    }
+
+    public function getFooterWidgetsColumns(): int|string|array
+    {
+        return 1;
     }
 }
