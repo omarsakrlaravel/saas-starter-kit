@@ -183,7 +183,6 @@
 					let that = this;
 					uploadCrop.result({type:'base64',size:'original',format:'png',quality:1}).then(function(base64) {
 						that.avatar = base64;
-						document.getElementById('preview').src = that.avatar;
 					});
 
 				}
@@ -194,6 +193,9 @@
 			fileTypes = ['jpg', 'jpeg', 'png'];
 
 			if(document.getElementById('upload')){
+				document.getElementById('upload').addEventListener('click', function () {
+					this.value = '';
+				});
 				document.getElementById('upload').addEventListener('change', function () {
 					window.dispatchEvent(new CustomEvent('open-modal', { detail: { id: 'profile-avatar-crop' }}));
 					uploadCropEl.classList.add('hidden');
@@ -220,7 +222,7 @@
 			<form wire:submit="save" class="w-full">
 				<div class="relative flex flex-col mt-5 lg:px-10">
 					<div class="relative flex-shrink-0 w-32 h-32 cursor-pointer group">
-						<img id="preview" src="{{ auth()->user()->avatar() }}" class="w-32 h-32 rounded-full">
+						<img id="preview" :src="avatar || '{!! auth()->user()->avatar() !!}'" class="w-32 h-32 rounded-full">
 
 						<div class="absolute inset-0 w-full h-full">
 							<input type="file" id="upload" class="absolute inset-0 z-20 w-full h-full opacity-0 cursor-pointer group">

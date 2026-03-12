@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-26)
 
 **Core value:** Every SaaS built on this kit inherits correctness by default -- tenant data isolation, secure file access, and proper account lifecycle management are baked in, not bolted on.
-**Current focus:** Phase 5 -- Feature Flags (IN PROGRESS)
+**Current focus:** Phase 5 -- Feature Flags (COMPLETE)
 
 ## Current Position
 
-Phase: 5 of 9 (Feature Flags) -- IN PROGRESS
-Plan: 2 of 3 in current phase (complete)
-Status: Plan 05-02 complete, ready for Plan 05-03 (Blade/middleware integration)
-Last activity: 2026-03-12 -- Completed 05-02-PLAN.md (admin UI)
+Phase: 5 of 9 (Feature Flags) -- COMPLETE
+Plan: 3 of 3 in current phase (complete)
+Status: Phase 05 complete, ready for phase transition
+Last activity: 2026-03-12 -- Completed 05-03-PLAN.md (testing)
 
-Progress: ██████░░░░ 67% (phase 5)
+Progress: ██████████ 100% (phase 5)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 12
+- Total plans completed: 13
 - Average duration: 11 min
-- Total execution time: 2.3 hours
+- Total execution time: 2.5 hours
 
 **By Phase:**
 
@@ -30,10 +30,10 @@ Progress: ██████░░░░ 67% (phase 5)
 | 1. Tenant Data Scoping | 3 | 62 min | 21 min |
 | 2. Account Suspension | 3 | 28 min | 9 min |
 | 3. Private File URLs | 4 | 29 min | 7 min |
-| 5. Feature Flags | 2 | 20 min | 10 min |
+| 5. Feature Flags | 3 | 32 min | 11 min |
 
 **Recent Trend:**
-- Last 5 plans: 8 min, 8 min, 8 min, 8 min, 12 min
+- Last 5 plans: 8 min, 8 min, 8 min, 12 min, 12 min
 - Trend: Stable
 
 ## Accumulated Context
@@ -73,10 +73,13 @@ Recent decisions affecting current work:
 - 05-02: Kill switch section uses wire:confirm for browser-native confirmation, not Filament requiresConfirmation().
 - 05-02: ToggleColumn afterStateUpdated calls Feature::purge on activate and Feature::deactivateForEveryone on deactivate.
 - 05-02: Filament v4 $view property is non-static; $navigationGroup type includes UnitEnum.
+- 05-03: Feature::discover() required in AppServiceProvider for #[Name] attribute string resolution.
+- 05-03: Organization billable_type must use morph map alias 'organization' not FQCN.
+- 05-03: ToggleColumn tested via direct call('updateTableColumnState') since no Filament test helper exists.
 
 ### Deferred Issues
 
-None logged from 03-01, 03-02, 03-03, 03-04, 05-01, or 05-02.
+None logged from 03-01, 03-02, 03-03, 03-04, 05-01, 05-02, or 05-03.
 
 ### Blockers/Concerns
 
@@ -86,5 +89,5 @@ None logged from 03-01, 03-02, 03-03, 03-04, 05-01, or 05-02.
 ## Session Continuity
 
 Last session: 2026-03-12
-Stopped at: Plan 05-02 complete, ready for Plan 05-03 (Blade/middleware integration)
+Stopped at: Phase 05 complete, ready for phase transition
 Resume file: None
