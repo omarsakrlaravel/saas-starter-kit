@@ -11,6 +11,8 @@
  * - Backward compatibility with existing @canUseFeature system
  */
 
+use App\Enums\FeatureFlagType;
+use App\Models\FeatureDefinition;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -249,4 +251,37 @@ test('existing canUseFeature system is unaffected by Pennant', function () {
 
     expect($user->canUseFeature('api_keys'))->toBeTrue()
         ->and($user->featureLimit('api_keys'))->toBe(5);
+});
+
+test('rollout feature uses configurable percentage from database', function () {
+    $definition = FeatureDefinition::create([
+        'name' => 'new-editor',
+        'type' => FeatureFlagType::Rollout,
+        'is_active' => true,
+        'rollout_percentage' => 100,
+    ]);
+
+    $org = Organization::create([
+        'name' => 'Rollout Test Org',
+        'slug' => 'rollout-test-org',
+    ]);
+
+    Feature::flushCache();
+    Feature::purge('new-editor');
+
+    // With 100% rollout, feature should always be active
+    expect(Feature::for($org)->active('new-editor'))->toBeTrue();
+});
+
+test('rollout feature defaults to 0 when no definition exists', function () {
+    $org = Organization::create([
+        'name' => 'No Def Org',
+        'slug' => 'no-def-org',
+    ]);
+
+    Feature::flushCache();
+    Feature::purge('new-editor');
+
+    // No definition means 0% rollout (safe default)
+    expect(Feature::for($org)->active('new-editor'))->toBeFalse();
 });
