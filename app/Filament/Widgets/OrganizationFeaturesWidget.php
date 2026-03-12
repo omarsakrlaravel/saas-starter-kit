@@ -118,49 +118,49 @@ class OrganizationFeaturesWidget extends Widget implements HasActions, HasSchema
                             ->send();
                     }),
             ])
+            ->heading('Feature Overrides')
+            ->description('Explicit feature flag overrides. Features not listed use default resolution.')
+            ->headerActions([
+                Action::make('setFeature')
+                    ->label('Set Feature')
+                    ->icon('heroicon-o-plus')
+                    ->color('primary')
+                    ->schema([
+                        Select::make('feature_name')
+                            ->label('Feature')
+                            ->searchable()
+                            ->options(fn (): array => FeatureDefinition::query()
+                                ->pluck('name', 'name')
+                                ->all())
+                            ->required(),
+                        Toggle::make('is_active')
+                            ->label('Active')
+                            ->default(true),
+                    ])
+                    ->action(function (array $data): void {
+                        $org = $this->record;
+                        $featureName = $data['feature_name'];
+                        $active = $data['is_active'];
+
+                        if ($active) {
+                            Feature::for($org)->activate($featureName);
+                        } else {
+                            Feature::for($org)->deactivate($featureName);
+                        }
+
+                        ActivityLog::log(
+                            'feature_flag_override',
+                            "Feature '{$featureName}' ".($active ? 'activated' : 'deactivated')." for org '{$org->name}'",
+                        );
+
+                        Notification::make()
+                            ->success()
+                            ->title("Feature '{$featureName}' ".($active ? 'activated' : 'deactivated'))
+                            ->send();
+                    }),
+            ])
             ->emptyStateHeading('No feature overrides')
             ->emptyStateDescription('This organization uses default feature resolution for all features.')
             ->paginated(false);
-    }
-
-    public function setFeatureAction(): Action
-    {
-        return Action::make('setFeature')
-            ->label('Set Feature')
-            ->icon('heroicon-o-plus')
-            ->color('primary')
-            ->schema([
-                Select::make('feature_name')
-                    ->label('Feature')
-                    ->searchable()
-                    ->options(fn (): array => FeatureDefinition::query()
-                        ->pluck('name', 'name')
-                        ->all())
-                    ->required(),
-                Toggle::make('is_active')
-                    ->label('Active')
-                    ->default(true),
-            ])
-            ->action(function (array $data): void {
-                $org = $this->record;
-                $featureName = $data['feature_name'];
-                $active = $data['is_active'];
-
-                if ($active) {
-                    Feature::for($org)->activate($featureName);
-                } else {
-                    Feature::for($org)->deactivate($featureName);
-                }
-
-                ActivityLog::log(
-                    'feature_flag_override',
-                    "Feature '{$featureName}' ".($active ? 'activated' : 'deactivated')." for org '{$org->name}'",
-                );
-
-                Notification::make()
-                    ->success()
-                    ->title("Feature '{$featureName}' ".($active ? 'activated' : 'deactivated'))
-                    ->send();
-            });
     }
 }

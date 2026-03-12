@@ -117,51 +117,51 @@ class OrganizationOverridesWidget extends Widget implements HasActions, HasSchem
                             ->send();
                     }),
             ])
+            ->heading('Organization Overrides')
+            ->description('Organizations with explicit feature state overrides. Others use default resolution.')
+            ->headerActions([
+                Action::make('addOverride')
+                    ->label('Add Override')
+                    ->icon('heroicon-o-plus')
+                    ->color('primary')
+                    ->schema([
+                        Select::make('organization_id')
+                            ->label('Organization')
+                            ->searchable()
+                            ->options(fn (): array => Organization::query()
+                                ->pluck('name', 'id')
+                                ->all())
+                            ->required(),
+                        Toggle::make('is_active')
+                            ->label('Active')
+                            ->default(true),
+                    ])
+                    ->action(function (array $data): void {
+                        $organization = Organization::findOrFail($data['organization_id']);
+                        $featureName = $this->record->name;
+                        $active = $data['is_active'];
+
+                        if ($active) {
+                            Feature::for($organization)->activate($featureName);
+                        } else {
+                            Feature::for($organization)->deactivate($featureName);
+                        }
+
+                        $this->record->update(['last_changed_by' => auth()->id()]);
+
+                        ActivityLog::log(
+                            'feature_flag_override',
+                            "Feature '{$featureName}' ".($active ? 'activated' : 'deactivated')." for org '{$organization->name}'",
+                        );
+
+                        Notification::make()
+                            ->success()
+                            ->title("Override added for '{$organization->name}'")
+                            ->send();
+                    }),
+            ])
             ->emptyStateHeading('No overrides')
             ->emptyStateDescription('All organizations use the default feature resolution.')
             ->paginated(false);
-    }
-
-    public function addOverrideAction(): Action
-    {
-        return Action::make('addOverride')
-            ->label('Add Override')
-            ->icon('heroicon-o-plus')
-            ->color('primary')
-            ->schema([
-                Select::make('organization_id')
-                    ->label('Organization')
-                    ->searchable()
-                    ->options(fn (): array => Organization::query()
-                        ->pluck('name', 'id')
-                        ->all())
-                    ->required(),
-                Toggle::make('is_active')
-                    ->label('Active')
-                    ->default(true),
-            ])
-            ->action(function (array $data): void {
-                $organization = Organization::findOrFail($data['organization_id']);
-                $featureName = $this->record->name;
-                $active = $data['is_active'];
-
-                if ($active) {
-                    Feature::for($organization)->activate($featureName);
-                } else {
-                    Feature::for($organization)->deactivate($featureName);
-                }
-
-                $this->record->update(['last_changed_by' => auth()->id()]);
-
-                ActivityLog::log(
-                    'feature_flag_override',
-                    "Feature '{$featureName}' ".($active ? 'activated' : 'deactivated')." for org '{$organization->name}'",
-                );
-
-                Notification::make()
-                    ->success()
-                    ->title("Override added for '{$organization->name}'")
-                    ->send();
-            });
     }
 }
