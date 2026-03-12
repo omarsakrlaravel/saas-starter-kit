@@ -8,16 +8,19 @@ use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
 use Filament\Notifications\Notification;
+use Filament\Schemas\Concerns\InteractsWithSchemas;
+use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Widgets\Widget;
 use Illuminate\Database\Eloquent\Collection;
 use Laravel\Pennant\Feature;
 use Wave\ActivityLog;
 
-class KillSwitchesWidget extends Widget implements HasActions
+class KillSwitchesWidget extends Widget implements HasActions, HasSchemas
 {
     use InteractsWithActions;
+    use InteractsWithSchemas;
 
-    protected static string $view = 'filament.widgets.kill-switches';
+    protected string $view = 'filament.widgets.kill-switches';
 
     protected int|string|array $columnSpan = 'full';
 

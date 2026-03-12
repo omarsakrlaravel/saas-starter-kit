@@ -1,10 +1,13 @@
 <?php
 
 use App\Enums\FeatureFlagType;
-use App\Filament\Pages\FeatureFlagsPage;
+use App\Filament\Resources\FeatureDefinitions\Pages\ListFeatureDefinitions;
+use App\Filament\Resources\FeatureDefinitions\Pages\ViewFeatureDefinition;
+use App\Filament\Widgets\KillSwitchesWidget;
 use App\Models\FeatureDefinition;
 use App\Models\Organization;
 use App\Models\User;
+use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Pennant\Feature;
 use Spatie\Permission\Models\Role;
@@ -24,12 +27,12 @@ beforeEach(function () {
     $this->actingAs($this->admin);
 });
 
-test('feature flags page renders successfully', function () {
-    livewire(FeatureFlagsPage::class)
+test('feature flags list page renders successfully', function () {
+    livewire(ListFeatureDefinitions::class)
         ->assertOk();
 });
 
-test('kill switches are shown in kill switch section', function () {
+test('kill switches are shown in kill switch widget', function () {
     $killSwitch = FeatureDefinition::create([
         'name' => 'test-kill-switch',
         'type' => FeatureFlagType::KillSwitch,
@@ -37,9 +40,9 @@ test('kill switches are shown in kill switch section', function () {
         'is_active' => false,
     ]);
 
-    $page = livewire(FeatureFlagsPage::class);
+    $widget = livewire(KillSwitchesWidget::class);
 
-    $killSwitches = $page->instance()->getKillSwitches();
+    $killSwitches = $widget->instance()->getKillSwitches();
 
     expect($killSwitches)->toHaveCount(1)
         ->and($killSwitches->first()->name)->toBe('test-kill-switch');
@@ -60,7 +63,7 @@ test('feature table excludes kill switches', function () {
         'is_active' => true,
     ]);
 
-    livewire(FeatureFlagsPage::class)
+    livewire(ListFeatureDefinitions::class)
         ->assertCanSeeTableRecords(collect([$planGated]))
         ->assertCanNotSeeTableRecords(collect([
             FeatureDefinition::where('type', FeatureFlagType::KillSwitch)->first(),
@@ -77,7 +80,7 @@ test('toggling kill switch on activates pennant state and logs activity', functi
 
     expect(Feature::for(null)->active('maintenance-mode'))->toBeFalse();
 
-    livewire(FeatureFlagsPage::class)
+    livewire(KillSwitchesWidget::class)
         ->callAction('toggleKillSwitch', arguments: [
             'id' => $killSwitch->id,
             'active' => false,
@@ -108,7 +111,7 @@ test('toggling kill switch off deactivates pennant state', function () {
     Feature::for(null)->activate('maintenance-mode');
     expect(Feature::for(null)->active('maintenance-mode'))->toBeTrue();
 
-    livewire(FeatureFlagsPage::class)
+    livewire(KillSwitchesWidget::class)
         ->callAction('toggleKillSwitch', arguments: [
             'id' => $killSwitch->id,
             'active' => true,
@@ -131,7 +134,7 @@ test('feature table shows correct columns', function () {
         'is_active' => true,
     ]);
 
-    livewire(FeatureFlagsPage::class)
+    livewire(ListFeatureDefinitions::class)
         ->assertTableColumnExists('name')
         ->assertTableColumnExists('type')
         ->assertTableColumnExists('description')
@@ -141,7 +144,7 @@ test('feature table shows correct columns', function () {
 });
 
 test('feature table has type filter excluding kill switches', function () {
-    livewire(FeatureFlagsPage::class)
+    livewire(ListFeatureDefinitions::class)
         ->assertTableFilterExists('type');
 });
 
@@ -153,8 +156,8 @@ test('feature table has override for org action', function () {
         'is_active' => true,
     ]);
 
-    livewire(FeatureFlagsPage::class)
-        ->assertTableActionExists('override_for_org');
+    livewire(ListFeatureDefinitions::class)
+        ->assertActionExists(TestAction::make('override_for_org')->table($feature));
 });
 
 test('feature table toggle column updates is_active and records last_changed_by', function () {
@@ -165,7 +168,7 @@ test('feature table toggle column updates is_active and records last_changed_by'
         'is_active' => false,
     ]);
 
-    livewire(FeatureFlagsPage::class)
+    livewire(ListFeatureDefinitions::class)
         ->assertTableColumnStateSet('is_active', false, $feature)
         ->call('updateTableColumnState', 'is_active', (string) $feature->getKey(), true);
 
@@ -193,14 +196,12 @@ test('per-org override action activates feature for specific organization', func
         'owner_user_id' => $this->admin->id,
     ]);
 
-    // First deactivate the feature for this org explicitly
     Feature::for($org)->deactivate('test-rollout-override');
     Feature::flushCache();
     expect(Feature::for($org)->active('test-rollout-override'))->toBeFalse();
 
-    // Now use the override action to activate it
-    livewire(FeatureFlagsPage::class)
-        ->callTableAction('override_for_org', $feature->id, [
+    livewire(ListFeatureDefinitions::class)
+        ->callAction(TestAction::make('override_for_org')->table($feature), [
             'organization_id' => $org->id,
             'is_active' => true,
         ])
@@ -232,14 +233,12 @@ test('per-org override action deactivates feature for specific organization', fu
         'owner_user_id' => $this->admin->id,
     ]);
 
-    // Activate the feature for this org first
     Feature::for($org)->activate('test-rollout-deactivate');
     Feature::flushCache();
     expect(Feature::for($org)->active('test-rollout-deactivate'))->toBeTrue();
 
-    // Use the override action to deactivate it
-    livewire(FeatureFlagsPage::class)
-        ->callTableAction('override_for_org', $feature->id, [
+    livewire(ListFeatureDefinitions::class)
+        ->callAction(TestAction::make('override_for_org')->table($feature), [
             'organization_id' => $org->id,
             'is_active' => false,
         ])
@@ -247,4 +246,36 @@ test('per-org override action deactivates feature for specific organization', fu
 
     Feature::flushCache();
     expect(Feature::for($org)->active('test-rollout-deactivate'))->toBeFalse();
+});
+
+test('view page renders with infolist', function () {
+    $feature = FeatureDefinition::create([
+        'name' => 'test-view-feature',
+        'type' => FeatureFlagType::PlanGated,
+        'description' => 'A feature for view page test',
+        'is_active' => true,
+    ]);
+
+    livewire(ViewFeatureDefinition::class, ['record' => $feature->id])
+        ->assertOk();
+});
+
+test('edit rollout percentage action updates percentage', function () {
+    $feature = FeatureDefinition::create([
+        'name' => 'test-rollout-edit',
+        'type' => FeatureFlagType::Rollout,
+        'description' => 'A rollout feature for edit test',
+        'is_active' => true,
+        'rollout_percentage' => 50,
+    ]);
+
+    livewire(ViewFeatureDefinition::class, ['record' => $feature->id])
+        ->callAction('editRolloutPercentage', [
+            'rollout_percentage' => 75,
+        ])
+        ->assertNotified();
+
+    $feature->refresh();
+    expect($feature->rollout_percentage)->toBe(75)
+        ->and($feature->last_changed_by)->toBe($this->admin->id);
 });
