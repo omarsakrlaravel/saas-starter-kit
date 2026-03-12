@@ -78,7 +78,11 @@ test('toggling kill switch on activates pennant state and logs activity', functi
     expect(Feature::for(null)->active('maintenance-mode'))->toBeFalse();
 
     livewire(FeatureFlagsPage::class)
-        ->call('toggleKillSwitch', $killSwitch->id)
+        ->callAction('toggleKillSwitch', arguments: [
+            'id' => $killSwitch->id,
+            'active' => false,
+            'name' => 'maintenance-mode',
+        ])
         ->assertNotified();
 
     expect(Feature::for(null)->active('maintenance-mode'))->toBeTrue();
@@ -105,7 +109,11 @@ test('toggling kill switch off deactivates pennant state', function () {
     expect(Feature::for(null)->active('maintenance-mode'))->toBeTrue();
 
     livewire(FeatureFlagsPage::class)
-        ->call('toggleKillSwitch', $killSwitch->id)
+        ->callAction('toggleKillSwitch', arguments: [
+            'id' => $killSwitch->id,
+            'active' => true,
+            'name' => 'maintenance-mode',
+        ])
         ->assertNotified();
 
     Feature::flushCache();
