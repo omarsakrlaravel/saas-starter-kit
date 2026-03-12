@@ -3,6 +3,7 @@
 namespace App\Filament\Widgets;
 
 use App\Models\FeatureDefinition;
+use App\Models\PennantFeature;
 use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
@@ -17,7 +18,6 @@ use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Filament\Widgets\Widget;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
 use Laravel\Pennant\Feature;
 use Wave\ActivityLog;
 
@@ -39,7 +39,7 @@ class OrganizationFeaturesWidget extends Widget implements HasActions, HasSchema
 
         return $table
             ->query(
-                DB::table('features')
+                PennantFeature::query()
                     ->where('scope', $scope)
                     ->orderBy('name'),
             )
@@ -118,8 +118,6 @@ class OrganizationFeaturesWidget extends Widget implements HasActions, HasSchema
                             ->send();
                     }),
             ])
-            ->heading('Feature Overrides')
-            ->description('Explicit feature flag overrides for this organization. Features not listed resolve using default rules.')
             ->emptyStateHeading('No feature overrides')
             ->emptyStateDescription('This organization uses default feature resolution for all features.')
             ->paginated(false);
