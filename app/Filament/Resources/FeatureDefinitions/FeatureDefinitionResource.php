@@ -175,6 +175,14 @@ class FeatureDefinitionResource extends Resource
             ->searchable();
     }
 
+    public static function getWidgets(): array
+    {
+        return [
+            \App\Filament\Widgets\KillSwitchesWidget::class,
+            \App\Filament\Widgets\OrganizationOverridesWidget::class,
+        ];
+    }
+
     public static function getPages(): array
     {
         return [

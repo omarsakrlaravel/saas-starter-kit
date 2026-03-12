@@ -41,7 +41,7 @@ class OrganizationOverridesWidget extends Widget implements HasActions, HasSchem
             ->query(
                 PennantFeature::query()
                     ->where('name', $featureName)
-                    ->where('scope', 'like', 'App\\Models\\Organization|%')
+                    ->where('scope', 'like', 'App\\\\Models\\\\Organization|%')
                     ->orderBy('updated_at', 'desc'),
             )
             ->columns([
