@@ -40,7 +40,7 @@ None
 - [x] **Phase 2: Account Suspension** - Status enum on users/orgs, middleware guards, admin controls `[custom]`
 - [x] **Phase 3: Private File URLs** - Ownership-checked access with signed URLs via Laravel built-ins `[custom]`
 - [ ] **Phase 4: Credits/Token System** - Ledger, transactions, consumption, top-ups, auto-refill, plan integration `[custom]`
-- [ ] **Phase 5: Feature Flags** - Laravel Pennant with DB driver, tenant/user scoping, admin UI `[laravel/pennant]`
+- [x] **Phase 5: Feature Flags** - Laravel Pennant with DB driver, tenant/user scoping, admin UI `[laravel/pennant]`
 - [ ] **Phase 6: Real-time Broadcasting** - Laravel Reverb setup, tenant-aware channels, notification integration `[laravel/reverb]`
 - [ ] **Phase 7: Email Template System** - DB-stored templates with Mustache placeholders, test-send in admin `[spatie/laravel-database-mail-templates]`
 - [ ] **Phase 8: Support Tickets** - Submission form, database storage, email notification, admin view `[custom]`
@@ -107,9 +107,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 05-01: Install Pennant + configure DB driver + define feature classes scoped to org/user
-- [ ] 05-02: Blade directive + middleware + helper integration with Pennant API
-- [ ] 05-03: Feature flags admin UI in Filament (toggle per org/user, bulk operations)
+- [x] 05-01: Install Pennant + configure DB driver + define feature classes scoped to org/user
+- [x] 05-02: Filament admin page with kill switch section, feature table, per-org overrides
+- [x] 05-03: Pennant integration tests + Filament page tests (21 tests)
 
 ### Phase 6: Real-time Broadcasting
 **Goal**: Users receive instant notifications and live updates via Laravel Reverb
@@ -168,7 +168,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9
 | 2. Account Suspension | 3/3 | Complete | 2026-03-11 |
 | 3. Private File URLs | 4/4 | Complete | 2026-03-11 |
 | 4. Credits/Token System | 0/4 | Not started | - |
-| 5. Feature Flags | 0/3 | Not started | - |
+| 5. Feature Flags | 3/3 | Complete | 2026-03-12 |
 | 6. Real-time Broadcasting | 0/3 | Not started | - |
 | 7. Email Template System | 0/2 | Not started | - |
 | 8. Support Tickets | 0/2 | Not started | - |
