@@ -26,6 +26,7 @@ class FeatureDefinitionSeeder extends Seeder
             [
                 'type' => FeatureFlagType::Rollout,
                 'description' => 'New rich text editor. Rolling out to 10% of organizations.',
+                'rollout_percentage' => 10,
             ],
         );
 

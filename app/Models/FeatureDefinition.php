@@ -15,6 +15,7 @@ class FeatureDefinition extends Model
         return [
             'type' => FeatureFlagType::class,
             'is_active' => 'boolean',
+            'rollout_percentage' => 'integer',
         ];
     }
 
