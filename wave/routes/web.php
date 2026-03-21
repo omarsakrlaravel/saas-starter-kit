@@ -8,7 +8,9 @@ use Wave\Actions\Reset;
 Route::impersonate();
 
 // Additional Auth Routes
-Route::get('logout', '\Wave\Http\Controllers\LogoutController@logout')->name('wave.logout');
+Route::post('logout', '\Wave\Http\Controllers\LogoutController@logout')
+    ->middleware('auth')
+    ->name('wave.logout');
 // Route::get('user/verify/{verification_code}', '\Wave\Http\Controllers\Auth\RegisterController@verify')->name('verify');
 // Route::post('register/complete', '\Wave\Http\Controllers\Auth\RegisterController@complete')->name('wave.register-complete');
 

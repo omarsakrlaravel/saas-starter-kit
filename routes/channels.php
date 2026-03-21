@@ -16,5 +16,5 @@ Broadcast::channel('private.organization.{organization}', function (User $user, 
         return false;
     }
 
-    return (int) $user->current_organization_id === $organizationId;
+    return $user->currentOrganizationIdForContext() === $organizationId;
 }, ['guards' => ['web']]);

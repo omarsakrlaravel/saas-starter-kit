@@ -14,8 +14,12 @@ class TenantAware
     public function handle(Request $request, Closure $next): Response
     {
         if ($user = $request->user()) {
-            if ($user->current_organization_id !== null) {
-                $this->context->set($user->current_organization_id);
+            $organizationId = method_exists($user, 'currentOrganizationIdForContext')
+                ? $user->currentOrganizationIdForContext()
+                : ($user->current_organization_id ?? null);
+
+            if ($organizationId !== null) {
+                $this->context->set($organizationId);
             }
         }
 

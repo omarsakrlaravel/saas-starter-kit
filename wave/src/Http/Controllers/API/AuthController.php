@@ -42,7 +42,7 @@ class AuthController extends Controller implements HasMiddleware
      */
     public function logout(): JsonResponse
     {
-        auth()->logout();
+        auth('api')->logout();
 
         return response()->json(['message' => 'Successfully logged out']);
     }
@@ -52,8 +52,7 @@ class AuthController extends Controller implements HasMiddleware
         $request = app('request');
 
         if (isset($request->key)) {
-
-            $key = ApiKey::where('key', '=', $request->key)->first();
+            $key = ApiKey::findByIncomingToken((string) $request->key);
 
             if (isset($key->id)) {
                 $key->update([
@@ -91,23 +90,21 @@ class AuthController extends Controller implements HasMiddleware
         ]);
     }
 
-    public function register(Request $request)
+    public function register(Request $request): JsonResponse
     {
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'username' => 'required|string|max:250',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:6|confirmed',
-        ]);
+        $validated = Validator::make($request->all(), $this->registrationRules())->validate();
 
         $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'username' => $request->username,
-            'password' => bcrypt($request->password),
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'username' => $validated['username'],
+            'password' => bcrypt($validated['password']),
         ]);
 
-        $credentials = ['email' => $request['email'], 'password' => $request['password']];
+        $credentials = [
+            'email' => $validated['email'],
+            'password' => $validated['password'],
+        ];
 
         if (! $token = JWTAuth::attempt($credentials)) {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -117,12 +114,18 @@ class AuthController extends Controller implements HasMiddleware
 
     }
 
-    protected function validator(array $data)
+    /**
+     * @return array<string, string>
+     */
+    protected function registrationRules(): array
     {
-        return Validator::make($data, [
+        $minPasswordLength = max(8, (int) config('wave.auth.min_password_length', 8));
+
+        return [
             'name' => 'required|string|max:255',
+            'username' => 'required|string|max:250|unique:users,username',
             'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:6|confirmed',
-        ]);
+            'password' => "required|string|min:{$minPasswordLength}|confirmed",
+        ];
     }
 }

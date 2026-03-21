@@ -30,7 +30,7 @@ class EnsureAccountActive
         }
 
         if (! isset($job->user_id)) {
-            return null;
+            return $this->resolveUserFromPayload($job);
         }
 
         $userId = is_array($job->user_id) || is_object($job->user_id) ? null : (int) $job->user_id;
@@ -56,6 +56,23 @@ class EnsureAccountActive
         }
 
         return Organization::find($organizationId);
+    }
+
+    private function resolveUserFromPayload(object $job): ?User
+    {
+        if (! property_exists($job, 'data') || ! is_array($job->data) || ! isset($job->data['user_id'])) {
+            return null;
+        }
+
+        $userId = is_array($job->data['user_id']) || is_object($job->data['user_id'])
+            ? null
+            : (int) $job->data['user_id'];
+
+        if (! $userId) {
+            return null;
+        }
+
+        return User::find($userId);
     }
 
     private function resolveOrganizationFromPayload(object $job): ?Organization

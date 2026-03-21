@@ -24,7 +24,7 @@ class TokenMiddleware
     public function handle(Request $request, Closure $next, ?string $guard = null): mixed
     {
         if ($request->token && strlen((string) $request->token) <= 60) {
-            $apiKey = ApiKey::where('key', (string) $request->token)->first();
+            $apiKey = ApiKey::findByIncomingToken((string) $request->token);
             if (! isset($apiKey->id)) {
                 return $next($request);
             }

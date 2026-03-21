@@ -2,6 +2,7 @@
 
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Hash;
 use Wave\ApiKey;
 
 beforeEach(function () {
@@ -78,18 +79,23 @@ describe('ApiKey Model', function () {
 describe('User API Key Methods', function () {
     it('can create api key via user method', function () {
         $apiKey = $this->user->createApiKey('My API Key');
+        [$id, $plainTextToken] = explode('|', $apiKey->plainTextToken);
 
         expect($apiKey)->toBeInstanceOf(ApiKey::class);
         expect($apiKey->name)->toBe('My API Key');
         expect($apiKey->user_id)->toBe($this->user->id);
-        expect(strlen($apiKey->key))->toBe(60);
+        expect((int) $id)->toBe($apiKey->id)
+            ->and($apiKey->plainTextToken)->not()->toBeNull()
+            ->and($apiKey->key)->not()->toBe($plainTextToken)
+            ->and(Hash::check($plainTextToken, $apiKey->key))->toBeTrue();
     });
 
     it('generates unique keys for each api key', function () {
         $key1 = $this->user->createApiKey('Key 1');
         $key2 = $this->user->createApiKey('Key 2');
 
-        expect($key1->key)->not->toBe($key2->key);
+        expect($key1->plainTextToken)->not->toBe($key2->plainTextToken)
+            ->and($key1->key)->not->toBe($key2->key);
     });
 
     it('can retrieve all api keys for user', function () {
@@ -149,7 +155,26 @@ describe('API Token Endpoint', function () {
         $apiKey = $this->user->createApiKey('Valid Key');
 
         $response = $this->postJson('/api/token', [
-            'key' => $apiKey->key,
+            'key' => $apiKey->plainTextToken,
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJsonStructure(['access_token']);
+    });
+
+    it('returns access token for legacy plaintext api keys', function () {
+        if (strlen(config('jwt.secret', '')) < 32) {
+            $this->markTestSkipped('JWT secret not configured for testing');
+        }
+
+        $legacyKey = ApiKey::create([
+            'user_id' => $this->user->id,
+            'name' => 'Legacy Key',
+            'key' => 'legacy_plaintext_api_key',
+        ]);
+
+        $response = $this->postJson('/api/token', [
+            'key' => $legacyKey->key,
         ]);
 
         $response->assertStatus(200);
@@ -164,7 +189,7 @@ describe('API Token Endpoint', function () {
         Carbon::setTestNow(now());
 
         $this->postJson('/api/token', [
-            'key' => $apiKey->key,
+            'key' => $apiKey->plainTextToken,
         ]);
 
         $apiKey->refresh();
@@ -258,7 +283,7 @@ describe('Multiple Users with API Keys', function () {
 
         // Use user 2's key
         $response = $this->postJson('/api/token', [
-            'key' => $key2->key,
+            'key' => $key2->plainTextToken,
         ]);
 
         $response->assertStatus(200);

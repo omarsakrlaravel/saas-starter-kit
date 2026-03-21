@@ -17,7 +17,6 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Str;
 use Lab404\Impersonate\Models\Impersonate;
 use Laravel\Cashier\Billable;
 use Laravel\Cashier\Cashier;
@@ -682,9 +681,16 @@ class User extends AuthUser implements FilamentUser, HasAvatar, JWTSubject
         return $this->belongsToMany('Wave\Changelog');
     }
 
-    public function createApiKey($name)
+    public function createApiKey(string $name): ApiKey
     {
-        return ApiKey::create(['user_id' => $this->id, 'name' => $name, 'key' => Str::random(60)]);
+        $apiKey = new ApiKey([
+            'user_id' => $this->id,
+            'name' => $name,
+        ]);
+
+        $apiKey->issuePlainTextToken();
+
+        return $apiKey;
     }
 
     public function apiKeys(): HasMany

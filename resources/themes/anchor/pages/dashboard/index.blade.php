@@ -53,6 +53,27 @@
 			/>
 		</div>
 
+		<div class="mt-5 p-4 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800">
+			<h3 class="text-sm font-medium text-neutral-500 dark:text-neutral-400 mb-3">Feature Flags</h3>
+			<div class="flex flex-wrap gap-3">
+				@php
+					$org = auth()->user()->currentOrganizationForContext();
+					$features = [
+						'ai-reports' => 'AI Reports',
+						'new-editor' => 'New Editor',
+						'maintenance-mode' => 'Maintenance Mode',
+					];
+				@endphp
+				@foreach($features as $key => $label)
+					@php $active = $org ? \Laravel\Pennant\Feature::for($org)->active($key) : false; @endphp
+					<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium {{ $active ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-neutral-100 text-neutral-500 dark:bg-neutral-700 dark:text-neutral-400' }}">
+						<span class="w-2 h-2 rounded-full {{ $active ? 'bg-green-500' : 'bg-neutral-300 dark:bg-neutral-500' }}"></span>
+						{{ $label }}
+					</span>
+				@endforeach
+			</div>
+		</div>
+
 		<div class="mt-5 space-y-5">
 			@subscriber
 				<p>You are subscribed to the <strong>{{ auth()->user()->plan()->name }}</strong> plan. Learn <a href="https://devdojo.com/wave/docs" target="_blank" class="underline">more</a> about managing your subscription.</p>

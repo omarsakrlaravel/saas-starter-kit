@@ -5,13 +5,13 @@ use App\Jobs\Middleware\EnsureAccountActive;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Broadcast;
 use Symfony\Component\HttpFoundation\Response;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use Wave\ActivityLog;
 use Wave\Http\Middleware\TokenMiddleware;
 use Wave\Jobs\CreateActivityLog;
-use Wave\ActivityLog;
 
 uses(RefreshDatabase::class);
 
@@ -56,17 +56,17 @@ it('blocks token-authenticated requests when account is not active', function ()
         ->getJson('/api/user');
 
     $response->assertStatus(Response::HTTP_FORBIDDEN);
-    $response->assertJsonPath('error_code', 'account_blocked');
+    $response->assertJsonPath('error_code', 'account_suspended');
 });
 
-it('rejects blocked account token middleware usage for JWT flow', function () {
+it('rejects blocked account token middleware usage for API key flow', function () {
     $user = User::factory()->create([
         'status' => AccountStatus::Suspended->value,
     ]);
-    $apiKey = $user->createApiKey('Legacy service key');
+    $apiKey = $user->createApiKey('Blocked service key');
 
     $request = Request::create('/api/token', 'POST', [
-        'token' => $apiKey->key,
+        'token' => $apiKey->plainTextToken,
     ]);
 
     $middleware = new TokenMiddleware(app('auth'));
@@ -137,4 +137,34 @@ it('only authorizes account channels for active accounts', function () {
     expect($user->isBlockedFromSession())->toBeTrue();
     expect($userChannel($user, $user->id))->toBeFalse();
     expect($organizationChannel($user, $organization->id))->toBeFalse();
+});
+
+it('does not authorize organization channels when current organization membership is stale', function () {
+    $owner = User::factory()->create();
+    $user = User::factory()->create();
+    $organization = Organization::create([
+        'name' => 'Stale Org',
+        'slug' => 'stale-org-channel',
+        'status' => AccountStatus::Active->value,
+        'owner_user_id' => $owner->id,
+        'active' => true,
+    ]);
+
+    $organization->members()->attach($user->id, [
+        'role' => 'member',
+        'status' => 'active',
+        'joined_at' => now(),
+    ]);
+
+    $user->update(['current_organization_id' => $organization->id]);
+
+    $channels = Broadcast::getChannels();
+    $organizationChannel = $channels->get('private.organization.{organization}');
+
+    expect($organizationChannel)->not()->toBeNull();
+    expect($organizationChannel($user->fresh(), $organization->id))->toBeTrue();
+
+    $organization->members()->detach($user->id);
+
+    expect($organizationChannel($user->fresh(), $organization->id))->toBeFalse();
 });

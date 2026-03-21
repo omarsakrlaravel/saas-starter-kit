@@ -19,9 +19,6 @@ class ApiKeysRelationManager extends RelationManager
             ->columns([
                 TextColumn::make('name')
                     ->searchable(),
-                TextColumn::make('key')
-                    ->limit(20)
-                    ->copyable(),
                 TextColumn::make('last_used_at')
                     ->label('Last Used')
                     ->dateTime()

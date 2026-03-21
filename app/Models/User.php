@@ -89,7 +89,7 @@ class User extends WaveUser
 
     public function organizationIsBlocked(): bool
     {
-        $organization = $this->currentOrganization;
+        $organization = $this->currentOrganizationForContext();
 
         if ($organization === null) {
             return false;
@@ -100,11 +100,31 @@ class User extends WaveUser
 
     public function activeOrganizationOrSelf(): self|Organization
     {
-        if ($this->currentOrganization?->isActiveAccount()) {
-            return $this->currentOrganization;
+        $organization = $this->currentOrganizationForContext();
+
+        if ($organization?->isActiveAccount()) {
+            return $organization;
         }
 
         return $this;
+    }
+
+    public function currentOrganizationForContext(): ?Organization
+    {
+        if (empty($this->current_organization_id)) {
+            return null;
+        }
+
+        return $this->organizations()
+            ->where('organizations.id', $this->current_organization_id)
+            ->where('organizations.active', true)
+            ->wherePivot('status', 'active')
+            ->first();
+    }
+
+    public function currentOrganizationIdForContext(): ?int
+    {
+        return $this->currentOrganizationForContext()?->getKey();
     }
 
     public function scopeWithStatus(Builder $query, string $status): Builder
