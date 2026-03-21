@@ -62,7 +62,8 @@ describe('Notification Controller', function () {
     it('returns error for non-existent notification', function () {
         $this->actingAs($this->user);
 
-        $response = $this->postJson(route('wave.notification.read', ['id' => 'non-existent-id']));
+        $fakeUuid = Str::uuid()->toString();
+        $response = $this->postJson(route('wave.notification.read', ['id' => $fakeUuid]));
 
         $response->assertStatus(200);
         $response->assertJson([

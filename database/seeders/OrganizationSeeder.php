@@ -56,11 +56,13 @@ class OrganizationSeeder extends Seeder
         ]);
 
         // Create the organization (boot method auto-adds owner as member)
-        $organization = Organization::create([
-            'name' => 'Acme Inc',
-            'slug' => 'acme-inc',
-            'owner_user_id' => $ownerId,
-        ]);
+        $organization = Organization::firstOrCreate(
+            ['slug' => 'acme-inc'],
+            [
+                'name' => 'Acme Inc',
+                'owner_user_id' => $ownerId,
+            ],
+        );
 
         // Add members to the organization
         $organization->members()->attach([
