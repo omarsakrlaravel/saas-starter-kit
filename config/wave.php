@@ -13,6 +13,10 @@ return [
 
     'primary_color' => '#000000',
 
+    'storage' => [
+        'disk' => env('WAVE_STORAGE_DISK', 'local'),
+    ],
+
     'user_model' => \App\Models\User::class,
     'show_docs' => env('WAVE_DOCS', true),
     'demo' => env('WAVE_DEMO', false),

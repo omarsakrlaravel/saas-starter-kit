@@ -14,6 +14,11 @@ use Wave\File;
 
 class FileService
 {
+    private function disk(): string
+    {
+        return config('wave.storage.disk', 'local');
+    }
+
     /**
      * Store an uploaded file and create a File record.
      */
@@ -28,12 +33,12 @@ class FileService
         $uuid = (string) Str::uuid();
         $path = ltrim($directory.'/'.$uuid.'.'.$file->getClientOriginalExtension(), '/');
 
-        Storage::disk('local')->putFileAs(dirname($path), $file, basename($path));
+        Storage::disk($this->disk())->putFileAs(dirname($path), $file, basename($path));
 
         $attributes = [
             'organization_id' => $organization?->id,
             'uploaded_by_user_id' => $user->id,
-            'disk' => 'local',
+            'disk' => $this->disk(),
             'path' => $path,
             'original_name' => $file->getClientOriginalName(),
             'mime_type' => $file->getMimeType(),
@@ -67,12 +72,12 @@ class FileService
         $extension = pathinfo($filename, PATHINFO_EXTENSION);
         $path = ltrim($directory.'/'.$uuid.'.'.$extension, '/');
 
-        Storage::disk('local')->put($path, $content);
+        Storage::disk($this->disk())->put($path, $content);
 
         $attributes = [
             'organization_id' => $organization?->id,
             'uploaded_by_user_id' => $user->id,
-            'disk' => 'local',
+            'disk' => $this->disk(),
             'path' => $path,
             'original_name' => $filename,
             'mime_type' => $mimeType,

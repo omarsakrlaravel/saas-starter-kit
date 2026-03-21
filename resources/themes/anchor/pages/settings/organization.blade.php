@@ -717,6 +717,7 @@
                                         max: 100,
                                         price: {{ $pricePerSeat }},
                                         occupied: {{ $seatUsage }},
+                                        currency: '{{ $plan->currency }}',
                                     }"
                                     class="space-y-5"
                                 >
@@ -728,7 +729,7 @@
                                             </div>
                                             <div>
                                                 <p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $plan->name }}</p>
-                                                <p class="text-xs text-zinc-500 dark:text-zinc-400">${{ number_format($pricePerSeat, 2) }}/{{ $cycleLabel }} per seat</p>
+                                                <p class="text-xs text-zinc-500 dark:text-zinc-400">{{ $plan->currency }}{{ number_format($pricePerSeat, 2) }}/{{ $cycleLabel }} per seat</p>
                                             </div>
                                         </div>
                                         <a href="{{ route('settings.subscription') }}" class="text-xs text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors" wire:navigate>
@@ -792,7 +793,7 @@
                                         <div class="flex items-center justify-between">
                                             <span class="text-sm text-zinc-600 dark:text-zinc-400">New recurring total</span>
                                             <span class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                                                $<span x-text="(seats * price).toFixed(2)"></span>/{{ $cycleLabel }}
+                                                <span x-text="currency"></span><span x-text="(seats * price).toFixed(2)"></span>/{{ $cycleLabel }}
                                             </span>
                                         </div>
                                         <p x-show="seats > current" class="text-xs text-zinc-500 dark:text-zinc-400">
