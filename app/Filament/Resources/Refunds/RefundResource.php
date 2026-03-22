@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Refunds;
 
 use App\Filament\Resources\Refunds\Pages\ListRefunds;
+use App\Models\Transaction;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Placeholder;
@@ -14,7 +15,6 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
-use Wave\Transaction;
 
 class RefundResource extends Resource
 {
@@ -49,10 +49,10 @@ class RefundResource extends Resource
                             ->content(fn (?Transaction $record): string => $record?->status ? ucfirst(str_replace('_', ' ', $record->status)) : '—'),
                         Placeholder::make('amount')
                             ->label('Original Amount')
-                            ->content(fn (?Transaction $record): string => $record ? '$'.number_format($record->amount / 100, 2) : '—'),
+                            ->content(fn (?Transaction $record): string => $record ? currencySymbol($record->currency).number_format($record->amount / 100, 2) : '—'),
                         Placeholder::make('refunded_amount')
                             ->label('Refunded Amount')
-                            ->content(fn (?Transaction $record): string => $record ? '$'.number_format($record->refunded_amount / 100, 2) : '—'),
+                            ->content(fn (?Transaction $record): string => $record ? currencySymbol($record->currency).number_format($record->refunded_amount / 100, 2) : '—'),
                         Placeholder::make('currency')
                             ->content(fn (?Transaction $record): string => $record?->currency ? strtoupper($record->currency) : '—'),
                         Placeholder::make('created_at')
@@ -89,10 +89,10 @@ class RefundResource extends Resource
                     }),
                 TextColumn::make('amount')
                     ->label('Original')
-                    ->formatStateUsing(fn (int $state): string => '$'.number_format($state / 100, 2)),
+                    ->formatStateUsing(fn (int $state, Transaction $record): string => currencySymbol($record->currency).number_format($state / 100, 2)),
                 TextColumn::make('refunded_amount')
                     ->label('Refunded')
-                    ->formatStateUsing(fn (int $state): string => '$'.number_format($state / 100, 2)),
+                    ->formatStateUsing(fn (int $state, Transaction $record): string => currencySymbol($record->currency).number_format($state / 100, 2)),
                 TextColumn::make('status')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
