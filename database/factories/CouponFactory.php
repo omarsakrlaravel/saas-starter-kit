@@ -2,8 +2,8 @@
 
 namespace Database\Factories;
 
+use App\Models\Coupon;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Wave\Coupon;
 
 /**
  * @extends Factory<Coupon>

@@ -1,16 +1,16 @@
 <?php
 
 use App\Listeners\HandleStripeWebhook;
+use App\Models\Coupon;
+use App\Models\CouponRedemption;
+use App\Models\Invoice;
+use App\Models\Plan;
+use App\Models\PromotionCode;
+use App\Models\Subscription;
+use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Cashier\Events\WebhookReceived;
-use Wave\Coupon;
-use Wave\CouponRedemption;
-use Wave\Invoice;
-use Wave\Plan;
-use Wave\PromotionCode;
-use Wave\Subscription;
-use Wave\Transaction;
 
 uses(RefreshDatabase::class);
 

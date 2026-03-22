@@ -5,7 +5,6 @@ use Illuminate\Support\Facades\File;
 test('blade views do not use native wire confirm dialogs', function () {
     $bladeDirectories = [
         resource_path(),
-        base_path('wave/resources/views'),
     ];
 
     $filesWithNativeConfirmDialogs = collect($bladeDirectories)

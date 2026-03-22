@@ -157,13 +157,13 @@ test('ApiKeysRelationManager uses tokens relationship', function () {
 // --- Model Relationship Method Tests ---
 
 test('Subscription model has localInvoices relationship method', function () {
-    expect(method_exists(\Wave\Subscription::class, 'localInvoices'))->toBeTrue();
+    expect(method_exists(\App\Models\Subscription::class, 'localInvoices'))->toBeTrue();
 });
 
 test('Subscription model has transactions relationship method', function () {
-    expect(method_exists(\Wave\Subscription::class, 'transactions'))->toBeTrue();
+    expect(method_exists(\App\Models\Subscription::class, 'transactions'))->toBeTrue();
 });
 
 test('Plan model has subscriptions relationship method', function () {
-    expect(method_exists(\Wave\Plan::class, 'subscriptions'))->toBeTrue();
+    expect(method_exists(\App\Models\Plan::class, 'subscriptions'))->toBeTrue();
 });

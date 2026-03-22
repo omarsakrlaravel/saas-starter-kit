@@ -7,10 +7,10 @@
  * that occur during Stripe webhook processing.
  */
 
+use App\Models\Plan;
+use App\Models\Subscription;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
-use Wave\Plan;
-use Wave\Subscription;
 
 beforeEach(function () {
     $this->artisan('migrate:fresh');

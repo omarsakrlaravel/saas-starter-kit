@@ -1,11 +1,11 @@
 <?php
 
+use App\Models\Coupon;
+use App\Models\Invoice;
+use App\Models\Plan;
+use App\Models\PromotionCode;
+use App\Models\Subscription;
 use App\Models\User;
-use Wave\Coupon;
-use Wave\Invoice;
-use Wave\Plan;
-use Wave\PromotionCode;
-use Wave\Subscription;
 
 use function Pest\Laravel\artisan;
 

@@ -19,11 +19,11 @@ use App\Filament\Widgets\PlanDistributionWidget;
 use App\Filament\Widgets\RecentTransactionsWidget;
 use App\Filament\Widgets\RevenueChartWidget;
 use App\Filament\Widgets\StatsOverviewWidget;
+use App\Models\Invoice;
+use App\Models\Plan;
+use App\Models\Subscription;
 use App\Models\User;
 use Illuminate\Support\Carbon;
-use Wave\Invoice;
-use Wave\Plan;
-use Wave\Subscription;
 
 beforeEach(function () {
     $this->artisan('migrate:fresh');

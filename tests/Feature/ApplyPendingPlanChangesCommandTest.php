@@ -1,8 +1,8 @@
 <?php
 
+use App\Models\Plan;
+use App\Models\Subscription;
 use App\Models\User;
-use Wave\Plan;
-use Wave\Subscription;
 
 beforeEach(function () {
     $this->artisan('migrate:fresh');
@@ -34,7 +34,7 @@ beforeEach(function () {
 });
 
 test('command reports no pending changes when none exist', function () {
-    $this->artisan('wave:apply-pending-plan-changes')
+    $this->artisan('subscriptions:apply-pending-changes')
         ->expectsOutput('No pending plan changes to apply.')
         ->assertSuccessful();
 });
@@ -57,7 +57,7 @@ test('command skips subscriptions with future next_payment_at', function () {
         'pending_change_scheduled_at' => now()->addMonth(),
     ]);
 
-    $this->artisan('wave:apply-pending-plan-changes')
+    $this->artisan('subscriptions:apply-pending-changes')
         ->expectsOutput('No pending plan changes to apply.')
         ->assertSuccessful();
 });
@@ -80,7 +80,7 @@ test('command skips non-active subscriptions', function () {
         'pending_change_scheduled_at' => now()->subDay(),
     ]);
 
-    $this->artisan('wave:apply-pending-plan-changes')
+    $this->artisan('subscriptions:apply-pending-changes')
         ->expectsOutput('No pending plan changes to apply.')
         ->assertSuccessful();
 });

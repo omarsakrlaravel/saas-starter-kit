@@ -1,0 +1,32 @@
+<?php
+
+namespace App\Http\Middleware;
+
+use Closure;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
+
+class CanManageBilling
+{
+    /**
+     * Handle an incoming request.
+     */
+    public function handle(Request $request, Closure $next): Response
+    {
+        if (auth()->check() && auth()->user()->canManageBillingContext()) {
+            return $next($request);
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json(
+                ['status' => 0, 'message' => 'You are not authorized to manage billing for this account.'],
+                422
+            );
+        }
+
+        return redirect()->back()->with([
+            'message' => 'You are not authorized to manage billing for this account.',
+            'message_type' => 'danger',
+        ]);
+    }
+}

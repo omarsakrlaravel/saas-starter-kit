@@ -1,9 +1,9 @@
 <?php
 
+use App\Models\Coupon;
+use App\Models\CouponRedemption;
+use App\Models\PromotionCode;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Wave\Coupon;
-use Wave\CouponRedemption;
-use Wave\PromotionCode;
 
 uses(RefreshDatabase::class);
 

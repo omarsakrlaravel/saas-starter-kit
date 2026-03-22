@@ -14,6 +14,7 @@ use App\Filament\Resources\Users\RelationManagers\OrganizationsRelationManager;
 use App\Filament\Resources\Users\RelationManagers\StatusHistoryRelationManager;
 use App\Filament\Resources\Users\RelationManagers\SubscriptionsRelationManager;
 use App\Models\User;
+use App\Services\FileService;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -40,7 +41,6 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Hash;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
-use Wave\Services\FileService;
 
 class UserResource extends Resource
 {

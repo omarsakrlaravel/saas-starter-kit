@@ -2,9 +2,9 @@
 
 namespace App\Filament\Widgets;
 
+use App\Models\Subscription;
 use Filament\Widgets\ChartWidget;
 use Illuminate\Support\Facades\DB;
-use Wave\Subscription;
 
 class PlanDistributionWidget extends ChartWidget
 {

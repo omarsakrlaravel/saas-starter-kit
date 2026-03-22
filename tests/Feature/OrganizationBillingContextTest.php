@@ -1,9 +1,9 @@
 <?php
 
 use App\Models\Organization;
+use App\Models\Plan;
+use App\Models\Subscription;
 use App\Models\User;
-use Wave\Plan;
-use Wave\Subscription;
 
 beforeEach(function () {
     $this->artisan('migrate:fresh');
@@ -215,14 +215,14 @@ test('cancel endpoint returns failure for unauthorized organization member', fun
     $this->user->refresh();
 
     $this->actingAs($this->user)
-        ->postJson(route('wave.cancel'))
+        ->postJson(route('subscription.cancel'))
         ->assertUnprocessable()
         ->assertJson(['status' => 0]);
 });
 
 test('cancel endpoint returns failure response when user has no active subscription', function () {
     $this->actingAs($this->user)
-        ->postJson(route('wave.cancel'))
+        ->postJson(route('subscription.cancel'))
         ->assertUnprocessable()
         ->assertJson(['status' => 0]);
 });

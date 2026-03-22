@@ -2,13 +2,13 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Invoice;
+use App\Models\Subscription;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Stripe\Exception\ApiErrorException;
 use Stripe\StripeClient;
-use Wave\Invoice;
-use Wave\Subscription;
 
 class StripeSyncInvoices extends Command
 {

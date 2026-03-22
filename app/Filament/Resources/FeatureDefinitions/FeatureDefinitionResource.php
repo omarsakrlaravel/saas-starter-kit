@@ -5,6 +5,7 @@ namespace App\Filament\Resources\FeatureDefinitions;
 use App\Enums\FeatureFlagType;
 use App\Filament\Resources\FeatureDefinitions\Pages\ListFeatureDefinitions;
 use App\Filament\Resources\FeatureDefinitions\Pages\ViewFeatureDefinition;
+use App\Models\ActivityLog;
 use App\Models\FeatureDefinition;
 use App\Models\Organization;
 use BackedEnum;
@@ -21,7 +22,6 @@ use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Laravel\Pennant\Feature;
-use Wave\ActivityLog;
 
 class FeatureDefinitionResource extends Resource
 {

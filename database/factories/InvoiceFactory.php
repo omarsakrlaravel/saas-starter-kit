@@ -2,9 +2,9 @@
 
 namespace Database\Factories;
 
+use App\Models\Invoice;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Wave\Invoice;
 
 /**
  * @extends Factory<Invoice>

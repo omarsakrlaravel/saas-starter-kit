@@ -1,9 +1,9 @@
 <?php
 
+use App\Models\ActivityLog;
+use App\Models\Plan;
+use App\Models\Subscription;
 use App\Models\User;
-use Wave\ActivityLog;
-use Wave\Plan;
-use Wave\Subscription;
 
 test('user can access export data page', function () {
     $user = User::factory()->create();

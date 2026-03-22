@@ -22,7 +22,7 @@ it('rejects invalid api registration payloads', function () {
 });
 
 it('uses the configured minimum api password length', function () {
-    config(['wave.auth.min_password_length' => 12]);
+    config(['saas.auth.min_password_length' => 12]);
 
     $response = $this->postJson('/api/register', [
         'name' => 'Test User',

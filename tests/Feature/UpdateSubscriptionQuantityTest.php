@@ -1,7 +1,7 @@
 <?php
 
-use Wave\Actions\Billing\Stripe\UpdateSubscriptionQuantity;
-use Wave\Subscription;
+use App\Actions\Billing\Stripe\UpdateSubscriptionQuantity;
+use App\Models\Subscription;
 
 test('seat increase uses payment failure guard before applying quantity change', function () {
     $subscription = \Mockery::mock(Subscription::class)->makePartial();

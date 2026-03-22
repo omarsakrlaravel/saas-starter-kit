@@ -1,8 +1,8 @@
 <?php
 
+use App\Models\Plan;
+use App\Models\Subscription;
 use App\Models\User;
-use Wave\Plan;
-use Wave\Subscription;
 
 beforeEach(function () {
     $this->user = User::factory()->create();

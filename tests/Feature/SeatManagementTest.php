@@ -1,14 +1,14 @@
 <?php
 
+use App\Actions\Billing\Stripe\UpdateSubscriptionQuantity;
 use App\Mail\OrganizationInvite;
 use App\Models\Organization;
+use App\Models\Plan;
+use App\Models\Subscription;
 use App\Models\User;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
 use Livewire\Volt\Volt;
-use Wave\Actions\Billing\Stripe\UpdateSubscriptionQuantity;
-use Wave\Plan;
-use Wave\Subscription;
 
 beforeEach(function () {
     $this->artisan('migrate:fresh');

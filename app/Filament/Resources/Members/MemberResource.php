@@ -8,6 +8,7 @@ use App\Filament\Resources\Members\Pages\CreateMember;
 use App\Filament\Resources\Members\Pages\EditMember;
 use App\Filament\Resources\Members\Pages\ListMembers;
 use App\Models\User;
+use App\Services\FileService;
 use BackedEnum;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
@@ -27,7 +28,6 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Hash;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
-use Wave\Services\FileService;
 
 class MemberResource extends Resource
 {

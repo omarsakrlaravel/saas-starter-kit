@@ -1,12 +1,12 @@
 <?php
 
+use App\Models\ActivityLog;
 use App\Models\Organization;
 use App\Models\User;
+use App\Scopes\TenantScope;
+use App\Services\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Route;
-use Wave\ActivityLog;
-use Wave\Scopes\TenantScope;
-use Wave\TenantContext;
 
 uses(RefreshDatabase::class);
 

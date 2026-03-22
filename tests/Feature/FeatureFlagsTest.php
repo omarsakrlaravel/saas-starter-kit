@@ -14,13 +14,13 @@
 use App\Enums\FeatureFlagType;
 use App\Models\FeatureDefinition;
 use App\Models\Organization;
+use App\Models\Plan;
+use App\Models\Subscription;
 use App\Models\User;
+use App\Services\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Pennant\Feature;
 use Spatie\Permission\Models\Role;
-use Wave\Plan;
-use Wave\Subscription;
-use Wave\TenantContext;
 
 uses(RefreshDatabase::class);
 

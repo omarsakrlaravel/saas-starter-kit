@@ -1,13 +1,13 @@
 <?php
 
 use App\Enums\FileAccessLevel;
+use App\Models\File;
 use App\Models\Organization;
 use App\Models\User;
+use App\Services\FileService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
-use Wave\File;
-use Wave\Services\FileService;
 
 uses(RefreshDatabase::class);
 

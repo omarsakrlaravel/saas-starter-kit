@@ -2,6 +2,7 @@
 
 namespace App\Filament\Widgets;
 
+use App\Models\ActivityLog;
 use App\Models\FeatureDefinition;
 use App\Models\PennantFeature;
 use Filament\Actions\Action;
@@ -19,7 +20,6 @@ use Filament\Tables\Table;
 use Filament\Widgets\Widget;
 use Illuminate\Database\Eloquent\Model;
 use Laravel\Pennant\Feature;
-use Wave\ActivityLog;
 
 class OrganizationFeaturesWidget extends Widget implements HasActions, HasSchemas, HasTable
 {

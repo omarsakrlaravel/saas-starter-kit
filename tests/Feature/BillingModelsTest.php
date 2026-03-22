@@ -10,10 +10,10 @@
  * - Factory states (paid, open, void, succeeded, failed, refunded)
  */
 
+use App\Models\Invoice;
+use App\Models\Subscription;
+use App\Models\Transaction;
 use App\Models\User;
-use Wave\Invoice;
-use Wave\Subscription;
-use Wave\Transaction;
 
 beforeEach(function () {
     $this->user = User::factory()->create();

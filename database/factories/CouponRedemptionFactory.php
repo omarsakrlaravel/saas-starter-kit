@@ -2,10 +2,10 @@
 
 namespace Database\Factories;
 
+use App\Models\Coupon;
+use App\Models\CouponRedemption;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Wave\Coupon;
-use Wave\CouponRedemption;
 
 /**
  * @extends Factory<CouponRedemption>

@@ -2,17 +2,17 @@
 
 namespace App\Listeners;
 
+use App\Models\Coupon;
+use App\Models\CouponRedemption;
+use App\Models\Invoice;
+use App\Models\Plan;
+use App\Models\PromotionCode;
+use App\Models\Subscription;
+use App\Models\Transaction;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Laravel\Cashier\Events\WebhookReceived;
-use Wave\Coupon;
-use Wave\CouponRedemption;
-use Wave\Invoice;
-use Wave\Plan;
-use Wave\PromotionCode;
-use Wave\Subscription;
-use Wave\Transaction;
 
 class HandleStripeWebhook
 {

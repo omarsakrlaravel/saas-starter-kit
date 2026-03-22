@@ -1,10 +1,10 @@
 <?php
 
 use App\Enums\FileAccessLevel;
+use App\Models\File;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Wave\File;
 
 uses(RefreshDatabase::class);
 

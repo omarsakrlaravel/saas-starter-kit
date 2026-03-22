@@ -3,8 +3,8 @@
 namespace App\Policies;
 
 use App\Enums\FileAccessLevel;
+use App\Models\File;
 use App\Models\User;
-use Wave\File;
 
 class FilePolicy
 {

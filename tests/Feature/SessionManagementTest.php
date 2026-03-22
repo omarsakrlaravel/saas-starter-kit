@@ -1,10 +1,10 @@
 <?php
 
+use App\Models\ActivityLog;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Livewire\Volt\Volt;
-use Wave\ActivityLog;
 
 beforeEach(function () {
     $this->user = User::factory()->create([

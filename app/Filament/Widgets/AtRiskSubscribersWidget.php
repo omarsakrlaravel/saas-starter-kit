@@ -2,11 +2,11 @@
 
 namespace App\Filament\Widgets;
 
+use App\Models\Subscription;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget;
 use Illuminate\Database\Eloquent\Builder;
-use Wave\Subscription;
 
 class AtRiskSubscribersWidget extends TableWidget
 {

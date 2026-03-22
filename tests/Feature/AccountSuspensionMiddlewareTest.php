@@ -1,14 +1,14 @@
 <?php
 
 use App\Enums\AccountStatus;
+use App\Jobs\CreateActivityLog;
 use App\Jobs\Middleware\EnsureAccountActive;
+use App\Models\ActivityLog;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Broadcast;
 use Symfony\Component\HttpFoundation\Response;
-use Wave\ActivityLog;
-use Wave\Jobs\CreateActivityLog;
 
 uses(RefreshDatabase::class);
 

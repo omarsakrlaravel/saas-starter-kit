@@ -137,7 +137,7 @@ describe('API Key Activity Logging', function () {
         $this->actingAs($this->user);
 
         // Clear existing activity logs
-        \Wave\ActivityLog::where('user_id', $this->user->id)->delete();
+        \App\Models\ActivityLog::where('user_id', $this->user->id)->delete();
 
         $this->user->createApiKey('Logged Key');
 

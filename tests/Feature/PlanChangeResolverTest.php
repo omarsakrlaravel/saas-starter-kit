@@ -1,9 +1,9 @@
 <?php
 
+use App\Models\Plan;
+use App\Models\Subscription;
 use App\Models\User;
-use Wave\Plan;
-use Wave\Services\PlanChangeResolver;
-use Wave\Subscription;
+use App\Services\PlanChangeResolver;
 
 beforeEach(function () {
     $this->artisan('migrate:fresh');

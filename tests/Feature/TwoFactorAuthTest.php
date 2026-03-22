@@ -1,10 +1,10 @@
 <?php
 
+use App\Models\ActivityLog;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Livewire\Volt\Volt;
 use PragmaRX\Google2FA\Google2FA;
-use Wave\ActivityLog;
 
 beforeEach(function () {
     $this->user = User::factory()->create([

@@ -24,13 +24,13 @@ class LogSuccessfulLogout
         }
 
         // Prevent duplicate logout logs
-        $recentLogout = \Wave\ActivityLog::where('user_id', $event->user->id)
+        $recentLogout = \App\Models\ActivityLog::where('user_id', $event->user->id)
             ->where('action', 'logout')
             ->where('created_at', '>=', now()->subMinutes(5))
             ->exists();
 
         if (! $recentLogout) {
-            \Wave\ActivityLog::create([
+            \App\Models\ActivityLog::create([
                 'user_id' => $event->user->id,
                 'action' => 'logout',
                 'description' => 'User logged out',

@@ -5,6 +5,7 @@ namespace App\Filament\Resources\PromotionCodes;
 use App\Filament\Resources\PromotionCodes\Pages\CreatePromotionCode;
 use App\Filament\Resources\PromotionCodes\Pages\EditPromotionCode;
 use App\Filament\Resources\PromotionCodes\Pages\ListPromotionCodes;
+use App\Models\PromotionCode;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -24,7 +25,6 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
-use Wave\PromotionCode;
 
 class PromotionCodeResource extends Resource
 {

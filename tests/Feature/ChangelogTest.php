@@ -1,7 +1,7 @@
 <?php
 
+use App\Models\Changelog;
 use App\Models\User;
-use Wave\Changelog;
 
 beforeEach(function () {
     $this->user = User::factory()->create();

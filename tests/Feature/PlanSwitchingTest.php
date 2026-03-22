@@ -9,9 +9,9 @@
  * - Edge cases (same plan, invalid plans, multiple subscriptions)
  */
 
+use App\Models\Plan;
+use App\Models\Subscription;
 use App\Models\User;
-use Wave\Plan;
-use Wave\Subscription;
 
 beforeEach(function () {
     $this->artisan('migrate:fresh');

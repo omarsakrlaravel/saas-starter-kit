@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Hash;
 use Livewire\Volt\Volt;
 
 it('respects minimum password length from config when changing password', function () {
-    $minLength = config('wave.auth.min_password_length');
+    $minLength = config('saas.auth.min_password_length');
 
     $user = User::factory()->create([
         'password' => Hash::make('oldpassword123'),
@@ -25,7 +25,7 @@ it('respects minimum password length from config when changing password', functi
 });
 
 it('allows password change with valid length', function () {
-    $minLength = config('wave.auth.min_password_length');
+    $minLength = config('saas.auth.min_password_length');
 
     $user = User::factory()->create([
         'password' => Hash::make('oldpassword123'),

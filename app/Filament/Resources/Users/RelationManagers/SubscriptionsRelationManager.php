@@ -3,11 +3,11 @@
 namespace App\Filament\Resources\Users\RelationManagers;
 
 use App\Filament\Resources\Subscriptions\SubscriptionResource;
+use App\Models\Subscription;
 use Filament\Actions\Action;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use Wave\Subscription;
 
 class SubscriptionsRelationManager extends RelationManager
 {

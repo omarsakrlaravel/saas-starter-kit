@@ -10,9 +10,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Str;
-use Wave\Invoice;
-use Wave\Subscription;
-use Wave\Transaction;
 
 class Organization extends Model
 {
@@ -121,12 +118,12 @@ class Organization extends Model
 
     public function owner(): BelongsTo
     {
-        return $this->belongsTo(config('wave.user_model', User::class), 'owner_user_id');
+        return $this->belongsTo(config('saas.user_model', User::class), 'owner_user_id');
     }
 
     public function members(): BelongsToMany
     {
-        return $this->belongsToMany(config('wave.user_model', User::class), 'organization_user')
+        return $this->belongsToMany(config('saas.user_model', User::class), 'organization_user')
             ->withPivot(['role', 'status', 'invited_by', 'invited_at', 'joined_at'])
             ->withTimestamps();
     }

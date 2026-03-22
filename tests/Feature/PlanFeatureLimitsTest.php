@@ -11,11 +11,11 @@
  * - Default limits for users without plans
  */
 
+use App\Models\Plan;
+use App\Models\Subscription;
 use App\Models\User;
 use Laravel\Sanctum\PersonalAccessToken;
 use Spatie\Permission\Models\Role;
-use Wave\Plan;
-use Wave\Subscription;
 
 beforeEach(function () {
     $this->artisan('migrate:fresh');

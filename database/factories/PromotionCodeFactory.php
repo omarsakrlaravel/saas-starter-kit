@@ -2,9 +2,9 @@
 
 namespace Database\Factories;
 
+use App\Models\Coupon;
+use App\Models\PromotionCode;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Wave\Coupon;
-use Wave\PromotionCode;
 
 /**
  * @extends Factory<PromotionCode>

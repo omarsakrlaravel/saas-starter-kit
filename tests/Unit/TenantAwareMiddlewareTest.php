@@ -1,9 +1,9 @@
 <?php
 
+use App\Http\Middleware\TenantAware;
+use App\Services\TenantContext;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Wave\Http\Middleware\TenantAware;
-use Wave\TenantContext;
 
 test('it sets tenant context from authenticated user current organization', function () {
     $context = new TenantContext();

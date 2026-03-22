@@ -2,11 +2,11 @@
 
 namespace App\Filament\Resources\Plans\RelationManagers;
 
+use App\Models\Subscription;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
-use Wave\Subscription;
 
 class SubscriptionsRelationManager extends RelationManager
 {

@@ -11,4 +11,4 @@ Artisan::command('inspire', function () {
 // Schedule::command('inspire')->hourly();
 Schedule::command('accounts:process-deletions')->daily();
 Schedule::command('activity:clean')->daily();
-Schedule::command('wave:apply-pending-plan-changes')->hourly();
+Schedule::command('subscriptions:apply-pending-changes')->hourly();

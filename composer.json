@@ -1,6 +1,6 @@
 {
-    "name": "devdojo/wave",
-    "description": "Wave SaaS Starter Kit",
+    "name": "app/saas-starter-kit",
+    "description": "SaaS Starter Kit",
     "keywords": [
         "framework",
         "laravel",
@@ -55,9 +55,11 @@
         "psr-4": {
             "App\\": "app/",
             "Database\\Factories\\": "database/factories/",
-            "Database\\Seeders\\": "database/seeders/",
-            "Wave\\": "wave/src/"
-        }
+            "Database\\Seeders\\": "database/seeders/"
+        },
+        "files": [
+            "app/Helpers/globals.php"
+        ]
     },
     "autoload-dev": {
         "psr-4": {
@@ -67,9 +69,7 @@
     "extra": {
         "laravel": {
             "dont-discover": [],
-            "providers": [
-                "Wave\\WaveServiceProvider"
-            ]
+            "providers": []
         }
     },
     "scripts": {

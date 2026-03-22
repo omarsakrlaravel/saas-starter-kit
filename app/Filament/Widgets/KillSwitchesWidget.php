@@ -3,6 +3,7 @@
 namespace App\Filament\Widgets;
 
 use App\Enums\FeatureFlagType;
+use App\Models\ActivityLog;
 use App\Models\FeatureDefinition;
 use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
@@ -13,7 +14,6 @@ use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Widgets\Widget;
 use Illuminate\Database\Eloquent\Collection;
 use Laravel\Pennant\Feature;
-use Wave\ActivityLog;
 
 class KillSwitchesWidget extends Widget implements HasActions, HasSchemas
 {

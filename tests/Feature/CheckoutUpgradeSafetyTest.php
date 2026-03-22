@@ -1,8 +1,8 @@
 <?php
 
+use App\Livewire\Billing\Checkout;
+use App\Models\Plan;
 use App\Models\User;
-use Wave\Http\Livewire\Billing\Checkout;
-use Wave\Plan;
 
 test('upgrade falls back to stripe checkout when no saved payment method', function () {
     $user = User::factory()->create();

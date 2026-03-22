@@ -2,12 +2,12 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Coupon;
+use App\Models\PromotionCode;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Stripe\Exception\ApiErrorException;
 use Stripe\StripeClient;
-use Wave\Coupon;
-use Wave\PromotionCode;
 
 class StripeSyncCoupons extends Command
 {

@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Changelogs;
 use App\Filament\Resources\Changelogs\Pages\CreateChangelog;
 use App\Filament\Resources\Changelogs\Pages\EditChangelog;
 use App\Filament\Resources\Changelogs\Pages\ListChangelogs;
+use App\Models\Changelog;
 use BackedEnum;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
@@ -17,7 +18,6 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use Wave\Changelog;
 
 class ChangelogResource extends Resource
 {

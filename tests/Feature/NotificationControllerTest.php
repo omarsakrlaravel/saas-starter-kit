@@ -36,7 +36,7 @@ function createNotificationForUser(User $user, ?string $id = null, bool $read = 
 
 describe('Notification Controller', function () {
     it('requires authentication to delete notification', function () {
-        $response = $this->post(route('wave.notification.read', ['id' => 'fake-id']));
+        $response = $this->post(route('notification.read', ['id' => 'fake-id']));
 
         $response->assertRedirect(route('login'));
     });
@@ -48,7 +48,7 @@ describe('Notification Controller', function () {
 
         expect($this->user->notifications()->count())->toBe(1);
 
-        $response = $this->postJson(route('wave.notification.read', ['id' => $notificationId]));
+        $response = $this->postJson(route('notification.read', ['id' => $notificationId]));
 
         $response->assertStatus(200);
         $response->assertJson([
@@ -63,7 +63,7 @@ describe('Notification Controller', function () {
         $this->actingAs($this->user);
 
         $fakeUuid = Str::uuid()->toString();
-        $response = $this->postJson(route('wave.notification.read', ['id' => $fakeUuid]));
+        $response = $this->postJson(route('notification.read', ['id' => $fakeUuid]));
 
         $response->assertStatus(200);
         $response->assertJson([
@@ -78,7 +78,7 @@ describe('Notification Controller', function () {
         $otherUser = User::factory()->create();
         $notificationId = createNotificationForUser($otherUser);
 
-        $response = $this->postJson(route('wave.notification.read', ['id' => $notificationId]));
+        $response = $this->postJson(route('notification.read', ['id' => $notificationId]));
 
         $response->assertJson([
             'type' => 'error',
@@ -96,7 +96,7 @@ describe('Notification Controller', function () {
 
         $notificationId = createNotificationForUser($this->user);
 
-        $response = $this->postJson(route('wave.notification.read', ['id' => $notificationId]), [
+        $response = $this->postJson(route('notification.read', ['id' => $notificationId]), [
             'listid' => 'notification-list-1',
         ]);
 

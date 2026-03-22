@@ -1,8 +1,8 @@
 <?php
 
+use App\Models\Plan;
+use App\Models\Subscription;
 use App\Models\User;
-use Wave\Plan;
-use Wave\Subscription;
 
 use function Pest\Laravel\artisan;
 
@@ -41,9 +41,9 @@ beforeEach(function () {
 });
 
 it('displays statistics successfully', function () {
-    artisan('wave:stats')
+    artisan('app:stats')
         ->assertSuccessful()
-        ->expectsOutputToContain('Wave Statistics');
+        ->expectsOutputToContain('Application Statistics');
 });
 
 it('calculates MRR correctly for monthly subscriptions', function () {
@@ -65,7 +65,7 @@ it('calculates MRR correctly for monthly subscriptions', function () {
     }
 
     // Run command and capture output
-    $this->artisan('wave:stats', ['--json' => true])
+    $this->artisan('app:stats', ['--json' => true])
         ->assertSuccessful()
         ->expectsOutputToContain('29.97');
 });
@@ -89,7 +89,7 @@ it('calculates MRR correctly for yearly subscriptions', function () {
     }
 
     // Expected MRR: 2 x ($299.99 / 12) = $49.998... ~ $50.00
-    $this->artisan('wave:stats', ['--json' => true])
+    $this->artisan('app:stats', ['--json' => true])
         ->assertSuccessful()
         ->expectsOutputToContain('50');
 });
@@ -128,7 +128,7 @@ it('calculates MRR correctly for mixed subscriptions', function () {
     ]);
 
     // Expected MRR: (2 x $9.99) + ($299.99 / 12) = $19.98 + $25.00 = $44.98
-    $this->artisan('wave:stats', ['--json' => true])
+    $this->artisan('app:stats', ['--json' => true])
         ->assertSuccessful()
         ->expectsOutputToContain('44.98');
 });
@@ -169,7 +169,7 @@ it('counts active subscriptions correctly', function () {
         ]);
     }
 
-    $this->artisan('wave:stats', ['--json' => true])
+    $this->artisan('app:stats', ['--json' => true])
         ->assertSuccessful()
         ->expectsOutputToContain('"active": 5');
 });
@@ -182,7 +182,7 @@ it('counts users correctly', function () {
     User::factory()->count(5)->create(['verified' => 0]);
 
     // Should show users (at least our 15 plus any from seeding)
-    $this->artisan('wave:stats', ['--json' => true])
+    $this->artisan('app:stats', ['--json' => true])
         ->assertSuccessful()
         ->expectsOutputToContain('"users"');
 });
@@ -204,13 +204,13 @@ it('calculates ARR correctly', function () {
     ]);
 
     // MRR = $9.99, ARR = $9.99 x 12 = $119.88
-    $this->artisan('wave:stats', ['--json' => true])
+    $this->artisan('app:stats', ['--json' => true])
         ->assertSuccessful()
         ->expectsOutputToContain('119.88');
 });
 
 it('shows zero MRR when no active subscriptions', function () {
-    $this->artisan('wave:stats', ['--json' => true])
+    $this->artisan('app:stats', ['--json' => true])
         ->assertSuccessful()
         ->expectsOutputToContain('"mrr": 0');
 });
@@ -251,7 +251,7 @@ it('displays plan breakdown correctly', function () {
     }
 
     // Verify the plan breakdown is in the output
-    $this->artisan('wave:stats', ['--json' => true])
+    $this->artisan('app:stats', ['--json' => true])
         ->assertSuccessful()
         ->expectsOutputToContain('"plans"');
 });
@@ -269,7 +269,7 @@ it('calculates growth metrics for custom period', function () {
         'created_at' => now()->subDays(15),
     ]);
 
-    $this->artisan('wave:stats', ['--period' => 30, '--json' => true])
+    $this->artisan('app:stats', ['--period' => 30, '--json' => true])
         ->assertSuccessful()
         ->expectsOutputToContain('"new": 5');
 });
@@ -307,7 +307,7 @@ it('ignores inactive subscriptions in MRR calculation', function () {
     ]);
 
     // Expected MRR: Only the active subscription = $9.99
-    $this->artisan('wave:stats', ['--json' => true])
+    $this->artisan('app:stats', ['--json' => true])
         ->assertSuccessful()
         ->expectsOutputToContain('9.99');
 });
@@ -329,7 +329,7 @@ it('handles subscriptions without plans gracefully', function () {
     ]);
 
     // Should calculate MRR for subscription with valid plan
-    $this->artisan('wave:stats', ['--json' => true])
+    $this->artisan('app:stats', ['--json' => true])
         ->assertSuccessful()
         ->expectsOutputToContain('9.99');
 });

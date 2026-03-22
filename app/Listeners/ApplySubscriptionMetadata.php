@@ -2,9 +2,9 @@
 
 namespace App\Listeners;
 
+use App\Models\Subscription;
 use Illuminate\Support\Facades\Cache;
 use Laravel\Cashier\Events\WebhookHandled;
-use Wave\Subscription;
 
 class ApplySubscriptionMetadata
 {

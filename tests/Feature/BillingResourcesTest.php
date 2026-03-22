@@ -19,9 +19,9 @@ use App\Filament\Resources\Refunds\RefundResource;
 use App\Filament\Resources\Transactions\Pages\EditTransaction;
 use App\Filament\Resources\Transactions\Pages\ListTransactions;
 use App\Filament\Resources\Transactions\TransactionResource;
+use App\Models\Invoice;
+use App\Models\Transaction;
 use App\Models\User;
-use Wave\Invoice;
-use Wave\Transaction;
 
 use function Pest\Livewire\livewire;
 

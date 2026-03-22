@@ -36,7 +36,7 @@ class AdminPanelProvider extends PanelProvider
     public function panel(Panel $panel): Panel
     {
 
-        Blade::component('wave::admin.components.label', 'label');
+        Blade::component('wave.admin.components.label', 'label');
 
         return $panel
             ->default()
@@ -76,7 +76,7 @@ class AdminPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
             ])
-            ->brandLogo(fn () => view('wave::admin.logo'))
-            ->darkModeBrandLogo(fn () => view('wave::admin.logo-dark'));
+            ->brandLogo(fn () => view('wave.admin.logo'))
+            ->darkModeBrandLogo(fn () => view('wave.admin.logo-dark'));
     }
 }

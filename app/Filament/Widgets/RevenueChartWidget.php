@@ -2,13 +2,13 @@
 
 namespace App\Filament\Widgets;
 
+use App\Models\Invoice;
+use App\Models\Plan;
+use App\Models\Subscription;
 use Filament\Widgets\ChartWidget;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
-use Wave\Invoice;
-use Wave\Plan;
-use Wave\Subscription;
 
 class RevenueChartWidget extends ChartWidget
 {

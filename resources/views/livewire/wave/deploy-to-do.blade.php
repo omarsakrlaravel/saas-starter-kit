@@ -57,7 +57,6 @@
         @else
             <div class="mx-auto w-full max-w-lg">
 
-
                 <div class="overflow-hidden bg-white rounded-lg border shadow-xl border-zinc-100">
                     <div class="flex relative items-center pl-5 w-full h-20 text-white bg-center bg-cover bg-gradient-to-br from-blue-500 to-blue-600" style="background-image:url('{{ Storage::url('/settings/April2021/deploy-banner.png') }}')">
                         <img src="{{ Storage::url('/settings/April2021/deploy-to-do.png') }}" class="w-10 h-10">
@@ -68,7 +67,6 @@
                         </div>
 
                     </div>
-
 
                     <div class="flex relative flex-col p-8 h-full">
                         <h2 class="font-bold text-black">{{ $app['app']['spec']['name'] }}</h2>
