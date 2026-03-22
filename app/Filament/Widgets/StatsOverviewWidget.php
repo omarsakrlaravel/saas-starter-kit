@@ -2,11 +2,11 @@
 
 namespace App\Filament\Widgets;
 
+use App\Models\Subscription;
+use App\Models\User;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Facades\DB;
-use Wave\Subscription;
-use Wave\User;
 
 class StatsOverviewWidget extends BaseWidget
 {
@@ -46,7 +46,7 @@ class StatsOverviewWidget extends BaseWidget
             return (float) $plan->monthly_price * $quantity;
         });
 
-        return Stat::make('MRR', '$'.number_format($mrr, 2))
+        return Stat::make('MRR', currencySymbol('usd').number_format($mrr, 2))
             ->description('Monthly Recurring Revenue')
             ->descriptionIcon('heroicon-m-currency-dollar')
             ->color('success');

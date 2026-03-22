@@ -2,11 +2,11 @@
 
 namespace App\Filament\Widgets;
 
+use App\Models\Transaction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget;
 use Illuminate\Support\Facades\Schema;
-use Wave\Transaction;
 
 class RecentTransactionsWidget extends TableWidget
 {
@@ -34,7 +34,7 @@ class RecentTransactionsWidget extends TableWidget
                     ->label('Customer')
                     ->placeholder('--'),
                 TextColumn::make('amount')
-                    ->formatStateUsing(fn (int $state): string => '$'.number_format($state / 100, 2))
+                    ->formatStateUsing(fn (int $state, Transaction $record): string => currencySymbol($record->currency).number_format($state / 100, 2))
                     ->label('Amount'),
                 TextColumn::make('status')
                     ->badge()
