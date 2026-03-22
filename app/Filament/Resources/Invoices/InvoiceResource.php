@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Invoices;
 use App\Filament\Resources\Invoices\Pages\CreateInvoice;
 use App\Filament\Resources\Invoices\Pages\EditInvoice;
 use App\Filament\Resources\Invoices\Pages\ListInvoices;
+use App\Models\Invoice;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -23,7 +24,6 @@ use Filament\Tables\Table;
 use Stripe\Exception\ApiErrorException;
 use Stripe\StripeClient;
 use UnitEnum;
-use Wave\Invoice;
 
 class InvoiceResource extends Resource
 {
@@ -54,12 +54,12 @@ class InvoiceResource extends Resource
                             ->content(fn (?Invoice $record): string => $record?->currency ? strtoupper($record->currency) : '—'),
                         Placeholder::make('amount_due')
                             ->label('Amount Due')
-                            ->content(fn (?Invoice $record): string => $record ? '$'.number_format($record->amount_due / 100, 2) : '—'),
+                            ->content(fn (?Invoice $record): string => $record ? currencySymbol($record->currency).number_format($record->amount_due / 100, 2) : '—'),
                         Placeholder::make('amount_paid')
                             ->label('Amount Paid')
-                            ->content(fn (?Invoice $record): string => $record ? '$'.number_format($record->amount_paid / 100, 2) : '—'),
+                            ->content(fn (?Invoice $record): string => $record ? currencySymbol($record->currency).number_format($record->amount_paid / 100, 2) : '—'),
                         Placeholder::make('total')
-                            ->content(fn (?Invoice $record): string => $record ? '$'.number_format($record->total / 100, 2) : '—'),
+                            ->content(fn (?Invoice $record): string => $record ? currencySymbol($record->currency).number_format($record->total / 100, 2) : '—'),
                         Placeholder::make('period_start')
                             ->label('Period Start')
                             ->content(fn (?Invoice $record): string => $record?->period_start?->format('M d, Y H:i') ?? '—'),
@@ -110,7 +110,7 @@ class InvoiceResource extends Resource
                     }),
                 TextColumn::make('total')
                     ->label('Amount')
-                    ->formatStateUsing(fn (int $state): string => '$'.number_format($state / 100, 2)),
+                    ->formatStateUsing(fn (int $state, Invoice $record): string => currencySymbol($record->currency).number_format($state / 100, 2)),
                 TextColumn::make('status')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
@@ -153,7 +153,7 @@ class InvoiceResource extends Resource
                     ])
                     ->schema([
                         TextInput::make('amount')
-                            ->label('Refund Amount ($)')
+                            ->label('Refund Amount')
                             ->numeric()
                             ->required()
                             ->minValue(0.01)
