@@ -1,15 +1,11 @@
 # Code of Conduct
 
-## Our Community
-
-Wave is built by developers, for developers. We're here to help each other build better SaaS applications.
-
 ## Expected Behavior
 
 - Be respectful and considerate in your communication
 - Welcome newcomers and help them get started
 - Give and receive constructive feedback gracefully
-- Focus on what's best for the community
+- Focus on what is best for the community
 - Show patience when others are learning
 
 ## Unacceptable Behavior
@@ -22,14 +18,14 @@ Wave is built by developers, for developers. We're here to help each other build
 
 ## Reporting Issues
 
-If you experience or witness unacceptable behavior, please contact us at support@devdojo.com.
+If you experience or witness unacceptable behavior, please open an issue or contact a project maintainer directly.
 
-We will review and address all reports promptly and fairly.
+All reports will be reviewed and addressed promptly and fairly.
 
 ## Scope
 
-This Code of Conduct applies to all project spaces including GitHub, Discord, social media, and events where you're representing the Wave community.
+This Code of Conduct applies to all project spaces including GitHub issues, pull requests, and any other communication channels associated with this project.
 
 ---
 
-By participating in the Wave community, you agree to follow this Code of Conduct.
+By participating in this project, you agree to follow this Code of Conduct.
