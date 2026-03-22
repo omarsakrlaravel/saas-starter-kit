@@ -6,10 +6,12 @@ use App\Listeners\ApplySubscriptionMetadata;
 use App\Listeners\HandleStripeWebhook;
 use App\Listeners\LogSuccessfulLogin;
 use App\Listeners\LogSuccessfulLogout;
+use App\Listeners\SendWelcomeNotification;
 use App\Policies\FilePolicy;
 use Exception;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
@@ -75,6 +77,7 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(Logout::class, LogSuccessfulLogout::class);
         Event::listen(WebhookReceived::class, HandleStripeWebhook::class);
         Event::listen(WebhookHandled::class, ApplySubscriptionMetadata::class);
+        Event::listen(Registered::class, SendWelcomeNotification::class);
 
         Validator::extend('base64image', function ($attribute, $value, $parameters, $validator) {
             $explode = explode(',', $value);

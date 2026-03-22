@@ -62,6 +62,8 @@ class AuthController extends Controller implements HasMiddleware
             'password' => bcrypt($validated['password']),
         ]);
 
+        $user->notify(new \App\Notifications\WelcomeNotification());
+
         $expiresAt = now()->addMinutes((int) config('wave.api.auth_token_expires', 60));
         $token = $user->createToken('auth', ['*'], $expiresAt);
 
