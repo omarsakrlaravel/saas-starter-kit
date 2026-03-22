@@ -35,9 +35,7 @@ use Wave\Http\Middleware\CanManageBilling;
 use Wave\Http\Middleware\HandleOrganizationInvite;
 use Wave\Http\Middleware\InstallMiddleware;
 use Wave\Http\Middleware\Subscribed;
-use Wave\Http\Middleware\TokenMiddleware;
 use Wave\Overrides\Vite;
-use Wave\TenantContext;
 
 class WaveServiceProvider extends ServiceProvider
 {
@@ -63,7 +61,6 @@ class WaveServiceProvider extends ServiceProvider
         $this->loadLivewireComponents();
 
         $this->app->router->aliasMiddleware('subscribed', Subscribed::class);
-        $this->app->router->aliasMiddleware('token_api', TokenMiddleware::class);
         $this->app->router->aliasMiddleware('can-manage-billing', CanManageBilling::class);
         $this->app->router->aliasMiddleware('handle-org-invite', HandleOrganizationInvite::class);
 

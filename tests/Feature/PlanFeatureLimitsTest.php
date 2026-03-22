@@ -12,14 +12,22 @@
  */
 
 use App\Models\User;
+use Laravel\Sanctum\PersonalAccessToken;
 use Spatie\Permission\Models\Role;
-use Wave\ApiKey;
 use Wave\Plan;
 use Wave\Subscription;
 
 beforeEach(function () {
     $this->artisan('migrate:fresh');
-    $this->seed();
+    $this->seed(\Database\Seeders\RolesTableSeeder::class);
+    $this->seed(\Database\Seeders\PermissionsTableSeeder::class);
+    $this->seed(\Database\Seeders\PermissionRoleTableSeeder::class);
+
+    // Override feature config to use Sanctum's PersonalAccessToken
+    config(['limits.features.api_keys' => [
+        'model' => PersonalAccessToken::class,
+        'column' => 'tokenable_id',
+    ]]);
 
     // Create test user
     $this->user = User::factory()->create();
@@ -171,21 +179,20 @@ test('admin bypass can be disabled', function () {
 });
 
 test('feature usage counts correctly', function () {
-    // Create some API keys for the user
-    ApiKey::create(['user_id' => $this->user->id, 'name' => 'Key 1', 'key' => 'test_key_1']);
-    ApiKey::create(['user_id' => $this->user->id, 'name' => 'Key 2', 'key' => 'test_key_2']);
+    $this->user->createToken('Key 1');
+    $this->user->createToken('Key 2');
 
     expect($this->user->featureUsage('api_keys'))->toBe(2);
 });
 
 test('feature usage is cached within request', function () {
-    ApiKey::create(['user_id' => $this->user->id, 'name' => 'Key 1', 'key' => 'test_key_1']);
+    $this->user->createToken('Key 1');
 
     // First call
     $usage1 = $this->user->featureUsage('api_keys');
 
-    // Add another key (but cache should return old value)
-    ApiKey::create(['user_id' => $this->user->id, 'name' => 'Key 2', 'key' => 'test_key_2']);
+    // Add another token (but cache should return old value)
+    $this->user->createToken('Key 2');
     $usage2 = $this->user->featureUsage('api_keys');
 
     expect($usage1)->toBe(1)
@@ -213,7 +220,7 @@ test('canUseFeature returns true when under limit', function () {
     ]);
 
     // Pro plan has limit of 10
-    ApiKey::create(['user_id' => $this->user->id, 'name' => 'Key 1', 'key' => 'test_key_1']);
+    $this->user->createToken('Key 1');
 
     expect($this->user->canUseFeature('api_keys'))->toBeTrue();
 });
@@ -233,7 +240,7 @@ test('canUseFeature returns false when at limit', function () {
     ]);
 
     // Free plan has limit of 1
-    ApiKey::create(['user_id' => $this->user->id, 'name' => 'Key 1', 'key' => 'test_key_1']);
+    $this->user->createToken('Key 1');
 
     expect($this->user->canUseFeature('api_keys'))->toBeFalse();
 });
@@ -254,7 +261,7 @@ test('canUseFeature with amount parameter', function () {
 
     // Pro plan has limit of 10
     for ($i = 1; $i <= 8; $i++) {
-        ApiKey::create(['user_id' => $this->user->id, 'name' => "Key {$i}", 'key' => "test_key_{$i}"]);
+        $this->user->createToken("Key {$i}");
     }
     $this->user->clearFeatureUsageCache();
 
@@ -276,8 +283,8 @@ test('featureRemaining returns correct value', function () {
         'quantity' => 1,
     ]);
 
-    ApiKey::create(['user_id' => $this->user->id, 'name' => 'Key 1', 'key' => 'test_key_1']);
-    ApiKey::create(['user_id' => $this->user->id, 'name' => 'Key 2', 'key' => 'test_key_2']);
+    $this->user->createToken('Key 1');
+    $this->user->createToken('Key 2');
 
     expect($this->user->featureRemaining('api_keys'))->toBe(8);
 });
@@ -315,7 +322,7 @@ test('featureLimitReached returns correct boolean', function () {
 
     expect($this->user->featureLimitReached('api_keys'))->toBeFalse();
 
-    ApiKey::create(['user_id' => $this->user->id, 'name' => 'Key 1', 'key' => 'test_key_1']);
+    $this->user->createToken('Key 1');
     $this->user->clearFeatureUsageCache();
 
     expect($this->user->featureLimitReached('api_keys'))->toBeTrue();
@@ -421,9 +428,9 @@ test('featureUsagePercent returns correct percentage', function () {
     ]);
 
     // Pro plan has limit of 10
-    ApiKey::create(['user_id' => $this->user->id, 'name' => 'Key 1', 'key' => 'test_key_1']);
-    ApiKey::create(['user_id' => $this->user->id, 'name' => 'Key 2', 'key' => 'test_key_2']);
-    ApiKey::create(['user_id' => $this->user->id, 'name' => 'Key 3', 'key' => 'test_key_3']);
+    $this->user->createToken('Key 1');
+    $this->user->createToken('Key 2');
+    $this->user->createToken('Key 3');
 
     expect($this->user->featureUsagePercent('api_keys'))->toBe(30.0);
 });
@@ -460,8 +467,8 @@ test('featureUsagePercent caps at 100', function () {
     ]);
 
     // Free plan has limit of 1, create 2
-    ApiKey::create(['user_id' => $this->user->id, 'name' => 'Key 1', 'key' => 'test_key_1']);
-    ApiKey::create(['user_id' => $this->user->id, 'name' => 'Key 2', 'key' => 'test_key_2']);
+    $this->user->createToken('Key 1');
+    $this->user->createToken('Key 2');
 
     expect($this->user->featureUsagePercent('api_keys'))->toBe(100.0);
 });
@@ -482,7 +489,7 @@ test('featureNearLimit returns true when approaching limit', function () {
 
     // Pro plan has limit of 10, create 8 (80%)
     for ($i = 1; $i <= 8; $i++) {
-        ApiKey::create(['user_id' => $this->user->id, 'name' => "Key {$i}", 'key' => "test_key_{$i}"]);
+        $this->user->createToken("Key {$i}");
     }
 
     expect($this->user->featureNearLimit('api_keys'))->toBeTrue()
@@ -504,8 +511,8 @@ test('featureNearLimit returns false when well under limit', function () {
     ]);
 
     // Pro plan has limit of 10, create 2 (20%)
-    ApiKey::create(['user_id' => $this->user->id, 'name' => 'Key 1', 'key' => 'test_key_1']);
-    ApiKey::create(['user_id' => $this->user->id, 'name' => 'Key 2', 'key' => 'test_key_2']);
+    $this->user->createToken('Key 1');
+    $this->user->createToken('Key 2');
 
     expect($this->user->featureNearLimit('api_keys'))->toBeFalse();
 });
@@ -525,7 +532,7 @@ test('featureNearLimit returns false for unlimited', function () {
     ]);
 
     for ($i = 1; $i <= 100; $i++) {
-        ApiKey::create(['user_id' => $this->user->id, 'name' => "Key {$i}", 'key' => "test_key_{$i}"]);
+        $this->user->createToken("Key {$i}");
     }
     $this->user->clearFeatureUsageCache();
 
@@ -548,7 +555,7 @@ test('featureNearLimit with custom threshold', function () {
 
     // Pro plan has limit of 10, create 5 (50%)
     for ($i = 1; $i <= 5; $i++) {
-        ApiKey::create(['user_id' => $this->user->id, 'name' => "Key {$i}", 'key' => "test_key_{$i}"]);
+        $this->user->createToken("Key {$i}");
     }
 
     expect($this->user->featureNearLimit('api_keys', 0.5))->toBeTrue()

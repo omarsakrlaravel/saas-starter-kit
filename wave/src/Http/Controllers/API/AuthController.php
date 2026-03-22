@@ -4,92 +4,53 @@ namespace Wave\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
-use Tymon\JWTAuth\Facades\JWTAuth;
-use Wave\ApiKey;
 
 class AuthController extends Controller implements HasMiddleware
 {
     public static function middleware(): array
     {
         return [
-            new Middleware('auth:api', except: ['login', 'token', 'register', 'refresh']),
-            new Middleware('jwt.refresh', only: ['refresh']),
+            new Middleware('auth:sanctum', except: ['login', 'register']),
         ];
     }
 
     /**
-     * Get a JWT via given credentials.
+     * Authenticate and return a Sanctum token.
      */
-    public function login(): JsonResponse
+    public function login(Request $request): JsonResponse
     {
-        $credentials = request(['email', 'password']);
+        $credentials = $request->only(['email', 'password']);
 
-        if (! $token = JWTAuth::attempt($credentials)) {
+        if (! Auth::attempt($credentials)) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        return $this->respondWithToken($token);
+        $user = Auth::user();
+        $expiresAt = now()->addMinutes((int) config('wave.api.auth_token_expires', 60));
+        $token = $user->createToken('auth', ['*'], $expiresAt);
+
+        return $this->respondWithToken($token->plainTextToken, $expiresAt);
     }
 
     /**
-     * Log the user out (Invalidate the token).
+     * Log the user out (revoke the current token).
      */
-    public function logout(): JsonResponse
+    public function logout(Request $request): JsonResponse
     {
-        auth('api')->logout();
+        $request->user()->currentAccessToken()->delete();
 
         return response()->json(['message' => 'Successfully logged out']);
     }
 
-    public function token(): JsonResponse
-    {
-        $request = app('request');
-
-        if (isset($request->key)) {
-            $key = ApiKey::findByIncomingToken((string) $request->key);
-
-            if (isset($key->id)) {
-                $key->update([
-                    'last_used_at' => Carbon::now(),
-                ]);
-
-                return response()->json(['access_token' => JWTAuth::fromUser($key->user, ['exp' => config('wave.api.key_token_expires', 1)])]);
-            } else {
-                abort('400', 'Invalid Api Key');
-            }
-
-        } else {
-            abort('401', 'Unauthorized');
-        }
-
-    }
-
     /**
-     * Refresh a token.
+     * Register a new user and return a Sanctum token.
      */
-    public function refresh(): JsonResponse
-    {
-        return $this->respondWithToken(auth('api')->refresh());
-    }
-
-    /**
-     * Get the token array structure.
-     */
-    protected function respondWithToken(string $token): JsonResponse
-    {
-        return response()->json([
-            'access_token' => $token,
-            'token_type' => 'bearer',
-            'expires_in' => config('wave.api.auth_token_expires', 60),
-        ]);
-    }
-
     public function register(Request $request): JsonResponse
     {
         $validated = Validator::make($request->all(), $this->registrationRules())->validate();
@@ -101,17 +62,22 @@ class AuthController extends Controller implements HasMiddleware
             'password' => bcrypt($validated['password']),
         ]);
 
-        $credentials = [
-            'email' => $validated['email'],
-            'password' => $validated['password'],
-        ];
+        $expiresAt = now()->addMinutes((int) config('wave.api.auth_token_expires', 60));
+        $token = $user->createToken('auth', ['*'], $expiresAt);
 
-        if (! $token = JWTAuth::attempt($credentials)) {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
+        return $this->respondWithToken($token->plainTextToken, $expiresAt);
+    }
 
-        return $this->respondWithToken($token);
-
+    /**
+     * Get the token array structure.
+     */
+    protected function respondWithToken(string $token, $expiresAt = null): JsonResponse
+    {
+        return response()->json([
+            'access_token' => $token,
+            'token_type' => 'bearer',
+            'expires_in' => config('wave.api.auth_token_expires', 60),
+        ]);
     }
 
     /**

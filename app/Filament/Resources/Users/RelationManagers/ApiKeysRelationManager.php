@@ -8,7 +8,7 @@ use Filament\Tables\Table;
 
 class ApiKeysRelationManager extends RelationManager
 {
-    protected static string $relationship = 'apiKeys';
+    protected static string $relationship = 'tokens';
 
     protected static ?string $title = 'API Keys';
 

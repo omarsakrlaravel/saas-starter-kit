@@ -20,16 +20,16 @@ use Illuminate\Support\Facades\Cache;
 use Lab404\Impersonate\Models\Impersonate;
 use Laravel\Cashier\Billable;
 use Laravel\Cashier\Cashier;
+use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
-use Tymon\JWTAuth\Contracts\JWTSubject;
 use Wave\Traits\HasPlanFeatures;
 
-class User extends AuthUser implements FilamentUser, HasAvatar, JWTSubject
+class User extends AuthUser implements FilamentUser, HasAvatar
 {
     use Billable {
         onTrial as cashierOnTrial;
     }
-    use HasPlanFeatures, HasRoles, Impersonate, Notifiable;
+    use HasApiTokens, HasPlanFeatures, HasRoles, Impersonate, Notifiable;
 
     /**
      * Cached billing context.
@@ -681,21 +681,14 @@ class User extends AuthUser implements FilamentUser, HasAvatar, JWTSubject
         return $this->belongsToMany('Wave\Changelog');
     }
 
-    public function createApiKey(string $name): ApiKey
+    public function createApiKey(string $name): \Laravel\Sanctum\NewAccessToken
     {
-        $apiKey = new ApiKey([
-            'user_id' => $this->id,
-            'name' => $name,
-        ]);
-
-        $apiKey->issuePlainTextToken();
-
-        return $apiKey;
+        return $this->createToken($name);
     }
 
-    public function apiKeys(): HasMany
+    public function apiKeys(): \Illuminate\Database\Eloquent\Relations\MorphMany
     {
-        return $this->hasMany('Wave\ApiKey')->orderByDesc('created_at');
+        return $this->tokens();
     }
 
     /**
@@ -779,24 +772,6 @@ class User extends AuthUser implements FilamentUser, HasAvatar, JWTSubject
     public function scopeWithAvatarFile(Builder $query): Builder
     {
         return $query->with('avatarFile');
-    }
-
-    /**
-     * Get the identifier that will be stored in the subject claim of the JWT.
-     *
-     * @return mixed
-     */
-    public function getJWTIdentifier()
-    {
-        return $this->getKey();
-    }
-
-    /**
-     * Return a key value array, containing any custom claims to be added to the JWT.
-     */
-    public function getJWTCustomClaims(): array
-    {
-        return [];
     }
 
     public function getFilamentAvatarUrl(): ?string

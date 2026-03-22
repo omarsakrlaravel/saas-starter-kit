@@ -9,7 +9,6 @@
     use Filament\Notifications\Notification;
 	use Livewire\Volt\Component;
 	use Wave\Traits\HasDynamicFields;
-    use Wave\ApiKey;
     use Wave\ActivityLog;
     use Wave\Services\FileService;
 

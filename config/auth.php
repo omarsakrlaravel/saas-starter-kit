@@ -4,7 +4,7 @@ return [
 
     'guards' => [
         'api' => [
-            'driver' => 'jwt',
+            'driver' => 'sanctum',
             'provider' => 'users',
         ],
     ],

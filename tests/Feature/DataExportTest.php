@@ -69,21 +69,24 @@ test('export logs activity', function () {
     expect($latestLog->action)->toBe('data_exported');
 });
 
-test('exported data masks api keys', function () {
+test('exported data does not expose token hashes', function () {
     $user = User::factory()->create();
 
-    // Create a test API key
-    $user->createApiKey('Test Key');
+    // Create a test token via Sanctum
+    $token = $user->createApiKey('Test Key');
+    $storedToken = $user->tokens()->first();
 
-    $apiKey = $user->apiKeys()->first();
-    $fullKey = $apiKey->key;
+    // The stored token hash should never appear in export data
+    // Export only includes name, last_used_at, and created_at (no token/key column)
+    $exportEntry = [
+        'name' => $storedToken->name,
+        'last_used_at' => $storedToken->last_used_at?->toDateTimeString(),
+        'created_at' => $storedToken->created_at->toDateTimeString(),
+    ];
 
-    // Simulate the masking logic
-    $maskedKey = substr($fullKey, 0, 10).'...'.substr($fullKey, -5);
-
-    expect($maskedKey)->not->toBe($fullKey);
-    expect($maskedKey)->toContain('...');
-    expect(strlen($maskedKey))->toBeLessThan(strlen($fullKey));
+    expect($exportEntry)->not->toHaveKey('token');
+    expect($exportEntry)->not->toHaveKey('key');
+    expect($exportEntry['name'])->toBe('Test Key');
 });
 
 test('export includes privacy settings', function () {

@@ -3,8 +3,6 @@
     use Livewire\Volt\Component;
     use function Laravel\Folio\{middleware, name};
     use Wave\ActivityLog;
-    use Wave\ApiKey;
-    
     middleware(['auth', 'verified']);
     name('settings.export');
 
@@ -45,12 +43,11 @@
                         'created_at' => $log->created_at->toDateTimeString(),
                     ];
                 })->toArray(),
-                'api_keys' => $user->apiKeys()->get()->map(function ($key) {
+                'api_keys' => $user->tokens()->get()->map(function ($token) {
                     return [
-                        'name' => $key->name,
-                        'key' => substr($key->key, 0, 10) . '...' . substr($key->key, -5), // Partially masked
-                        'last_used_at' => $key->last_used_at ? $key->last_used_at->toDateTimeString() : null,
-                        'created_at' => $key->created_at->toDateTimeString(),
+                        'name' => $token->name,
+                        'last_used_at' => $token->last_used_at ? $token->last_used_at->toDateTimeString() : null,
+                        'created_at' => $token->created_at->toDateTimeString(),
                     ];
                 })->toArray(),
             ];

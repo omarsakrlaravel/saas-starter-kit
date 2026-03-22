@@ -70,7 +70,7 @@
 
         public function table(Table $table): Table
         {
-            return $table->query(\Wave\ApiKey::query()->where('user_id', auth()->user()->id))
+            return $table->query(auth()->user()->tokens()->getQuery())
                 ->columns([
                     TextColumn::make('name'),
                     TextColumn::make('created_at')->label('Created'),
@@ -119,18 +119,38 @@
             >
                 <div class="flex flex-col">
                     @if($newKey)
-                        <div class="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-                            <p class="font-medium">This key is shown only once.</p>
-                            <p class="mt-1">Copy it now. After you leave this page, only the name will remain visible.</p>
-                            <div class="mt-3 flex flex-col gap-3 sm:flex-row">
-                                <input type="text" readonly value="{{ $newKey }}" class="w-full rounded-md border border-amber-300 bg-white px-3 py-2 font-mono text-xs text-zinc-900">
-                                <button type="button" x-on:click="window.navigator.clipboard.writeText(@js($newKey))" class="inline-flex items-center justify-center rounded-md border border-amber-300 bg-white px-4 py-2 text-sm font-medium text-amber-900 hover:bg-amber-100">
-                                    Copy key
-                                </button>
+                        <div class="mb-6 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 p-4 text-sm" x-data="{ copied: false }">
+                            <div class="flex gap-3">
+                                <x-dynamic-component component="phosphor-key-duotone" class="mt-0.5 h-5 w-5 flex-shrink-0 text-blue-600 dark:text-blue-400" />
+                                <div class="min-w-0 flex-1">
+                                    <p class="font-medium text-blue-900 dark:text-blue-100">Your new API key</p>
+                                    <p class="mt-0.5 text-blue-700 dark:text-blue-300">Copy it now. It will not be shown again.</p>
+                                    <div class="mt-3 flex items-center gap-2">
+                                        <code class="min-w-0 flex-1 truncate rounded-md border border-blue-200 dark:border-blue-700 bg-white dark:bg-blue-950/50 px-3 py-2 font-mono text-xs text-zinc-800 dark:text-zinc-200 select-all">{{ $newKey }}</code>
+                                        <button
+                                            type="button"
+                                            x-on:click="window.navigator.clipboard.writeText(@js($newKey)); copied = true; setTimeout(() => copied = false, 2000)"
+                                            class="inline-flex flex-shrink-0 items-center gap-1.5 rounded-md border border-blue-200 dark:border-blue-700 bg-white dark:bg-blue-950/50 px-3 py-2 text-xs font-medium text-blue-700 dark:text-blue-300 transition-colors hover:bg-blue-100 dark:hover:bg-blue-900/50"
+                                        >
+                                            <template x-if="!copied">
+                                                <span class="inline-flex items-center gap-1.5">
+                                                    <x-dynamic-component component="phosphor-copy" class="h-3.5 w-3.5" />
+                                                    Copy
+                                                </span>
+                                            </template>
+                                            <template x-if="copied">
+                                                <span class="inline-flex items-center gap-1.5 text-green-600 dark:text-green-400">
+                                                    <x-dynamic-component component="phosphor-check" class="h-3.5 w-3.5" />
+                                                    Copied
+                                                </span>
+                                            </template>
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     @endif
-                    <form wire:submit="add" class="w-full max-w-lg">
+                    <form wire:submit="add" class="w-full">
                         {{ $this->form }}
                         <div class="w-full pt-6 text-right">
                             <x-button type="submit">Create New Key</x-button>

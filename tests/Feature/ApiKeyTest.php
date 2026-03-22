@@ -2,202 +2,97 @@
 
 use App\Models\User;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Hash;
-use Wave\ApiKey;
+use Laravel\Sanctum\PersonalAccessToken;
 
 beforeEach(function () {
     $this->user = User::factory()->create();
 });
 
 afterEach(function () {
-    // Clean up API keys created during tests
-    ApiKey::where('user_id', $this->user->id)->delete();
+    $this->user->tokens()->delete();
     $this->user->forceDelete();
 });
 
-describe('ApiKey Model', function () {
-    it('can create an api key', function () {
-        $apiKey = ApiKey::create([
-            'user_id' => $this->user->id,
-            'name' => 'Test Key',
-            'key' => 'test_key_123456',
-        ]);
+describe('Personal Access Token', function () {
+    it('can create a token', function () {
+        $token = $this->user->createToken('Test Key');
 
-        expect($apiKey)->toBeInstanceOf(ApiKey::class);
-        expect($apiKey->name)->toBe('Test Key');
-        expect($apiKey->key)->toBe('test_key_123456');
-        expect($apiKey->user_id)->toBe($this->user->id);
+        expect($token)->toBeInstanceOf(\Laravel\Sanctum\NewAccessToken::class);
+        expect($token->plainTextToken)->not()->toBeNull();
+        expect($token->accessToken->name)->toBe('Test Key');
+        expect($token->accessToken->tokenable_id)->toBe($this->user->id);
     });
 
     it('belongs to a user', function () {
-        $apiKey = ApiKey::create([
-            'user_id' => $this->user->id,
-            'name' => 'Test Key',
-            'key' => 'test_key_123456',
-        ]);
+        $token = $this->user->createToken('Test Key');
 
-        expect($apiKey->user)->toBeInstanceOf(User::class);
-        expect($apiKey->user->id)->toBe($this->user->id);
+        expect($token->accessToken->tokenable)->toBeInstanceOf(User::class);
+        expect($token->accessToken->tokenable->id)->toBe($this->user->id);
     });
 
     it('casts last_used_at to datetime', function () {
-        $apiKey = ApiKey::create([
-            'user_id' => $this->user->id,
-            'name' => 'Test Key',
-            'key' => 'test_key_123456',
-            'last_used_at' => now(),
-        ]);
+        $token = $this->user->createToken('Test Key');
+        $token->accessToken->forceFill(['last_used_at' => now()])->save();
+        $token->accessToken->refresh();
 
-        expect($apiKey->last_used_at)->toBeInstanceOf(Carbon::class);
+        expect($token->accessToken->last_used_at)->toBeInstanceOf(Carbon::class);
     });
 
     it('has nullable last_used_at by default', function () {
-        $apiKey = ApiKey::create([
-            'user_id' => $this->user->id,
-            'name' => 'Test Key',
-            'key' => 'test_key_123456',
-        ]);
+        $token = $this->user->createToken('Test Key');
 
-        expect($apiKey->last_used_at)->toBeNull();
-    });
-
-    it('enforces unique key constraint', function () {
-        ApiKey::create([
-            'user_id' => $this->user->id,
-            'name' => 'First Key',
-            'key' => 'unique_key_123',
-        ]);
-
-        expect(fn () => ApiKey::create([
-            'user_id' => $this->user->id,
-            'name' => 'Second Key',
-            'key' => 'unique_key_123',
-        ]))->toThrow(Exception::class);
+        expect($token->accessToken->last_used_at)->toBeNull();
     });
 });
 
-describe('User API Key Methods', function () {
-    it('can create api key via user method', function () {
-        $apiKey = $this->user->createApiKey('My API Key');
-        [$id, $plainTextToken] = explode('|', $apiKey->plainTextToken);
+describe('User Token Methods', function () {
+    it('can create token via user method', function () {
+        $token = $this->user->createApiKey('My API Key');
 
-        expect($apiKey)->toBeInstanceOf(ApiKey::class);
-        expect($apiKey->name)->toBe('My API Key');
-        expect($apiKey->user_id)->toBe($this->user->id);
-        expect((int) $id)->toBe($apiKey->id)
-            ->and($apiKey->plainTextToken)->not()->toBeNull()
-            ->and($apiKey->key)->not()->toBe($plainTextToken)
-            ->and(Hash::check($plainTextToken, $apiKey->key))->toBeTrue();
+        expect($token)->toBeInstanceOf(\Laravel\Sanctum\NewAccessToken::class);
+        expect($token->accessToken->name)->toBe('My API Key');
+        expect($token->accessToken->tokenable_id)->toBe($this->user->id);
+        expect($token->plainTextToken)->not()->toBeNull();
     });
 
-    it('generates unique keys for each api key', function () {
-        $key1 = $this->user->createApiKey('Key 1');
-        $key2 = $this->user->createApiKey('Key 2');
+    it('generates unique tokens for each token', function () {
+        $token1 = $this->user->createApiKey('Key 1');
+        $token2 = $this->user->createApiKey('Key 2');
 
-        expect($key1->plainTextToken)->not->toBe($key2->plainTextToken)
-            ->and($key1->key)->not->toBe($key2->key);
+        expect($token1->plainTextToken)->not->toBe($token2->plainTextToken);
     });
 
-    it('can retrieve all api keys for user', function () {
+    it('can retrieve all tokens for user', function () {
         $this->user->createApiKey('Key 1');
         $this->user->createApiKey('Key 2');
         $this->user->createApiKey('Key 3');
 
-        expect($this->user->apiKeys)->toHaveCount(3);
+        expect($this->user->tokens)->toHaveCount(3);
     });
 
-    it('orders api keys by created_at descending', function () {
-        $key1 = $this->user->createApiKey('Key 1');
+    it('retrieves tokens', function () {
+        $token1 = $this->user->createApiKey('Key 1');
         Carbon::setTestNow(now()->addMinute());
-        $key2 = $this->user->createApiKey('Key 2');
+        $token2 = $this->user->createApiKey('Key 2');
         Carbon::setTestNow(now()->addMinutes(2));
-        $key3 = $this->user->createApiKey('Key 3');
+        $token3 = $this->user->createApiKey('Key 3');
         Carbon::setTestNow();
 
-        $keys = $this->user->apiKeys;
+        $tokens = $this->user->tokens()->orderByDesc('created_at')->get();
 
-        expect($keys->first()->id)->toBe($key3->id);
-        expect($keys->last()->id)->toBe($key1->id);
+        expect($tokens->first()->id)->toBe($token3->accessToken->id);
+        expect($tokens->last()->id)->toBe($token1->accessToken->id);
     });
 
-    it('deletes api keys when user is deleted', function () {
+    it('deletes tokens when explicitly removed', function () {
         $user = User::factory()->create();
-        $apiKey = $user->createApiKey('Test Key');
-        $keyId = $apiKey->id;
+        $token = $user->createApiKey('Test Key');
+        $tokenId = $token->accessToken->id;
 
+        $user->tokens()->delete();
         $user->forceDelete();
 
-        expect(ApiKey::find($keyId))->toBeNull();
-    });
-});
-
-describe('API Token Endpoint', function () {
-    it('returns 401 when no key provided', function () {
-        $response = $this->postJson('/api/token');
-
-        $response->assertStatus(401);
-    });
-
-    it('returns 400 for invalid api key', function () {
-        $response = $this->postJson('/api/token', [
-            'key' => 'invalid_key_that_does_not_exist',
-        ]);
-
-        $response->assertStatus(400);
-    });
-
-    it('returns access token for valid api key', function () {
-        // Skip if JWT secret is not properly configured (common in test environments)
-        if (strlen(config('jwt.secret', '')) < 32) {
-            $this->markTestSkipped('JWT secret not configured for testing');
-        }
-
-        $apiKey = $this->user->createApiKey('Valid Key');
-
-        $response = $this->postJson('/api/token', [
-            'key' => $apiKey->plainTextToken,
-        ]);
-
-        $response->assertStatus(200);
-        $response->assertJsonStructure(['access_token']);
-    });
-
-    it('returns access token for legacy plaintext api keys', function () {
-        if (strlen(config('jwt.secret', '')) < 32) {
-            $this->markTestSkipped('JWT secret not configured for testing');
-        }
-
-        $legacyKey = ApiKey::create([
-            'user_id' => $this->user->id,
-            'name' => 'Legacy Key',
-            'key' => 'legacy_plaintext_api_key',
-        ]);
-
-        $response = $this->postJson('/api/token', [
-            'key' => $legacyKey->key,
-        ]);
-
-        $response->assertStatus(200);
-        $response->assertJsonStructure(['access_token']);
-    });
-
-    it('updates last_used_at when api key is used', function () {
-        $apiKey = $this->user->createApiKey('Test Key');
-
-        expect($apiKey->last_used_at)->toBeNull();
-
-        Carbon::setTestNow(now());
-
-        $this->postJson('/api/token', [
-            'key' => $apiKey->plainTextToken,
-        ]);
-
-        $apiKey->refresh();
-
-        expect($apiKey->last_used_at)->not->toBeNull();
-        expect($apiKey->last_used_at->toDateTimeString())->toBe(now()->toDateTimeString());
-
-        Carbon::setTestNow();
+        expect(PersonalAccessToken::find($tokenId))->toBeNull();
     });
 });
 
@@ -248,55 +143,24 @@ describe('API Key Activity Logging', function () {
 
         // Activity logging happens in the Livewire component, not the model
         // So we just verify the key was created
-        expect($this->user->apiKeys()->where('name', 'Logged Key')->exists())->toBeTrue();
+        expect($this->user->tokens()->where('name', 'Logged Key')->exists())->toBeTrue();
     });
 });
 
 describe('Multiple Users with API Keys', function () {
-    it('users can only see their own api keys', function () {
+    it('users can only see their own tokens', function () {
         $user2 = User::factory()->create();
 
-        $key1 = $this->user->createApiKey('User 1 Key');
-        $key2 = $user2->createApiKey('User 2 Key');
+        $this->user->createApiKey('User 1 Key');
+        $user2->createApiKey('User 2 Key');
 
-        expect($this->user->apiKeys)->toHaveCount(1);
-        expect($this->user->apiKeys->first()->name)->toBe('User 1 Key');
+        expect($this->user->tokens)->toHaveCount(1);
+        expect($this->user->tokens->first()->name)->toBe('User 1 Key');
 
-        expect($user2->apiKeys)->toHaveCount(1);
-        expect($user2->apiKeys->first()->name)->toBe('User 2 Key');
+        expect($user2->tokens)->toHaveCount(1);
+        expect($user2->tokens->first()->name)->toBe('User 2 Key');
 
-        // Cleanup
-        ApiKey::where('user_id', $user2->id)->delete();
-        $user2->forceDelete();
-    });
-
-    it('api key belongs to correct user after token request', function () {
-        // Skip if JWT secret is not properly configured (common in test environments)
-        if (strlen(config('jwt.secret', '')) < 32) {
-            $this->markTestSkipped('JWT secret not configured for testing');
-        }
-
-        $user2 = User::factory()->create();
-
-        $key1 = $this->user->createApiKey('User 1 Key');
-        $key2 = $user2->createApiKey('User 2 Key');
-
-        // Use user 2's key
-        $response = $this->postJson('/api/token', [
-            'key' => $key2->plainTextToken,
-        ]);
-
-        $response->assertStatus(200);
-
-        // Verify only user 2's key was updated
-        $key1->refresh();
-        $key2->refresh();
-
-        expect($key1->last_used_at)->toBeNull();
-        expect($key2->last_used_at)->not->toBeNull();
-
-        // Cleanup
-        ApiKey::where('user_id', $user2->id)->delete();
+        $user2->tokens()->delete();
         $user2->forceDelete();
     });
 });

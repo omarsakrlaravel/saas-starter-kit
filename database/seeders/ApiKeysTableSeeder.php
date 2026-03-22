@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Wave\ApiKey;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class ApiKeysTableSeeder extends Seeder
 {
@@ -12,6 +12,6 @@ class ApiKeysTableSeeder extends Seeder
      */
     public function run(): void
     {
-        ApiKey::query()->delete();
+        PersonalAccessToken::query()->delete();
     }
 }

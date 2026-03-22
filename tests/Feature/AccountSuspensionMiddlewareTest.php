@@ -5,12 +5,9 @@ use App\Jobs\Middleware\EnsureAccountActive;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Broadcast;
 use Symfony\Component\HttpFoundation\Response;
-use Tymon\JWTAuth\Facades\JWTAuth;
 use Wave\ActivityLog;
-use Wave\Http\Middleware\TokenMiddleware;
 use Wave\Jobs\CreateActivityLog;
 
 uses(RefreshDatabase::class);
@@ -43,37 +40,16 @@ it('returns blocked responses for suspended users on protected web routes', func
 });
 
 it('blocks token-authenticated requests when account is not active', function () {
-    if (strlen(config('jwt.secret', '')) < 32) {
-        $this->markTestSkipped('JWT secret not configured for testing');
-    }
-
     $user = User::factory()->create([
         'status' => AccountStatus::Suspended->value,
     ]);
-    $token = JWTAuth::fromUser($user);
+    $token = $user->createToken('test')->plainTextToken;
 
     $response = $this->withHeader('Authorization', "Bearer {$token}")
         ->getJson('/api/user');
 
     $response->assertStatus(Response::HTTP_FORBIDDEN);
     $response->assertJsonPath('error_code', 'account_suspended');
-});
-
-it('rejects blocked account token middleware usage for API key flow', function () {
-    $user = User::factory()->create([
-        'status' => AccountStatus::Suspended->value,
-    ]);
-    $apiKey = $user->createApiKey('Blocked service key');
-
-    $request = Request::create('/api/token', 'POST', [
-        'token' => $apiKey->plainTextToken,
-    ]);
-
-    $middleware = new TokenMiddleware(app('auth'));
-    $response = $middleware->handle($request, fn () => response('ok'));
-
-    expect($response->getStatusCode())->toBe(Response::HTTP_FORBIDDEN);
-    expect($response->getData(true)['error_code'])->toBe('account_blocked');
 });
 
 it('re-checks account state at job execution via middleware', function () {

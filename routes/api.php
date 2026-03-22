@@ -14,7 +14,7 @@ use Illuminate\Http\Request;
 |
 */
 
-Route::middleware(['auth:api', AccountStatusMiddleware::class])->get('/user', function (Request $request) {
+Route::middleware(['auth:sanctum', AccountStatusMiddleware::class])->get('/user', function (Request $request) {
     return auth()->user();
 });
 

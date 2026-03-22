@@ -146,12 +146,12 @@ test('TransactionsRelationManager uses transactions relationship', function () {
     expect($property->getValue())->toBe('transactions');
 });
 
-test('ApiKeysRelationManager uses apiKeys relationship', function () {
+test('ApiKeysRelationManager uses tokens relationship', function () {
     $reflection = new ReflectionClass(ApiKeysRelationManager::class);
     $property = $reflection->getProperty('relationship');
     $property->setAccessible(true);
 
-    expect($property->getValue())->toBe('apiKeys');
+    expect($property->getValue())->toBe('tokens');
 });
 
 // --- Model Relationship Method Tests ---

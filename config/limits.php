@@ -21,8 +21,8 @@ return [
 
     'features' => [
         'api_keys' => [
-            'model' => \Wave\ApiKey::class,
-            'column' => 'user_id',
+            'model' => \Laravel\Sanctum\PersonalAccessToken::class,
+            'column' => 'tokenable_id',
         ],
     ],
 
