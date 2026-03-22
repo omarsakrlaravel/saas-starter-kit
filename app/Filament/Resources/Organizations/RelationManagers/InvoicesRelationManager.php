@@ -2,11 +2,11 @@
 
 namespace App\Filament\Resources\Organizations\RelationManagers;
 
+use App\Models\Invoice;
 use Filament\Actions\Action;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use Wave\Invoice;
 
 class InvoicesRelationManager extends RelationManager
 {
@@ -23,7 +23,7 @@ class InvoicesRelationManager extends RelationManager
                     ->placeholder('—'),
                 TextColumn::make('total')
                     ->label('Amount')
-                    ->formatStateUsing(fn (int $state): string => '$'.number_format($state / 100, 2)),
+                    ->formatStateUsing(fn (int $state, Invoice $record): string => currencySymbol($record->currency).number_format($state / 100, 2)),
                 TextColumn::make('status')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {

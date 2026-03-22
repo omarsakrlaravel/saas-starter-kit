@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Subscriptions\RelationManagers;
 
+use App\Models\Transaction;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -23,7 +24,7 @@ class TransactionsRelationManager extends RelationManager
                     ->limit(20)
                     ->searchable(),
                 TextColumn::make('amount')
-                    ->formatStateUsing(fn (int $state): string => '$'.number_format($state / 100, 2)),
+                    ->formatStateUsing(fn (int $state, Transaction $record): string => currencySymbol($record->currency).number_format($state / 100, 2)),
                 TextColumn::make('status')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {

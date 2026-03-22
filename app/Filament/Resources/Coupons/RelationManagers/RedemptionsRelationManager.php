@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Coupons\RelationManagers;
 
+use App\Models\CouponRedemption;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -18,7 +19,7 @@ class RedemptionsRelationManager extends RelationManager
                 TextColumn::make('billable.name')
                     ->label('Customer'),
                 TextColumn::make('discount_amount')
-                    ->formatStateUsing(fn (?int $state): string => '$'.number_format(($state ?? 0) / 100, 2)),
+                    ->formatStateUsing(fn (?int $state, CouponRedemption $record): string => currencySymbol($record->coupon?->currency).number_format(($state ?? 0) / 100, 2)),
                 TextColumn::make('promotionCode.code')
                     ->label('Promo Code')
                     ->placeholder('—'),
