@@ -9,7 +9,7 @@ use Laravel\Cashier\Events\WebhookHandled;
 class ApplySubscriptionMetadata
 {
     /**
-     * Apply Wave metadata after Cashier creates the subscription record.
+     * Apply subscription metadata after Cashier creates the subscription record.
      *
      * WebhookHandled fires AFTER Cashier's handler, so the subscription
      * row already exists when this runs.

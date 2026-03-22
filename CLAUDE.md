@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-Wave is a Laravel-based SaaS framework that provides essential features for building subscription-based applications. The application uses a modular architecture with themes, plugins, and a custom admin panel built with Filament.
+A Laravel-based SaaS starter kit that provides essential features for building subscription-based applications. The application uses a standard Laravel structure with a Filament admin panel.
 
 ## Development Commands
 
@@ -29,39 +29,23 @@ Wave is a Laravel-based SaaS framework that provides essential features for buil
 - `php artisan queue:work` - Process queued jobs
 - `php artisan queue:listen --tries=1` - Listen for jobs with retry limit
 
-### Wave-Specific Commands
-- `php artisan wave:cancel-expired-subscriptions` - Cancel expired subscriptions
-- `php artisan wave:create-plugin` - Create a new plugin
-
 ## Architecture Overview
 
 ### Core Structure
-- `app/` - Standard Laravel application files
-- `wave/` - Wave framework core files and components
-- `resources/themes/` - Theme files (Blade templates, assets)
-- `resources/plugins/` - Plugin system files
-- `config/wave.php` - Main Wave configuration
+- `app/` - Standard Laravel application files (models, controllers, middleware, services, traits)
+- `resources/views/` - Blade templates (pages, components, partials, layouts)
+- `config/saas.php` - Main SaaS configuration (currency, billing, API, checkout)
 
 ### Key Components
 
-#### Wave Service Provider (`wave/src/WaveServiceProvider.php`)
-- Registers middleware, Livewire components, and Blade directives
-- Handles plugin registration and theme management
-- Configures Filament colors and authentication
-
 #### Models & Database
-- User model extends Wave User with subscription capabilities
-- Subscription management with Stripe/Paddle integration
+- All models in `app/Models/` (User, Plan, Subscription, Invoice, Transaction, Coupon, etc.)
+- Subscription management with Stripe via Laravel Cashier
 - Role-based permissions using Spatie Laravel Permission
-
-#### Theme System
-- Multiple themes available in `resources/themes/`
-- Theme switching in demo mode via cookies
-- Folio integration for page routing
 
 #### Admin Panel
 - Filament-based admin interface
-- Resource management for users, plans, etc.
+- Resource management for users, plans, billing, etc.
 - Located in `app/Filament/`
 
 #### Filament Form Layout Convention
@@ -93,27 +77,20 @@ return $schema
 ```
 
 ### Billing Integration
-- Supports both Stripe and Paddle
-- Configured via `config/wave.php` and environment variables
+- Stripe billing via Laravel Cashier
+- Configured via `config/saas.php` and environment variables
 - Webhook handling for subscription events
-
-### Plugin System
-- Plugins located in `resources/plugins/`
-- Auto-loading via `PluginServiceProvider`
-- Plugin creation command available
 
 ## Configuration
 
 ### Environment Variables
-- `WAVE_DOCS` - Show/hide documentation
-- `WAVE_DEMO` - Enable demo mode
-- `WAVE_BAR` - Show development bar
-- `BILLING_PROVIDER` - Set to 'stripe' or 'paddle'
+- `SAAS_CURRENCY` - Platform currency (ISO code, default: usd)
+- `APP_DEMO` - Enable demo mode
+- `DEV_BAR` - Show development bar
 
 ### Important Config Files
-- `config/wave.php` - Main Wave configuration
-- `config/themes.php` - Theme configuration
-- `config/settings.php` - Application settings
+- `config/saas.php` - Main SaaS configuration (currency, billing, API, checkout)
+- `config/features.php` - Feature flags
 
 ## Testing
 
@@ -124,8 +101,6 @@ The application uses Pest for testing with PHPUnit as the underlying framework. 
 - The application uses Laravel Folio for page routing
 - Livewire components handle dynamic UI interactions
 - Filament provides the admin interface
-- Theme development follows Blade templating conventions
-- Plugin development follows Laravel package conventions
 
 ## Performance Optimizations
 
@@ -133,9 +108,6 @@ The application uses Pest for testing with PHPUnit as the underlying framework. 
 - User subscription/admin status cached for 5-10 minutes
 - Active plans cached for 30 minutes
 - Categories cached for 1 hour
-- Helper files cached permanently until cleared
-- Theme colors cached for 1 hour
-- Plugin lists cached for 1 hour
 
 ### Cache Clearing
 - User caches cleared via `$user->clearUserCache()` method
@@ -150,8 +122,7 @@ The application uses Pest for testing with PHPUnit as the underlying framework. 
 ### Usage Tips
 - Use `Plan::getActivePlans()` instead of `Plan::where('active', 1)->get()`
 - Use `Plan::getByName($name)` instead of `Plan::where('name', $name)->first()`
-- Use `Category::getAllCached()` instead of `Category::all()`
-- Always clear relevant caches when updating user roles, plans, or categories
+- Always clear relevant caches when updating user roles or plans
 
 ### Installation & CI Compatibility
 - All caching methods include fallbacks for when cache service is unavailable
@@ -201,7 +172,7 @@ ACTIVITY_LOG_RETENTION_DAYS=30
 #### Basic Logging
 
 ```php
-use Wave\ActivityLog;
+use App\Models\ActivityLog;
 
 // Simple log
 ActivityLog::log('action_name', 'Description of what happened');

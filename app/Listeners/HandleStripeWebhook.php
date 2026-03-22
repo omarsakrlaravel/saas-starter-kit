@@ -21,7 +21,7 @@ class HandleStripeWebhook
      *
      * Cashier's WebhookController handles standard fields (stripe_status,
      * stripe_price, quantity, trial_ends_at, ends_at). This listener only
-     * sets custom Wave fields: billable_type, billable_id, plan_id, cycle.
+     * sets custom fields: billable_type, billable_id, plan_id, cycle.
      */
     public function handle(WebhookReceived $event): void
     {
