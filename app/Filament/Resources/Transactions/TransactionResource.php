@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Transactions;
 use App\Filament\Resources\Transactions\Pages\CreateTransaction;
 use App\Filament\Resources\Transactions\Pages\EditTransaction;
 use App\Filament\Resources\Transactions\Pages\ListTransactions;
+use App\Models\Transaction;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -20,7 +21,6 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use UnitEnum;
-use Wave\Transaction;
 
 class TransactionResource extends Resource
 {
@@ -49,12 +49,12 @@ class TransactionResource extends Resource
                         Placeholder::make('status')
                             ->content(fn (?Transaction $record): string => $record?->status ? ucfirst($record->status) : '—'),
                         Placeholder::make('amount')
-                            ->content(fn (?Transaction $record): string => $record ? '$'.number_format($record->amount / 100, 2) : '—'),
+                            ->content(fn (?Transaction $record): string => $record ? currencySymbol($record->currency).number_format($record->amount / 100, 2) : '—'),
                         Placeholder::make('currency')
                             ->content(fn (?Transaction $record): string => $record?->currency ? strtoupper($record->currency) : '—'),
                         Placeholder::make('refunded_amount')
                             ->label('Refunded Amount')
-                            ->content(fn (?Transaction $record): string => $record ? '$'.number_format($record->refunded_amount / 100, 2) : '—'),
+                            ->content(fn (?Transaction $record): string => $record ? currencySymbol($record->currency).number_format($record->refunded_amount / 100, 2) : '—'),
                         Placeholder::make('description')
                             ->content(fn (?Transaction $record): string => $record?->description ?? '—'),
                     ])
@@ -102,7 +102,7 @@ class TransactionResource extends Resource
                         });
                     }),
                 TextColumn::make('amount')
-                    ->formatStateUsing(fn (int $state): string => '$'.number_format($state / 100, 2)),
+                    ->formatStateUsing(fn (int $state, Transaction $record): string => currencySymbol($record->currency).number_format($state / 100, 2)),
                 TextColumn::make('status')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
@@ -142,7 +142,7 @@ class TransactionResource extends Resource
                     ->color('danger')
                     ->requiresConfirmation()
                     ->modalHeading('Refund Full Amount')
-                    ->modalDescription(fn (Transaction $record): string => 'Are you sure you want to refund $'.number_format($record->amount / 100, 2).'? This cannot be undone.')
+                    ->modalDescription(fn (Transaction $record): string => 'Are you sure you want to refund '.currencySymbol($record->currency).number_format($record->amount / 100, 2).'? This cannot be undone.')
                     ->visible(fn (Transaction $record): bool => $record->status === 'succeeded' && $record->refunded_amount < $record->amount)
                     ->action(function (Transaction $record): void {
                         $stripe = new \Stripe\StripeClient(config('services.stripe.secret'));
@@ -160,7 +160,7 @@ class TransactionResource extends Resource
 
                             Notification::make()
                                 ->title('Refund successful')
-                                ->body('$'.number_format($record->amount / 100, 2).' has been refunded.')
+                                ->body(currencySymbol($record->currency).number_format($record->amount / 100, 2).' has been refunded.')
                                 ->success()
                                 ->send();
                         } catch (\Stripe\Exception\ApiErrorException $e) {
@@ -177,17 +177,17 @@ class TransactionResource extends Resource
                     ->color('warning')
                     ->visible(fn (Transaction $record): bool => $record->status === 'succeeded' && $record->refunded_amount < $record->amount)
                     ->modalHeading('Partial Refund')
-                    ->modalDescription(fn (Transaction $record): string => 'Original amount: $'.number_format($record->amount / 100, 2).'. Already refunded: $'.number_format($record->refunded_amount / 100, 2).'.')
+                    ->modalDescription(fn (Transaction $record): string => 'Original amount: '.currencySymbol($record->currency).number_format($record->amount / 100, 2).'. Already refunded: '.currencySymbol($record->currency).number_format($record->refunded_amount / 100, 2).'.')
                     ->schema(fn (Transaction $record): array => [
                         TextInput::make('refund_amount')
-                            ->label('Refund Amount ($)')
+                            ->label('Refund Amount')
                             ->numeric()
                             ->required()
                             ->minValue(0.01)
                             ->maxValue(($record->amount - $record->refunded_amount) / 100)
                             ->step(0.01)
-                            ->prefix('$')
-                            ->helperText('Maximum refundable: $'.number_format(($record->amount - $record->refunded_amount) / 100, 2)),
+                            ->prefix(currencySymbol($record->currency))
+                            ->helperText('Maximum refundable: '.currencySymbol($record->currency).number_format(($record->amount - $record->refunded_amount) / 100, 2)),
                     ])
                     ->action(function (Transaction $record, array $data): void {
                         $refundAmountCents = (int) round($data['refund_amount'] * 100);
@@ -209,7 +209,7 @@ class TransactionResource extends Resource
 
                             Notification::make()
                                 ->title('Partial refund successful')
-                                ->body('$'.number_format($refundAmountCents / 100, 2).' has been refunded.')
+                                ->body(currencySymbol($record->currency).number_format($refundAmountCents / 100, 2).' has been refunded.')
                                 ->success()
                                 ->send();
                         } catch (\Stripe\Exception\ApiErrorException $e) {
