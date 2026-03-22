@@ -33,13 +33,13 @@ if (! function_exists('currencySymbol')) {
     {
         $symbols = [
             'usd' => '$',
-            'eur' => 'EUR',
-            'gbp' => 'GBP',
-            'jpy' => 'JPY',
+            'eur' => "\u{20AC}",
+            'gbp' => "\u{00A3}",
+            'jpy' => "\u{00A5}",
             'cad' => 'CA$',
             'aud' => 'A$',
             'chf' => 'CHF',
-            'inr' => 'INR',
+            'inr' => "\u{20B9}",
             'brl' => 'R$',
             'mxn' => 'MX$',
         ];
@@ -67,9 +67,9 @@ Select::make('currency')
     ->default('usd')
     ->options([
         'usd' => 'USD ($)',
-        'eur' => 'EUR (EUR)',
-        'gbp' => 'GBP (GBP)',
-        'jpy' => 'JPY (JPY)',
+        'eur' => 'EUR (\u{20AC})',
+        'gbp' => 'GBP (\u{00A3})',
+        'jpy' => 'JPY (\u{00A5})',
     ]),
 ```
 
@@ -101,6 +101,7 @@ All instances of `'$'.number_format(...)` should use `currencySymbol($record->cu
 | 57 | `'$'.number_format($record->refunded_amount / 100, 2)` | `currencySymbol($record->currency).number_format(...)` |
 | 105 | table column `'$'.number_format(...)` | Use record's currency |
 | 145 | modal description `'$'.number_format(...)` | `currencySymbol($record->currency).number_format(...)` |
+| 183 | `->label('Refund Amount ($)')` | `->label('Refund Amount')` |
 | 163 | notification body `'$'.number_format(...)` | `currencySymbol($record->currency).number_format(...)` |
 | 180 | modal description hardcoded `$` | Use record's currency |
 | 189 | TextInput prefix `'$'` | `currencySymbol($record->currency)` |
@@ -160,19 +161,35 @@ Replace `'$'.number_format($state / 100, 2)` with `currencySymbol($record->curre
 
 Replace `'$'.number_format($mrr, 2)` with `currencySymbol('usd').number_format($mrr, 2)`. Uses `usd` as default since MRR aggregates across plans. This is acceptable because multi-currency aggregation is deferred.
 
-### 7. Frontend Blade templates
+### 7. Fix Livewire components
 
-**File:** `resources/views/components/marketing/sections/pricing.blade.php`
+#### CheckoutReview (`app/Livewire/Billing/CheckoutReview.php`)
 
-Currently uses `{{ $plan->currency }}` which shows the raw symbol. After migration to ISO codes, update to `{{ currencySymbol($plan->currency) }}`.
+Lines 134-138 compute currency but hardcode `$`:
 
-**File:** `resources/views/pages/settings/subscription.blade.php`
+```php
+// Current (broken):
+return '$'.$amount.' '.$currency.' off'...;
 
-Same pattern -- replace `{{ $plan->currency }}` with `{{ currencySymbol($plan->currency) }}`.
+// Fix:
+return currencySymbol($coupon->currency).$amount.' off'...;
+```
 
-Search for any other Blade files referencing `$plan->currency` and update similarly.
+### 8. Frontend Blade templates
 
-### 8. Test updates
+All Blade files using `{{ $plan->currency }}` must switch to `{{ currencySymbol($plan->currency) }}`:
+
+**File:** `resources/views/components/marketing/sections/pricing.blade.php` (line 63)
+
+**File:** `resources/views/pages/settings/subscription.blade.php` (lines 74, 81)
+
+**File:** `resources/views/wave/livewire/billing/checkout-review.blade.php` (lines 38, 42, 63, 154, 208, 215, 223 -- 7 occurrences)
+
+**File:** `resources/views/wave/livewire/billing/checkout.blade.php` (line 84)
+
+**File:** `resources/views/pages/settings/organization.blade.php` (lines 720, 732 -- Alpine data binding and display)
+
+### 9. Test updates
 
 Write a unit test for the `currencySymbol()` helper covering:
 - Known currencies return correct symbols
@@ -188,6 +205,7 @@ Update any existing tests that assert hardcoded `$` in formatted amounts to use 
 - Multi-currency revenue aggregation in widgets
 - Locale-aware formatting in admin (keeps simple symbol prefix)
 - Currency conversion
+- Zero-decimal currency handling (JPY amounts stored in whole units vs cents) -- existing issue, not introduced by this change
 
 ## File Summary
 
@@ -209,6 +227,10 @@ Update any existing tests that assert hardcoded `$` in formatted amounts to use 
 | `app/Filament/Resources/Coupons/RelationManagers/RedemptionsRelationManager.php` | Replace hardcoded `$` |
 | `app/Filament/Widgets/RecentTransactionsWidget.php` | Replace hardcoded `$` |
 | `app/Filament/Widgets/StatsOverviewWidget.php` | Replace hardcoded `$` |
+| `app/Livewire/Billing/CheckoutReview.php` | Fix hardcoded `$` in coupon display |
 | `resources/views/components/marketing/sections/pricing.blade.php` | Use `currencySymbol()` |
 | `resources/views/pages/settings/subscription.blade.php` | Use `currencySymbol()` |
+| `resources/views/pages/settings/organization.blade.php` | Use `currencySymbol()` |
+| `resources/views/wave/livewire/billing/checkout-review.blade.php` | Use `currencySymbol()` (7 occurrences) |
+| `resources/views/wave/livewire/billing/checkout.blade.php` | Use `currencySymbol()` |
 | `tests/Unit/CurrencySymbolHelperTest.php` | New test |
