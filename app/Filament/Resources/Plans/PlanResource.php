@@ -6,6 +6,7 @@ use App\Filament\Resources\Plans\Pages\CreatePlan;
 use App\Filament\Resources\Plans\Pages\EditPlan;
 use App\Filament\Resources\Plans\Pages\ListPlans;
 use App\Filament\Resources\Plans\RelationManagers\SubscriptionsRelationManager;
+use App\Models\Plan;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -30,7 +31,6 @@ use Filament\Tables\Table;
 use Stripe\Exception\ApiErrorException;
 use Stripe\StripeClient;
 use UnitEnum;
-use Wave\Plan;
 
 class PlanResource extends Resource
 {
@@ -93,12 +93,12 @@ class PlanResource extends Resource
                                 TextInput::make('onetime_price')
                                     ->maxLength(191),
                                 Select::make('currency')
-                                    ->default('$')
+                                    ->default('usd')
                                     ->options([
-                                        '$' => '$',
-                                        '€' => '€',
-                                        '£' => '£',
-                                        '¥' => '¥',
+                                        'usd' => 'USD ($)',
+                                        'eur' => "EUR (\u{20AC})",
+                                        'gbp' => "GBP (\u{00A3})",
+                                        'jpy' => "JPY (\u{00A5})",
                                     ]),
                             ])
                             ->columns(2),
