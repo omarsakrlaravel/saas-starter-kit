@@ -7,6 +7,7 @@ use App\Filament\Resources\Coupons\Pages\EditCoupon;
 use App\Filament\Resources\Coupons\Pages\ListCoupons;
 use App\Filament\Resources\Coupons\RelationManagers\PromotionCodesRelationManager;
 use App\Filament\Resources\Coupons\RelationManagers\RedemptionsRelationManager;
+use App\Models\Coupon;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -30,7 +31,6 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
 use Stripe\Exception\ApiErrorException;
 use Stripe\StripeClient;
-use Wave\Coupon;
 
 class CouponResource extends Resource
 {
@@ -129,7 +129,7 @@ class CouponResource extends Resource
                         }
 
                         if ($record->amount_off) {
-                            return '$'.number_format($record->amount_off / 100, 2).' off';
+                            return currencySymbol($record->currency).number_format($record->amount_off / 100, 2).' off';
                         }
 
                         return 'No discount';
