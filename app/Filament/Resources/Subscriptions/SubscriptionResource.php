@@ -8,7 +8,10 @@ use App\Filament\Resources\Subscriptions\Pages\ListSubscriptions;
 use App\Filament\Resources\Subscriptions\RelationManagers\InvoicesRelationManager;
 use App\Filament\Resources\Subscriptions\RelationManagers\TransactionsRelationManager;
 use App\Models\Organization;
+use App\Models\Plan;
+use App\Models\Subscription;
 use App\Models\User;
+use App\Services\PlanChangeResolver;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -28,9 +31,6 @@ use Filament\Tables\Table;
 use Stripe\Exception\ApiErrorException;
 use Stripe\StripeClient;
 use UnitEnum;
-use Wave\Plan;
-use Wave\Services\PlanChangeResolver;
-use Wave\Subscription;
 
 class SubscriptionResource extends Resource
 {
@@ -521,10 +521,11 @@ class SubscriptionResource extends Resource
                             return;
                         }
 
+                        $currency = strtolower((string) ($latestInvoice->currency ?? 'usd'));
                         $amountFormatted = number_format($latestInvoice->amount_paid / 100, 2);
 
                         Notification::make()
-                            ->title('Refund of $'.$amountFormatted.' issued for invoice '.$latestInvoice->number.'.')
+                            ->title('Refund of '.currencySymbol($currency).$amountFormatted.' issued for invoice '.$latestInvoice->number.'.')
                             ->success()
                             ->send();
                     }),
