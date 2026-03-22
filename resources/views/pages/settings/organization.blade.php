@@ -717,7 +717,7 @@
                                         max: 100,
                                         price: {{ $pricePerSeat }},
                                         occupied: {{ $seatUsage }},
-                                        currency: '{{ currencySymbol($plan->currency) }}',
+                                        currency: '{{ currencySymbol() }}',
                                     }"
                                     class="space-y-5"
                                 >
@@ -729,7 +729,7 @@
                                             </div>
                                             <div>
                                                 <p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $plan->name }}</p>
-                                                <p class="text-xs text-zinc-500 dark:text-zinc-400">{{ currencySymbol($plan->currency) }}{{ number_format($pricePerSeat, 2) }}/{{ $cycleLabel }} per seat</p>
+                                                <p class="text-xs text-zinc-500 dark:text-zinc-400">{{ currencySymbol() }}{{ number_format($pricePerSeat, 2) }}/{{ $cycleLabel }} per seat</p>
                                             </div>
                                         </div>
                                         <a href="{{ route('settings.subscription') }}" class="text-xs text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors" wire:navigate>

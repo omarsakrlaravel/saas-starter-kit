@@ -177,8 +177,8 @@ class AppStats extends Command
 
         // Revenue Section
         $this->components->twoColumnDetail('<fg=cyan>💰 Revenue</>');
-        $this->components->twoColumnDetail('MRR (Monthly Recurring Revenue)', currencySymbol('usd').number_format($stats['revenue']['mrr'], 2));
-        $this->components->twoColumnDetail('ARR (Annual Recurring Revenue)', currencySymbol('usd').number_format($stats['revenue']['arr'], 2));
+        $this->components->twoColumnDetail('MRR (Monthly Recurring Revenue)', currencySymbol().number_format($stats['revenue']['mrr'], 2));
+        $this->components->twoColumnDetail('ARR (Annual Recurring Revenue)', currencySymbol().number_format($stats['revenue']['arr'], 2));
 
         // Plans Breakdown
         if (! empty($stats['plans'])) {

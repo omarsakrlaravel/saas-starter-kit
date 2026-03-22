@@ -14,7 +14,6 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\KeyValue;
-use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -92,14 +91,6 @@ class PlanResource extends Resource
                                     ->maxLength(191),
                                 TextInput::make('onetime_price')
                                     ->maxLength(191),
-                                Select::make('currency')
-                                    ->default('usd')
-                                    ->options([
-                                        'usd' => 'USD ($)',
-                                        'eur' => "EUR (\u{20AC})",
-                                        'gbp' => "GBP (\u{00A3})",
-                                        'jpy' => "JPY (\u{00A5})",
-                                    ]),
                             ])
                             ->columns(2),
                         Section::make('Trials and Coupons')

@@ -35,11 +35,11 @@
                         {{-- Price display --}}
                         <div class="text-right">
                             <div class="flex items-baseline gap-0.5">
-                                <span class="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">{{ currencySymbol($plan->currency) }}{{ $this->unitPrice }}</span>
+                                <span class="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">{{ currencySymbol() }}{{ $this->unitPrice }}</span>
                                 <span class="text-sm text-zinc-400 dark:text-zinc-500">/{{ $billing_cycle === 'month' ? 'mo' : 'yr' }}</span>
                             </div>
                             @if($this->effectiveMonthlyPrice)
-                                <p class="mt-0.5 text-xs text-zinc-400 dark:text-zinc-500">{{ currencySymbol($plan->currency) }}{{ $this->effectiveMonthlyPrice }}/mo billed yearly</p>
+                                <p class="mt-0.5 text-xs text-zinc-400 dark:text-zinc-500">{{ currencySymbol() }}{{ $this->effectiveMonthlyPrice }}/mo billed yearly</p>
                             @endif
                         </div>
                     </div>
@@ -60,7 +60,7 @@
                         <div class="mt-4 flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3.5 py-2.5 dark:border-blue-800/40 dark:bg-blue-950/30">
                             <x-phosphor-piggy-bank-duotone class="h-4 w-4 flex-shrink-0 text-blue-500" />
                             <p class="text-sm text-blue-700 dark:text-blue-300">
-                                You save <span class="font-semibold">{{ currencySymbol($plan->currency) }}{{ number_format($this->yearlySavings * $seat_quantity, 0) }}/yr</span> compared to monthly billing.
+                                You save <span class="font-semibold">{{ currencySymbol() }}{{ number_format($this->yearlySavings * $seat_quantity, 0) }}/yr</span> compared to monthly billing.
                             </p>
                         </div>
                     @endif
@@ -151,7 +151,7 @@
                         {{-- Plan line item --}}
                         <div class="flex items-center justify-between text-sm">
                             <span class="text-zinc-600 dark:text-zinc-400">{{ $plan->name }}</span>
-                            <span class="font-medium text-zinc-900 dark:text-zinc-100">{{ currencySymbol($plan->currency) }}{{ $this->unitPrice }}</span>
+                            <span class="font-medium text-zinc-900 dark:text-zinc-100">{{ currencySymbol() }}{{ $this->unitPrice }}</span>
                         </div>
 
                         {{-- Seat quantity (org billing) --}}
@@ -205,14 +205,14 @@
                         <div class="space-y-2.5">
                             <div class="flex items-center justify-between">
                                 <span class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Due today</span>
-                                <span class="text-xl font-bold text-emerald-600 dark:text-emerald-400">{{ currencySymbol($plan->currency) }}0.00</span>
+                                <span class="text-xl font-bold text-emerald-600 dark:text-emerald-400">{{ currencySymbol() }}0.00</span>
                             </div>
                             <div class="flex items-center justify-between">
                                 <span class="text-xs text-zinc-500 dark:text-zinc-400">
                                     Then after {{ (int) $plan->trial_days }} days
                                 </span>
                                 <span class="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                                    {{ currencySymbol($plan->currency) }}{{ number_format($this->totalPrice, 2) }}/{{ $billing_cycle === 'month' ? 'mo' : 'yr' }}
+                                    {{ currencySymbol() }}{{ number_format($this->totalPrice, 2) }}/{{ $billing_cycle === 'month' ? 'mo' : 'yr' }}
                                 </span>
                             </div>
                         </div>
@@ -220,7 +220,7 @@
                         <div class="flex items-center justify-between">
                             <span class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Total</span>
                             <div class="text-right">
-                                <span class="text-xl font-bold text-zinc-900 dark:text-zinc-100">{{ currencySymbol($plan->currency) }}{{ number_format($this->totalPrice, 2) }}</span>
+                                <span class="text-xl font-bold text-zinc-900 dark:text-zinc-100">{{ currencySymbol() }}{{ number_format($this->totalPrice, 2) }}</span>
                                 <span class="text-xs text-zinc-500 dark:text-zinc-400">/{{ $billing_cycle === 'month' ? 'mo' : 'yr' }}</span>
                             </div>
                         </div>

@@ -104,7 +104,12 @@ if (! function_exists('currencySymbol')) {
             'mxn' => 'MX$',
         ];
 
-        $normalized = strtolower(trim($code ?? 'usd'));
+        try {
+            $default = config('saas.currency', 'usd');
+        } catch (\Throwable) {
+            $default = 'usd';
+        }
+        $normalized = strtolower(trim($code ?? $default));
 
         return $symbols[$normalized] ?? strtoupper($normalized);
     }

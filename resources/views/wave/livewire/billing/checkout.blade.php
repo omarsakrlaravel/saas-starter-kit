@@ -81,7 +81,7 @@
 
                                 {{-- Price --}}
                                 <div class="mt-5 flex items-baseline gap-1.5">
-                                    <span class="text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">{{ currencySymbol($plan->currency) }}<span x-text="billing_cycle_selected == 'month' ? '{{ $plan->monthly_price }}' : '{{ $plan->yearly_price }}'"></span></span>
+                                    <span class="text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">{{ currencySymbol() }}<span x-text="billing_cycle_selected == 'month' ? '{{ $plan->monthly_price }}' : '{{ $plan->yearly_price }}'"></span></span>
                                     <span class="text-sm font-medium text-zinc-400 dark:text-zinc-500">/<span x-text="billing_cycle_selected == 'month' ? 'mo' : 'yr'"></span></span>
                                 </div>
 

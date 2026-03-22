@@ -46,7 +46,7 @@ class StatsOverviewWidget extends BaseWidget
             return (float) $plan->monthly_price * $quantity;
         });
 
-        return Stat::make('MRR', currencySymbol('usd').number_format($mrr, 2))
+        return Stat::make('MRR', currencySymbol().number_format($mrr, 2))
             ->description('Monthly Recurring Revenue')
             ->descriptionIcon('heroicon-m-currency-dollar')
             ->color('success');

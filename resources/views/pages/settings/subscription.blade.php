@@ -71,14 +71,14 @@
                                     @endphp
                                     <div class="flex items-baseline gap-1">
                                         <span class="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-                                            {{ currencySymbol($plan->currency) }}{{ number_format($totalPrice, 0) }}
+                                            {{ currencySymbol() }}{{ number_format($totalPrice, 0) }}
                                         </span>
                                         <span class="text-sm text-zinc-500 dark:text-zinc-400">
                                             /{{ $cycleLabel }}
                                         </span>
                                     </div>
                                     @if($seats > 1)
-                                        <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">{{ currencySymbol($plan->currency) }}{{ number_format($unitPrice, 0) }}/seat &times; {{ $seats }} seats</p>
+                                        <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">{{ currencySymbol() }}{{ number_format($unitPrice, 0) }}/seat &times; {{ $seats }} seats</p>
                                     @endif
                                     @if($plan->description)
                                         <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">{{ $plan->description }}</p>
