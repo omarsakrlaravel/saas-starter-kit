@@ -16,6 +16,9 @@ class AccountStatusMiddleware
     private const RESTRICTED_ALLOWED_ROUTES = [
         'account/restricted',
         'auth/*',
+        'logout',
+        'settings/profile',
+        'settings/security',
         'settings/subscription*',
         'settings/export',
         'livewire*',
@@ -39,6 +42,12 @@ class AccountStatusMiddleware
             return $next($request);
         }
 
+        $reference = $this->supportReference();
+
+        if ($request->expectsJson()) {
+            return $this->jsonBlockedResponse($request, $reference, $status['state']);
+        }
+
         if ($status['state']->isRestricted()) {
             if ($request->is(...self::RESTRICTED_ALLOWED_ROUTES)) {
                 return $next($request);
@@ -47,48 +56,50 @@ class AccountStatusMiddleware
             return redirect()->route('account.restricted');
         }
 
-        $reference = $this->supportReference();
-
-        if ($request->expectsJson()) {
-            return $this->jsonBlockedResponse($request, $reference);
-        }
-
         return response()->view('account.suspended', [
             'support_reference' => $reference,
         ], 403);
     }
 
     /**
-     * Resolve effective status based on organization first, then user.
+     * Resolve effective status -- worst status wins (suspended > restricted).
      *
      * @return array{state: ?AccountStatus, source: User|Organization|null}
      */
     private function effectiveAccountState(User $user): array
     {
-        $state = null;
-        $source = null;
+        $userState = $user->status?->isBlocking() ? $user->status : null;
+        $orgState = null;
 
-        if ($user->currentOrganization && $user->currentOrganization->isBlockedFromSession()) {
-            $state = $user->currentOrganization->status;
-            $source = $user->currentOrganization;
-        } elseif ($user->isBlockedFromSession()) {
-            $state = $user->status;
-            $source = $user;
+        $organization = $user->currentOrganizationForContext();
+        if ($organization?->isBlockedFromSession()) {
+            $orgState = $organization->status;
         }
 
-        return [
-            'state' => $state,
-            'source' => $source,
-        ];
+        if ($userState?->isSuspended() || $orgState?->isSuspended()) {
+            $suspended = $userState?->isSuspended() ? $user : $organization;
+
+            return ['state' => AccountStatus::Suspended, 'source' => $suspended];
+        }
+
+        if ($userState?->isRestricted()) {
+            return ['state' => $userState, 'source' => $user];
+        }
+
+        if ($orgState?->isRestricted()) {
+            return ['state' => $orgState, 'source' => $organization];
+        }
+
+        return ['state' => null, 'source' => null];
     }
 
-    private function jsonBlockedResponse(Request $request, string $supportReference): JsonResponse
+    private function jsonBlockedResponse(Request $request, string $supportReference, AccountStatus $state): JsonResponse
     {
         return response()->json([
             'status' => 'forbidden',
-            'error_code' => 'account_suspended',
+            'error_code' => 'account_'.$state->value,
             'support_reference' => $supportReference,
-            'message' => 'Account has been suspended.',
+            'message' => 'Account has been '.$state->value.'.',
             'path' => $request->path(),
         ], 403);
     }

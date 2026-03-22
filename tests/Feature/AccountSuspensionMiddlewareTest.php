@@ -115,6 +115,51 @@ it('only authorizes account channels for active accounts', function () {
     expect($organizationChannel($user, $organization->id))->toBeFalse();
 });
 
+it('suspended user wins over restricted org (worst status takes priority)', function () {
+    $user = User::factory()->create([
+        'status' => AccountStatus::Suspended->value,
+    ]);
+    $organization = Organization::create([
+        'name' => 'Restricted Org',
+        'slug' => 'restricted-org-priority',
+        'status' => AccountStatus::Restricted->value,
+        'owner_user_id' => $user->id,
+    ]);
+    $user->update(['current_organization_id' => $organization->id]);
+
+    $this->actingAs($user);
+
+    $response = $this->get('/settings');
+
+    $response->assertStatus(Response::HTTP_FORBIDDEN);
+    $response->assertSee('Account suspended');
+});
+
+it('returns account_restricted error code for restricted API requests', function () {
+    $user = User::factory()->create([
+        'status' => AccountStatus::Restricted->value,
+    ]);
+    $token = $user->createToken('test')->plainTextToken;
+
+    $response = $this->withHeader('Authorization', "Bearer {$token}")
+        ->getJson('/api/user');
+
+    $response->assertStatus(Response::HTTP_FORBIDDEN);
+    $response->assertJsonPath('error_code', 'account_restricted');
+});
+
+it('allows restricted users to access profile and security settings', function () {
+    $user = User::factory()->create([
+        'status' => AccountStatus::Restricted->value,
+    ]);
+
+    $this->actingAs($user);
+
+    $this->get('/settings/profile')->assertOk();
+    $this->get('/settings/security')->assertOk();
+    $this->get('/settings/export')->assertOk();
+});
+
 it('does not authorize organization channels when current organization membership is stale', function () {
     $owner = User::factory()->create();
     $user = User::factory()->create();
