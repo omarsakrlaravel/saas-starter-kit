@@ -69,7 +69,7 @@ Route::get('organization/invite/{organization}/accept', [OrganizationInviteContr
     ->name('organization.invite.accept');
 
 // Installer
-Route::view('install', 'wave.install')->name('install');
+Route::view('install', 'install')->name('install');
 
 // File downloads
 Route::get('files/{file}/download', FileDownloadController::class)
@@ -119,7 +119,7 @@ Route::redirect('billing', 'settings/subscription')->name('billing');
 // Welcome page fallback when no users exist
 try {
     if (! User::first()) {
-        Route::view('/', 'wave.welcome');
+        Route::view('/', 'welcome');
     }
 } catch (QueryException $e) {
     // Handle the exception or log it if needed

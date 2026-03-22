@@ -1,11 +1,9 @@
 @import '../../../../vendor/filament/filament/resources/css/theme.css';
-@source '../../../../wave/resources/views/**/*.blade.php';
 
 @source '../../../../resources/views/filament/**/*.blade.php';
 @source '../../../../vendor/filament/**/*.blade.php';
 @source '../../../../resources/views/**/*.blade.php';
 @source '../../../../resources/views/components/**/*.blade.php';
-@source '../../../../wave/resources/views/**/*.blade.php';
 @source '../../../../resources/plugins/**/*.php';
 
 /* 

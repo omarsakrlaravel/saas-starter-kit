@@ -108,6 +108,6 @@ class Update extends Component
 
     public function render()
     {
-        return view('wave.livewire.billing.update');
+        return view('livewire.billing.update');
     }
 }

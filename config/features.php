@@ -48,7 +48,7 @@ return [
     ],
     (object) [
         'title' => 'Filament Admin',
-        'description' => 'Wave utilizes Filament to provide a beautiful admin panel.',
+        'description' => 'Uses Filament to provide a beautiful admin panel.',
         'image' => '/themes/tailwind/images/admin.png',
     ],
 ];

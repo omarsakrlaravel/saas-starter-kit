@@ -30,7 +30,7 @@ class Plan extends Model
         // Use cache if available, otherwise direct query
         if (app()->bound('cache')) {
             try {
-                return Cache::remember('wave_active_plans', 1800, function () {
+                return Cache::remember('active_plans', 1800, function () {
                     return self::where('active', 1)->orderBy('sort_order')->orderBy('id')->get();
                 });
             } catch (Exception $e) {
@@ -49,7 +49,7 @@ class Plan extends Model
         // Use cache if available, otherwise direct query
         if (app()->bound('cache')) {
             try {
-                return Cache::remember("wave_plan_{$name}", 1800, function () use ($name) {
+                return Cache::remember("plan_{$name}", 1800, function () use ($name) {
                     return self::where('name', $name)->first();
                 });
             } catch (Exception $e) {
@@ -68,10 +68,10 @@ class Plan extends Model
         // Only clear cache if it's available
         if (app()->bound('cache')) {
             try {
-                Cache::forget('wave_active_plans');
+                Cache::forget('active_plans');
                 $plans = self::pluck('name');
                 foreach ($plans as $planName) {
-                    Cache::forget("wave_plan_{$planName}");
+                    Cache::forget("plan_{$planName}");
                 }
             } catch (Exception $e) {
                 // Silently handle cache clearing failures
