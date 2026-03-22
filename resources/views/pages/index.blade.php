@@ -5,7 +5,7 @@
 
 <x-layouts.marketing
     :seo="[
-        'title'         => setting('site.title', 'Laravel Wave'),
+        'title'         => setting('site.title', 'App'),
         'description'   => setting('site.description', 'Software as a Service Starter Kit'),
         'image'         => url('/og_image.png'),
         'type'          => 'website'

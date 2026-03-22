@@ -21,7 +21,7 @@
 
                     <div class="relative pl-3">
                         <h3 class="text-base font-bold leading-tight text-white">Deploy Your App to Digital Ocean</h3>
-                        <p class="text-xs">Easily deploy your Wave app to DigitalOcean.</p>
+                        <p class="text-xs">Easily deploy your app to DigitalOcean.</p>
                     </div>
 
                 </div>
@@ -32,7 +32,7 @@
                         <label for="api_key" class="block pb-3 text-sm font-medium text-zinc-700">
                             1. Enter your Github Repo <span class="font-normal">(exclude https://github.com/)</span>
                         </label>
-                        <input type="text" wire:model.live="repo" placeholder="thedevdojo/wave" class="block px-4 py-3 mb-4 w-full rounded-lg border-2 border border-transparent border-zinc-200 focus:ring focus:ring-blue-500 focus:outline-none" name="repo">
+                        <input type="text" wire:model.live="repo" placeholder="your-org/your-app" class="block px-4 py-3 mb-4 w-full rounded-lg border-2 border border-transparent border-zinc-200 focus:ring focus:ring-blue-500 focus:outline-none" name="repo">
                     </div>
 
                     <div class="relative mb-8">

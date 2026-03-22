@@ -69,7 +69,7 @@ it('logs out via post and invalidates the session', function () {
     expect(session()->token())->not()->toBe($oldToken);
 });
 
-it('does not allow get requests to the wave logout endpoint', function () {
+it('does not allow get requests to the logout endpoint', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)

@@ -13,7 +13,7 @@
             </div>
         </div>
         <div class="flex justify-center items-center mt-12 w-full lg:w-1/2 lg:mt-0">
-            <img alt="Wave Character" class="relative w-full lg:scale-125 xl:translate-x-6" src="/wave/img/character.png" style="max-width:450px;">
+            <img alt="Hero Image" class="relative w-full lg:scale-125 xl:translate-x-6" src="/img/character.png" style="max-width:450px;">
         </div>
     </div>
     <div class="flex-shrink-0 lg:h-[150px] flex border-t border-zinc-200 items-center w-full bg-white">

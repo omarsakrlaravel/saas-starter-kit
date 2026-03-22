@@ -6,6 +6,6 @@
     &lt;p&gt;You are a paid subscriber&lt;/p&gt;
 &#64;endsubscriber</code></pre>
     <div class="p-5">
-        <p><a href="https://devdojo.com/wave/docs/concepts/blade-directives" class="underline">Click here to learn more</a> about Blade directives you can use in your Wave application.</p>
+        <p>Learn more about Blade directives you can use in your application.</p>
     </div>
 </div>

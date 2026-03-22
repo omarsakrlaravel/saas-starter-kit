@@ -2,7 +2,7 @@
     <x-marketing.elements.heading
         level="h2"
         title="Master the Seas of <br> Product Development"
-        description="Harness the power of Wave's extensive features to fast-track your SaaS projects. Get ready to fall in love with the future of SaaS development, today." 
+        description="Harness the power of extensive features to fast-track your SaaS projects. Get ready to fall in love with the future of SaaS development, today." 
     />
     <div class="text-center">
         <div class="grid grid-cols-2 gap-x-6 gap-y-12 mt-12 text-center lg:mt-16 lg:grid-cols-4 lg:gap-x-8 lg:gap-y-16">
@@ -13,7 +13,7 @@
                 <div class="mt-6">
                     <h3 class="font-medium text-zinc-900">User Management</h3>
                     <p class="mt-2 text-sm text-zinc-500">
-                        Effortlessly manage users with Wave's intuitive dashboard.
+                        Effortlessly manage users with an intuitive dashboard.
                     </p>
                 </div>
             </div>
@@ -68,7 +68,7 @@
                 <div class="mt-6">
                     <h3 class="font-medium text-zinc-900">Easy Setup</h3>
                     <p class="mt-2 text-sm text-zinc-500">
-                        Get started quickly with Wave's straightforward setup process.
+                        Get started quickly with a straightforward setup process.
                     </p>
                 </div>
             </div>
@@ -90,7 +90,7 @@
                 <div class="mt-6">
                     <h3 class="font-medium text-zinc-900">File Management</h3>
                     <p class="mt-2 text-sm text-zinc-500">
-                        Manage your files efficiently with Wave's built-in file manager.
+                        Manage your files efficiently with a built-in file manager.
                     </p>
                 </div>
             </div>

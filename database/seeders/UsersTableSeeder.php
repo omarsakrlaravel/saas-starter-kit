@@ -18,7 +18,7 @@ class UsersTableSeeder extends Seeder
 
         DB::table('users')->insert([
             0 => [
-                'name' => 'Wave Admin',
+                'name' => 'Admin',
                 'email' => 'admin@demo.com',
                 'username' => 'admin',
                 'avatar' => 'demo/default.png',

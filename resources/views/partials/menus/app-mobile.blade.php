@@ -47,13 +47,13 @@
                                 Dashboard
                             </div>
                         </a>
-                        <a href="https://wave.devdojo.com/docs" target="_blank" class="flex items-center p-3 -m-3 space-x-3 rounded-md transition duration-150 ease-in-out hover:bg-zinc-50">
+                        <a href="#" class="flex items-center p-3 -m-3 space-x-3 rounded-md transition duration-150 ease-in-out hover:bg-zinc-50">
                             <svg class="flex-shrink-0 w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
                             <div class="text-base font-medium leading-6 text-zinc-900">
                                 Documentation
                             </div>
                         </a>
-                        <a href="https://devdojo.com/course/wave" target="_blank" class="flex items-center p-3 -m-3 space-x-3 rounded-md transition duration-150 ease-in-out hover:bg-zinc-50">
+                        <a href="#" class="flex items-center p-3 -m-3 space-x-3 rounded-md transition duration-150 ease-in-out hover:bg-zinc-50">
                             <svg class="flex-shrink-0 w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z"></path></svg>
                             <div class="text-base font-medium leading-6 text-zinc-900">
                                 Videos

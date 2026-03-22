@@ -44,8 +44,8 @@
 
             <div class="relative px-2.5 space-y-1.5 text-zinc-700 dark:text-zinc-400">
                 
-                <x-app.sidebar-link href="https://devdojo.com/wave/docs" target="_blank" icon="phosphor-book-bookmark-duotone" active="false">Documentation</x-app.sidebar-link>
-                <x-app.sidebar-link href="https://devdojo.com/questions" target="_blank" icon="phosphor-chat-duotone" active="false">Questions</x-app.sidebar-link>
+                <x-app.sidebar-link href="#" icon="phosphor-book-bookmark-duotone" active="false">Documentation</x-app.sidebar-link>
+                <x-app.sidebar-link href="#" icon="phosphor-chat-duotone" active="false">Questions</x-app.sidebar-link>
                 <x-app.sidebar-link :href="route('changelogs')" icon="phosphor-book-open-text-duotone" :active="Request::is('changelog') || Request::is('changelog/*')">Changelog</x-app.sidebar-link>
 
                 <div x-show="sidebarTip" x-data="{ sidebarTip: $persist(true) }" class="px-1 py-3" x-collapse x-cloak>
