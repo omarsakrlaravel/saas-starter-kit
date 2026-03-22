@@ -181,6 +181,16 @@ class HandleStripeWebhook
         }
 
         $subscription->clearBillableCache();
+
+        // Notify the user about the cancelled subscription
+        try {
+            $user = \App\Models\User::find($subscription->user_id);
+            if ($user) {
+                $user->notify(new \App\Notifications\SubscriptionCancelled());
+            }
+        } catch (\Throwable $e) {
+            Log::warning('HandleStripeWebhook: subscription cancelled notification could not be sent', ['error' => $e->getMessage()]);
+        }
     }
 
     /**
@@ -412,6 +422,20 @@ class HandleStripeWebhook
                 ]);
             } else {
                 $this->handleInvoiceUpsert($payload);
+            }
+
+            // Notify the user about the failed payment
+            try {
+                $customerId = $invoice['customer'] ?? null;
+                $billable = is_string($customerId) ? $this->resolveBillable($customerId) : null;
+                if ($billable && $billable['type'] === 'user') {
+                    $user = \App\Models\User::find($billable['id']);
+                    if ($user) {
+                        $user->notify(new \App\Notifications\PaymentFailed($invoice['hosted_invoice_url'] ?? null));
+                    }
+                }
+            } catch (\Throwable $e) {
+                Log::warning('HandleStripeWebhook: payment failed notification could not be sent', ['error' => $e->getMessage()]);
             }
         } catch (\Throwable $e) {
             Log::error('HandleStripeWebhook: invoice payment_failed failed', ['error' => $e->getMessage()]);
