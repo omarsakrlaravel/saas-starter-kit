@@ -2,6 +2,9 @@
 
 namespace App\Filament\Resources\Invoices;
 
+use App\Actions\Billing\MarkInvoiceUncollectible;
+use App\Actions\Billing\RefundInvoice;
+use App\Actions\Billing\VoidInvoice;
 use App\Filament\Resources\Invoices\Pages\EditInvoice;
 use App\Filament\Resources\Invoices\Pages\ListInvoices;
 use App\Models\Invoice;
@@ -20,8 +23,6 @@ use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
-use Stripe\Exception\ApiErrorException;
-use Stripe\StripeClient;
 use UnitEnum;
 
 class InvoiceResource extends Resource
@@ -164,42 +165,8 @@ class InvoiceResource extends Resource
                             ->step(0.01),
                     ])
                     ->action(function (Invoice $record, array $data): void {
-                        $amountInCents = (int) round($data['amount'] * 100);
-
-                        if ($amountInCents > $record->amount_paid) {
-                            Notification::make()
-                                ->title('Refund amount exceeds amount paid')
-                                ->danger()
-                                ->send();
-
-                            return;
-                        }
-
-                        try {
-                            $stripe = new StripeClient(config('services.stripe.secret'));
-                            $stripeInvoice = $stripe->invoices->retrieve($record->stripe_id);
-                            $stripe->refunds->create([
-                                'charge' => $stripeInvoice->charge,
-                                'amount' => $amountInCents,
-                            ]);
-
-                            $newAmountPaid = $record->amount_paid - $amountInCents;
-                            $record->update([
-                                'amount_paid' => $newAmountPaid,
-                                'amount_remaining' => $record->total - $newAmountPaid,
-                            ]);
-
-                            Notification::make()
-                                ->title('Refund processed successfully')
-                                ->success()
-                                ->send();
-                        } catch (ApiErrorException $e) {
-                            Notification::make()
-                                ->title('Stripe error')
-                                ->body($e->getMessage())
-                                ->danger()
-                                ->send();
-                        }
+                        $result = app(RefundInvoice::class)->execute($record, (int) round($data['amount'] * 100));
+                        Notification::make()->title($result->message)->{$result->success ? 'success' : 'danger'}()->send();
                     }),
                 Action::make('void')
                     ->icon('heroicon-o-x-circle')
@@ -207,23 +174,8 @@ class InvoiceResource extends Resource
                     ->requiresConfirmation()
                     ->visible(fn (Invoice $record): bool => $record->status === 'open')
                     ->action(function (Invoice $record): void {
-                        try {
-                            $stripe = new StripeClient(config('services.stripe.secret'));
-                            $stripe->invoices->voidInvoice($record->stripe_id);
-
-                            $record->update(['status' => 'void']);
-
-                            Notification::make()
-                                ->title('Invoice voided successfully')
-                                ->success()
-                                ->send();
-                        } catch (ApiErrorException $e) {
-                            Notification::make()
-                                ->title('Stripe error')
-                                ->body($e->getMessage())
-                                ->danger()
-                                ->send();
-                        }
+                        $result = app(VoidInvoice::class)->execute($record);
+                        Notification::make()->title($result->message)->{$result->success ? 'success' : 'danger'}()->send();
                     }),
                 Action::make('mark_uncollectible')
                     ->label('Mark Uncollectible')
@@ -232,23 +184,8 @@ class InvoiceResource extends Resource
                     ->requiresConfirmation()
                     ->visible(fn (Invoice $record): bool => $record->status === 'open')
                     ->action(function (Invoice $record): void {
-                        try {
-                            $stripe = new StripeClient(config('services.stripe.secret'));
-                            $stripe->invoices->markUncollectible($record->stripe_id);
-
-                            $record->update(['status' => 'uncollectible']);
-
-                            Notification::make()
-                                ->title('Invoice marked as uncollectible')
-                                ->success()
-                                ->send();
-                        } catch (ApiErrorException $e) {
-                            Notification::make()
-                                ->title('Stripe error')
-                                ->body($e->getMessage())
-                                ->danger()
-                                ->send();
-                        }
+                        $result = app(MarkInvoiceUncollectible::class)->execute($record);
+                        Notification::make()->title($result->message)->{$result->success ? 'success' : 'danger'}()->send();
                     }),
                 Action::make('download_pdf')
                     ->label('PDF')

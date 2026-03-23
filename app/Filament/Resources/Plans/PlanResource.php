@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Plans;
 
+use App\Actions\Billing\VerifyPlanStripeIds;
 use App\Filament\Resources\Plans\Pages\CreatePlan;
 use App\Filament\Resources\Plans\Pages\EditPlan;
 use App\Filament\Resources\Plans\Pages\ListPlans;
@@ -27,8 +28,6 @@ use Filament\Tables\Columns\BooleanColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
-use Stripe\Exception\ApiErrorException;
-use Stripe\StripeClient;
 use UnitEnum;
 
 class PlanResource extends Resource
@@ -179,40 +178,13 @@ class PlanResource extends Resource
                     ->icon('heroicon-o-arrow-path')
                     ->color('info')
                     ->action(function (Plan $record): void {
-                        $stripe = new StripeClient(config('services.stripe.secret'));
-                        $issues = [];
-
-                        foreach (['monthly_price_id', 'yearly_price_id', 'onetime_price_id'] as $field) {
-                            $priceId = $record->{$field};
-
-                            if (empty($priceId)) {
-                                continue;
-                            }
-
-                            try {
-                                $price = $stripe->prices->retrieve($priceId);
-
-                                if (! $price->active) {
-                                    $issues[] = $field.' ('.$priceId.') exists but is inactive';
-                                }
-                            } catch (ApiErrorException) {
-                                $issues[] = $field.' ('.$priceId.') not found in Stripe';
-                            }
-                        }
-
-                        if (empty($issues)) {
-                            Notification::make()
-                                ->title('All Stripe price IDs are valid and active.')
-                                ->success()
-                                ->send();
-                        } else {
-                            Notification::make()
-                                ->title('Stripe sync issues found')
-                                ->body(implode("\n", $issues))
-                                ->danger()
-                                ->persistent()
-                                ->send();
-                        }
+                        $result = app(VerifyPlanStripeIds::class)->execute($record);
+                        Notification::make()
+                            ->title($result->success ? $result->message : 'Stripe issues found')
+                            ->body($result->success ? null : $result->message)
+                            ->{$result->success ? 'success' : 'danger'}()
+                            ->persistent(! $result->success)
+                            ->send();
                     }),
                 DeleteAction::make(),
             ])

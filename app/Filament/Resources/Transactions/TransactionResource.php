@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Transactions;
 
+use App\Actions\Billing\RefundTransaction;
 use App\Filament\Resources\Transactions\Pages\EditTransaction;
 use App\Filament\Resources\Transactions\Pages\ListTransactions;
 use App\Models\Transaction;
@@ -149,31 +150,8 @@ class TransactionResource extends Resource
                     ->modalDescription(fn (Transaction $record): string => 'Are you sure you want to refund '.currencySymbol($record->currency).number_format($record->amount / 100, 2).'? This cannot be undone.')
                     ->visible(fn (Transaction $record): bool => $record->status === 'succeeded' && $record->refunded_amount < $record->amount)
                     ->action(function (Transaction $record): void {
-                        $stripe = new \Stripe\StripeClient(config('services.stripe.secret'));
-                        $refundParams = str_starts_with($record->stripe_id, 'pi_')
-                            ? ['payment_intent' => $record->stripe_id]
-                            : ['charge' => $record->stripe_id];
-
-                        try {
-                            $stripe->refunds->create($refundParams);
-
-                            $record->update([
-                                'status' => 'refunded',
-                                'refunded_amount' => $record->amount,
-                            ]);
-
-                            Notification::make()
-                                ->title('Refund successful')
-                                ->body(currencySymbol($record->currency).number_format($record->amount / 100, 2).' has been refunded.')
-                                ->success()
-                                ->send();
-                        } catch (\Stripe\Exception\ApiErrorException $e) {
-                            Notification::make()
-                                ->title('Refund failed')
-                                ->body($e->getMessage())
-                                ->danger()
-                                ->send();
-                        }
+                        $result = app(RefundTransaction::class)->execute($record);
+                        Notification::make()->title($result->message)->{$result->success ? 'success' : 'danger'}()->send();
                     }),
                 Action::make('refund_partial')
                     ->label('Partial Refund')
@@ -194,35 +172,8 @@ class TransactionResource extends Resource
                             ->helperText('Maximum refundable: '.currencySymbol($record->currency).number_format(($record->amount - $record->refunded_amount) / 100, 2)),
                     ])
                     ->action(function (Transaction $record, array $data): void {
-                        $refundAmountCents = (int) round($data['refund_amount'] * 100);
-                        $stripe = new \Stripe\StripeClient(config('services.stripe.secret'));
-                        $refundParams = str_starts_with($record->stripe_id, 'pi_')
-                            ? ['payment_intent' => $record->stripe_id, 'amount' => $refundAmountCents]
-                            : ['charge' => $record->stripe_id, 'amount' => $refundAmountCents];
-
-                        try {
-                            $stripe->refunds->create($refundParams);
-
-                            $newRefundedAmount = $record->refunded_amount + $refundAmountCents;
-                            $newStatus = $newRefundedAmount >= $record->amount ? 'refunded' : 'partially_refunded';
-
-                            $record->update([
-                                'status' => $newStatus,
-                                'refunded_amount' => $newRefundedAmount,
-                            ]);
-
-                            Notification::make()
-                                ->title('Partial refund successful')
-                                ->body(currencySymbol($record->currency).number_format($refundAmountCents / 100, 2).' has been refunded.')
-                                ->success()
-                                ->send();
-                        } catch (\Stripe\Exception\ApiErrorException $e) {
-                            Notification::make()
-                                ->title('Refund failed')
-                                ->body($e->getMessage())
-                                ->danger()
-                                ->send();
-                        }
+                        $result = app(RefundTransaction::class)->execute($record, (int) round($data['refund_amount'] * 100));
+                        Notification::make()->title($result->message)->{$result->success ? 'success' : 'danger'}()->send();
                     }),
                 Action::make('open_in_stripe')
                     ->label('Stripe')

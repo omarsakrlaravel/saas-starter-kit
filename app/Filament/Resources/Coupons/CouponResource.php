@@ -28,8 +28,6 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
-use Stripe\Exception\ApiErrorException;
-use Stripe\StripeClient;
 
 class CouponResource extends Resource
 {
@@ -167,21 +165,8 @@ class CouponResource extends Resource
                     ->requiresConfirmation()
                     ->visible(fn (Model $record): bool => $record->active)
                     ->action(function (Model $record): void {
-                        if ($record->stripe_id) {
-                            try {
-                                $stripe = new StripeClient(config('services.stripe.secret'));
-                                $stripe->coupons->update($record->stripe_id, ['metadata' => ['deactivated_by_admin' => 'true']]);
-                            } catch (ApiErrorException) {
-                                // Stripe deactivation is best-effort for coupons
-                            }
-                        }
-
-                        $record->update(['active' => false]);
-
-                        Notification::make()
-                            ->title('Coupon deactivated.')
-                            ->success()
-                            ->send();
+                        $result = app(\App\Actions\Billing\DeactivateCoupon::class)->execute($record);
+                        Notification::make()->title($result->message)->success()->send();
                     }),
                 Action::make('duplicate')
                     ->icon('heroicon-o-document-duplicate')

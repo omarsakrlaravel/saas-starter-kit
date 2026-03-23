@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\Organizations;
 
+use App\Actions\Billing\AdjustSubscriptionSeats;
+use App\Actions\Billing\CancelSubscription;
 use App\Enums\AccountStatus;
 use App\Filament\Resources\Organizations\Pages\CreateOrganization;
 use App\Filament\Resources\Organizations\Pages\EditOrganization;
@@ -32,8 +34,6 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Stripe\Exception\ApiErrorException;
-use Stripe\StripeClient;
 use UnitEnum;
 
 class OrganizationResource extends Resource
@@ -204,37 +204,13 @@ class OrganizationResource extends Resource
                         $subscription = $record->activeSubscription();
 
                         if (! $subscription) {
-                            Notification::make()
-                                ->title('No active subscription found.')
-                                ->warning()
-                                ->send();
+                            Notification::make()->title('No active subscription found.')->warning()->send();
 
                             return;
                         }
 
-                        if ($subscription->stripe_id) {
-                            try {
-                                $stripe = new StripeClient(config('services.stripe.secret'));
-                                $stripe->subscriptions->cancel($subscription->stripe_id);
-                            } catch (ApiErrorException $e) {
-                                Notification::make()
-                                    ->title('Stripe error: '.$e->getMessage())
-                                    ->danger()
-                                    ->send();
-
-                                return;
-                            }
-                        }
-
-                        $subscription->update([
-                            'stripe_status' => 'canceled',
-                            'ends_at' => now(),
-                        ]);
-
-                        Notification::make()
-                            ->title('Subscription canceled for '.$record->name.'.')
-                            ->success()
-                            ->send();
+                        $result = app(CancelSubscription::class)->execute($subscription);
+                        Notification::make()->title($result->message)->{$result->success ? 'success' : 'danger'}()->send();
                     }),
                 Action::make('manage_seats')
                     ->label('Manage Seats')
@@ -267,35 +243,8 @@ class OrganizationResource extends Resource
                             return;
                         }
 
-                        try {
-                            $stripe = new StripeClient(config('services.stripe.secret'));
-                            $stripeSubscription = $stripe->subscriptions->retrieve($subscription->stripe_id);
-                            $stripe->subscriptions->update($subscription->stripe_id, [
-                                'items' => [
-                                    [
-                                        'id' => $stripeSubscription->items->data[0]->id,
-                                        'quantity' => $newQuantity,
-                                    ],
-                                ],
-                                'proration_behavior' => $newQuantity > $subscription->quantity
-                                    ? 'create_prorations'
-                                    : 'none',
-                            ]);
-                        } catch (ApiErrorException $e) {
-                            Notification::make()
-                                ->title('Stripe error: '.$e->getMessage())
-                                ->danger()
-                                ->send();
-
-                            return;
-                        }
-
-                        $subscription->update(['quantity' => $newQuantity]);
-
-                        Notification::make()
-                            ->title('Seats updated to '.$newQuantity.' for '.$record->name.'.')
-                            ->success()
-                            ->send();
+                        $result = app(AdjustSubscriptionSeats::class)->execute($subscription, $newQuantity);
+                        Notification::make()->title($result->message)->{$result->success ? 'success' : 'danger'}()->send();
                     }),
                 DeleteAction::make(),
             ])
