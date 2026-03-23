@@ -8,7 +8,6 @@ use App\Models\Subscription;
 use App\Services\PlanChangeResolver;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
-use Filament\Actions\DeleteAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
@@ -236,7 +235,30 @@ class ViewSubscription extends ViewRecord
                         Notification::make()->title('Subscription canceled.')->success()->send();
                     }),
 
-                DeleteAction::make(),
+                Action::make('delete_subscription')
+                    ->label('Delete')
+                    ->icon('heroicon-o-trash')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->modalDescription('This will cancel the subscription in Stripe (if active) and permanently delete the local record. This cannot be undone.')
+                    ->action(function (Subscription $record): void {
+                        if ($record->stripe_id && in_array($record->stripe_status, ['active', 'trialing', 'past_due'])) {
+                            try {
+                                $stripe = new StripeClient(config('services.stripe.secret'));
+                                $stripe->subscriptions->cancel($record->stripe_id);
+                            } catch (ApiErrorException $e) {
+                                Notification::make()->title('Stripe error: '.$e->getMessage())->danger()->send();
+
+                                return;
+                            }
+                        }
+
+                        $record->delete();
+
+                        Notification::make()->title('Subscription deleted.')->success()->send();
+
+                        $this->redirect(SubscriptionResource::getUrl('index'));
+                    }),
             ])
                 ->label('Danger')
                 ->icon('heroicon-o-exclamation-triangle')
