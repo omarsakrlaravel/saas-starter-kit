@@ -188,7 +188,7 @@ class Checkout extends Component
         }
 
         try {
-            $stripe = new StripeClient(config('services.stripe.secret'));
+            $stripe = app(StripeClient::class);
             $paymentMethods = $stripe->customers->allPaymentMethods($user->stripe_id, [
                 'type' => 'card',
                 'limit' => 20,

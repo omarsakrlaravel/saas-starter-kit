@@ -11,7 +11,6 @@
 |
 */
 
-use App\Actions\Reset;
 use App\Http\Controllers\AccountRestrictedController;
 use App\Http\Controllers\Billing\Stripe;
 use App\Http\Controllers\ChangelogController;
@@ -102,11 +101,6 @@ Route::group(['middleware' => 'auth'], function () {
 
 // Admin login redirect
 Route::redirect('admin/login', '/auth/login');
-
-// Reset sqlite database - only in local environment
-if (app()->environment('local')) {
-    Route::get('reset', Reset::class)->middleware('auth');
-}
 
 // Billing / Stripe
 Route::post('stripe/webhook', [WebhookController::class, 'handleWebhook'])

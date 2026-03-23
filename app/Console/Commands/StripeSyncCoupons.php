@@ -178,15 +178,8 @@ class StripeSyncCoupons extends Command
         }
     }
 
-    /**
-     * Resolve the Stripe client instance from the container or create a new one.
-     */
     protected function makeStripeClient(): StripeClient
     {
-        if (app()->bound(StripeClient::class)) {
-            return app(StripeClient::class);
-        }
-
-        return new StripeClient(config('services.stripe.secret'));
+        return app(StripeClient::class);
     }
 }
