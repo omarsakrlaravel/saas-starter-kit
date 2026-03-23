@@ -15,6 +15,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\TextSize;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -130,7 +131,7 @@ class SubscriptionResource extends Resource
                                 TextEntry::make('stripe_status')
                                     ->label('Status')
                                     ->badge()
-                                    ->size(TextEntry\TextEntrySize::Large)
+                                    ->size(TextSize::Large)
                                     ->color(fn (string $state): string => match ($state) {
                                         'active' => 'success',
                                         'trialing' => 'warning',
