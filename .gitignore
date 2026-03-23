@@ -25,3 +25,4 @@ storage/app/livewire-tmp
 /storage/app/public/*
 !/storage/app/public/demo
 .playwright-mcp/
+.claude/worktrees/
