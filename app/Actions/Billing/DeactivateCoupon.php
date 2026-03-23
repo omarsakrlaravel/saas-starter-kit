@@ -8,12 +8,15 @@ use Stripe\StripeClient;
 
 class DeactivateCoupon
 {
+    public function __construct(
+        private StripeClient $stripe,
+    ) {}
+
     public function execute(Coupon $coupon): ActionResult
     {
         if ($coupon->stripe_id) {
             try {
-                $stripe = new StripeClient(config('services.stripe.secret'));
-                $stripe->coupons->update($coupon->stripe_id, [
+                $this->stripe->coupons->update($coupon->stripe_id, [
                     'metadata' => ['deactivated_by_admin' => 'true'],
                 ]);
             } catch (ApiErrorException) {

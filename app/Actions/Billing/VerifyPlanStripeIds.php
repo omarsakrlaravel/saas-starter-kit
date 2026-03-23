@@ -8,9 +8,12 @@ use Stripe\StripeClient;
 
 class VerifyPlanStripeIds
 {
+    public function __construct(
+        private StripeClient $stripe,
+    ) {}
+
     public function execute(Plan $plan): ActionResult
     {
-        $stripe = new StripeClient(config('services.stripe.secret'));
         $issues = [];
 
         foreach (['monthly_price_id', 'yearly_price_id', 'onetime_price_id'] as $field) {
@@ -21,7 +24,7 @@ class VerifyPlanStripeIds
             }
 
             try {
-                $price = $stripe->prices->retrieve($priceId);
+                $price = $this->stripe->prices->retrieve($priceId);
 
                 if (! $price->active) {
                     $issues[] = $field.' ('.$priceId.') exists but is inactive';

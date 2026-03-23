@@ -8,6 +8,10 @@ use Stripe\StripeClient;
 
 class RefundInvoice
 {
+    public function __construct(
+        private StripeClient $stripe,
+    ) {}
+
     public function execute(Invoice $invoice, int $amountInCents): ActionResult
     {
         if ($amountInCents > $invoice->amount_paid) {
@@ -15,9 +19,8 @@ class RefundInvoice
         }
 
         try {
-            $stripe = new StripeClient(config('services.stripe.secret'));
-            $stripeInvoice = $stripe->invoices->retrieve($invoice->stripe_id);
-            $stripe->refunds->create([
+            $stripeInvoice = $this->stripe->invoices->retrieve($invoice->stripe_id);
+            $this->stripe->refunds->create([
                 'charge' => $stripeInvoice->charge,
                 'amount' => $amountInCents,
             ]);

@@ -8,6 +8,10 @@ use Stripe\StripeClient;
 
 class AdjustSubscriptionSeats
 {
+    public function __construct(
+        private StripeClient $stripe,
+    ) {}
+
     public function execute(Subscription $subscription, int $newQuantity): ActionResult
     {
         if ($newQuantity < 1) {
@@ -15,9 +19,8 @@ class AdjustSubscriptionSeats
         }
 
         try {
-            $stripe = new StripeClient(config('services.stripe.secret'));
-            $stripeSubscription = $stripe->subscriptions->retrieve($subscription->stripe_id);
-            $stripe->subscriptions->update($subscription->stripe_id, [
+            $stripeSubscription = $this->stripe->subscriptions->retrieve($subscription->stripe_id);
+            $this->stripe->subscriptions->update($subscription->stripe_id, [
                 'items' => [
                     ['id' => $stripeSubscription->items->data[0]->id, 'quantity' => $newQuantity],
                 ],

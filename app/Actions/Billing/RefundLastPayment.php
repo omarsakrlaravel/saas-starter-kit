@@ -8,11 +8,14 @@ use Stripe\StripeClient;
 
 class RefundLastPayment
 {
+    public function __construct(
+        private StripeClient $stripe,
+    ) {}
+
     public function execute(Subscription $subscription): ActionResult
     {
         try {
-            $stripe = new StripeClient(config('services.stripe.secret'));
-            $invoices = $stripe->invoices->all([
+            $invoices = $this->stripe->invoices->all([
                 'subscription' => $subscription->stripe_id,
                 'status' => 'paid',
                 'limit' => 1,
@@ -28,7 +31,7 @@ class RefundLastPayment
                 return ActionResult::fail('No payment intent found on invoice.');
             }
 
-            $stripe->refunds->create([
+            $this->stripe->refunds->create([
                 'payment_intent' => $latestInvoice->payment_intent,
             ]);
         } catch (ApiErrorException $e) {

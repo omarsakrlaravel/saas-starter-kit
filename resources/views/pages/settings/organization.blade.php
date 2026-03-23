@@ -13,7 +13,7 @@
     use Illuminate\Support\Facades\URL;
     use Illuminate\Support\Str;
     use Livewire\Volt\Component;
-    use App\Actions\Billing\Stripe\UpdateSubscriptionQuantity;
+    use App\Actions\Billing\UpdateSeatQuantity;
     use function Laravel\Folio\{middleware, name};
 
     middleware(['auth', 'verified']);
@@ -283,26 +283,20 @@
                 return;
             }
 
-            try {
-                $invoiceUrl = app(UpdateSubscriptionQuantity::class)($subscription, $delta);
+            $result = app(UpdateSeatQuantity::class)->execute($subscription, $delta);
 
-                if ($invoiceUrl) {
-                    $this->seatPaymentUrl = $invoiceUrl;
-                    $this->seatUpdateError = 'Seat upgrade is pending payment. Complete the invoice to apply the new seats.';
-                    Notification::make()
-                        ->title('Payment required')
-                        ->warning()
-                        ->send();
+            if ($result->paymentUrl) {
+                $this->seatPaymentUrl = $result->paymentUrl;
+                $this->seatUpdateError = $result->message;
+                Notification::make()->title('Payment required')->warning()->send();
 
-                    return;
-                }
-            } catch (\RuntimeException $e) {
-                $this->seatUpdateError = $e->getMessage();
+                return;
+            }
+
+            if (! $result->success) {
+                $this->seatUpdateError = $result->message;
                 $this->seatPaymentUrl = null;
-                Notification::make()
-                    ->title('Unable to update seats. Please update your payment method and retry.')
-                    ->danger()
-                    ->send();
+                Notification::make()->title($result->message)->danger()->send();
 
                 return;
             }

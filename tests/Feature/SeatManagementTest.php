@@ -1,6 +1,7 @@
 <?php
 
-use App\Actions\Billing\Stripe\UpdateSubscriptionQuantity;
+use App\Actions\Billing\ActionResult;
+use App\Actions\Billing\UpdateSeatQuantity;
 use App\Mail\OrganizationInvite;
 use App\Models\Organization;
 use App\Models\Plan;
@@ -53,14 +54,16 @@ beforeEach(function () {
     $this->owner->update(['current_organization_id' => $this->org->id]);
 
     // Mock the action to avoid Stripe API calls
-    $this->mock = $this->mock(UpdateSubscriptionQuantity::class, function ($mock) {
-        $mock->shouldReceive('__invoke')->andReturnUsing(function (Subscription $subscription, int $delta) {
+    $this->mock = $this->mock(UpdateSeatQuantity::class, function ($mock) {
+        $mock->shouldReceive('execute')->andReturnUsing(function (Subscription $subscription, int $delta) {
             $newQuantity = $subscription->quantity + $delta;
             if ($newQuantity < 1) {
-                throw new RuntimeException('Subscription must have at least 1 seat.');
+                return ActionResult::fail('Subscription must have at least 1 seat.');
             }
             $subscription->quantity = $newQuantity;
             $subscription->save();
+
+            return ActionResult::ok('Seats updated to '.$newQuantity.'.');
         })->byDefault();
     });
 });

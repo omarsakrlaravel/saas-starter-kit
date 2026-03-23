@@ -8,11 +8,14 @@ use Stripe\StripeClient;
 
 class VoidInvoice
 {
+    public function __construct(
+        private StripeClient $stripe,
+    ) {}
+
     public function execute(Invoice $invoice): ActionResult
     {
         try {
-            $stripe = new StripeClient(config('services.stripe.secret'));
-            $stripe->invoices->voidInvoice($invoice->stripe_id);
+            $this->stripe->invoices->voidInvoice($invoice->stripe_id);
 
             $invoice->update(['status' => 'void']);
         } catch (ApiErrorException $e) {

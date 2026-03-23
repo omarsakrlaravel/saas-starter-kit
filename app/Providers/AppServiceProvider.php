@@ -61,6 +61,11 @@ class AppServiceProvider extends ServiceProvider
         // TenantContext singleton
         $this->app->singleton(\App\Services\TenantContext::class);
 
+        // Stripe client singleton
+        $this->app->singleton(\Stripe\StripeClient::class, function () {
+            return new \Stripe\StripeClient(config('services.stripe.secret'));
+        });
+
         // Intervention Image Manager
         $this->app->singleton('image', function () {
             return new ImageManager(new Driver());

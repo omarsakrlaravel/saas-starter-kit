@@ -8,6 +8,10 @@ use Stripe\StripeClient;
 
 class RefundTransaction
 {
+    public function __construct(
+        private StripeClient $stripe,
+    ) {}
+
     /**
      * Refund a transaction. Pass null for amountInCents to refund the full amount.
      */
@@ -23,8 +27,7 @@ class RefundTransaction
         }
 
         try {
-            $stripe = new StripeClient(config('services.stripe.secret'));
-            $stripe->refunds->create($refundParams);
+            $this->stripe->refunds->create($refundParams);
         } catch (ApiErrorException $e) {
             return ActionResult::fail('Stripe error: '.$e->getMessage());
         }

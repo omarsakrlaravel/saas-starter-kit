@@ -8,11 +8,14 @@ use Stripe\StripeClient;
 
 class MarkInvoiceUncollectible
 {
+    public function __construct(
+        private StripeClient $stripe,
+    ) {}
+
     public function execute(Invoice $invoice): ActionResult
     {
         try {
-            $stripe = new StripeClient(config('services.stripe.secret'));
-            $stripe->invoices->markUncollectible($invoice->stripe_id);
+            $this->stripe->invoices->markUncollectible($invoice->stripe_id);
 
             $invoice->update(['status' => 'uncollectible']);
         } catch (ApiErrorException $e) {

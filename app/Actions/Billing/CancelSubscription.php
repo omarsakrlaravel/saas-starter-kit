@@ -8,12 +8,15 @@ use Stripe\StripeClient;
 
 class CancelSubscription
 {
+    public function __construct(
+        private StripeClient $stripe,
+    ) {}
+
     public function execute(Subscription $subscription): ActionResult
     {
         if ($subscription->stripe_id) {
             try {
-                $stripe = new StripeClient(config('services.stripe.secret'));
-                $stripe->subscriptions->cancel($subscription->stripe_id);
+                $this->stripe->subscriptions->cancel($subscription->stripe_id);
             } catch (ApiErrorException $e) {
                 return ActionResult::fail('Stripe error: '.$e->getMessage());
             }

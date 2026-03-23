@@ -8,13 +8,16 @@ use Stripe\StripeClient;
 
 class ApplyCouponToSubscription
 {
+    public function __construct(
+        private StripeClient $stripe,
+    ) {}
+
     public function execute(Subscription $subscription, string $couponCode): ActionResult
     {
         try {
-            $stripe = new StripeClient(config('services.stripe.secret'));
             $couponId = $couponCode;
 
-            $promotionCodes = $stripe->promotionCodes->all([
+            $promotionCodes = $this->stripe->promotionCodes->all([
                 'code' => $couponCode,
                 'active' => true,
                 'limit' => 1,
@@ -24,7 +27,7 @@ class ApplyCouponToSubscription
                 $couponId = $promotionCodes->data[0]->coupon->id;
             }
 
-            $stripe->subscriptions->update($subscription->stripe_id, [
+            $this->stripe->subscriptions->update($subscription->stripe_id, [
                 'coupon' => $couponId,
             ]);
         } catch (ApiErrorException $e) {

@@ -12,6 +12,7 @@ class ChangeSubscriptionPlan
 {
     public function __construct(
         private PlanChangeResolver $resolver,
+        private StripeClient $stripe,
     ) {}
 
     public function execute(Subscription $subscription, int $planId, string $cycle): ActionResult
@@ -44,9 +45,8 @@ class ChangeSubscriptionPlan
     private function applyUpgrade(Subscription $subscription, Plan $plan, string $priceId, string $cycle): ActionResult
     {
         try {
-            $stripe = new StripeClient(config('services.stripe.secret'));
-            $stripeSubscription = $stripe->subscriptions->retrieve($subscription->stripe_id);
-            $stripe->subscriptions->update($subscription->stripe_id, [
+            $stripeSubscription = $this->stripe->subscriptions->retrieve($subscription->stripe_id);
+            $this->stripe->subscriptions->update($subscription->stripe_id, [
                 'items' => [
                     ['id' => $stripeSubscription->items->data[0]->id, 'price' => $priceId],
                 ],
