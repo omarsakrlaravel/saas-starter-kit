@@ -46,7 +46,6 @@ return [
     ],
 
     'user_model' => \App\Models\User::class,
-    'show_docs' => env('SHOW_DOCS', true),
     'demo' => env('APP_DEMO', false),
     'dev_bar' => env('DEV_BAR', false),
     'organizations_enabled' => env('ORGANIZATIONS_ENABLED', true),
@@ -84,7 +83,6 @@ return [
         'site.google_analytics_tracking_id' => env('GOOGLE_ANALYTICS_ID'),
         'site.favicon' => '/favicon.png',
         'site.favicon_dark' => '/favicon-dark.png',
-        'digital-ocean.enabled' => false,
     ],
 
 ];

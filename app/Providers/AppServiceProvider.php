@@ -8,7 +8,7 @@ use App\Listeners\LogSuccessfulLogin;
 use App\Listeners\LogSuccessfulLogout;
 use App\Listeners\SendWelcomeNotification;
 use App\Models\File;
-use App\Models\Forms;
+use App\Models\Form;
 use App\Models\Organization;
 use App\Policies\FilePolicy;
 use Exception;
@@ -126,7 +126,7 @@ class AppServiceProvider extends ServiceProvider
         // Morph map
         Relation::morphMap([
             'user' => config('saas.user_model', \App\Models\User::class),
-            'form' => Forms::class,
+            'form' => Form::class,
             'organization' => Organization::class,
         ]);
 

@@ -5,7 +5,7 @@ namespace App\Filament\Resources\Forms;
 use App\Filament\Resources\Forms\Pages\CreateForms;
 use App\Filament\Resources\Forms\Pages\EditForms;
 use App\Filament\Resources\Forms\Pages\ListForms;
-use App\Models\Forms;
+use App\Models\Form;
 use BackedEnum;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
@@ -27,7 +27,7 @@ use Illuminate\Support\Str;
 
 class FormsResource extends Resource
 {
-    protected static ?string $model = Forms::class;
+    protected static ?string $model = Form::class;
 
     protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-rectangle-stack';
 

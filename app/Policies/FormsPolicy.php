@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
-use App\Models\Forms;
+use App\Models\Form;
 use Illuminate\Auth\Access\HandlesAuthorization;
 use Illuminate\Foundation\Auth\User as AuthUser;
 
@@ -17,7 +17,7 @@ class FormsPolicy
         return $authUser->can('ViewAny:Forms');
     }
 
-    public function view(AuthUser $authUser, Forms $forms): bool
+    public function view(AuthUser $authUser, Form $forms): bool
     {
         return $authUser->can('View:Forms');
     }
@@ -27,22 +27,22 @@ class FormsPolicy
         return $authUser->can('Create:Forms');
     }
 
-    public function update(AuthUser $authUser, Forms $forms): bool
+    public function update(AuthUser $authUser, Form $forms): bool
     {
         return $authUser->can('Update:Forms');
     }
 
-    public function delete(AuthUser $authUser, Forms $forms): bool
+    public function delete(AuthUser $authUser, Form $forms): bool
     {
         return $authUser->can('Delete:Forms');
     }
 
-    public function restore(AuthUser $authUser, Forms $forms): bool
+    public function restore(AuthUser $authUser, Form $forms): bool
     {
         return $authUser->can('Restore:Forms');
     }
 
-    public function forceDelete(AuthUser $authUser, Forms $forms): bool
+    public function forceDelete(AuthUser $authUser, Form $forms): bool
     {
         return $authUser->can('ForceDelete:Forms');
     }
@@ -57,7 +57,7 @@ class FormsPolicy
         return $authUser->can('RestoreAny:Forms');
     }
 
-    public function replicate(AuthUser $authUser, Forms $forms): bool
+    public function replicate(AuthUser $authUser, Form $forms): bool
     {
         return $authUser->can('Replicate:Forms');
     }

@@ -2,19 +2,11 @@
 
 use App\Models\Plan;
 use Illuminate\Database\Eloquent\Relations\Relation;
-use Illuminate\Support\Facades\Blade;
 
 if (! function_exists('setting')) {
     function setting($key, $default = null)
     {
         return config('saas.settings.'.$key, $default);
-    }
-}
-
-if (! function_exists('blade')) {
-    function blade($string)
-    {
-        return Blade::render($string);
     }
 }
 
