@@ -2,7 +2,6 @@
 
 namespace App\Filament\Resources\Coupons;
 
-use App\Filament\Resources\Coupons\Pages\CreateCoupon;
 use App\Filament\Resources\Coupons\Pages\EditCoupon;
 use App\Filament\Resources\Coupons\Pages\ListCoupons;
 use App\Filament\Resources\Coupons\RelationManagers\PromotionCodesRelationManager;
@@ -35,6 +34,11 @@ use Stripe\StripeClient;
 class CouponResource extends Resource
 {
     protected static ?string $model = Coupon::class;
+
+    public static function canCreate(): bool
+    {
+        return false;
+    }
 
     protected static string|BackedEnum|null $navigationIcon = 'phosphor-ticket-duotone';
 
@@ -215,7 +219,6 @@ class CouponResource extends Resource
     {
         return [
             'index' => ListCoupons::route('/'),
-            'create' => CreateCoupon::route('/create'),
             'edit' => EditCoupon::route('/{record}/edit'),
         ];
     }

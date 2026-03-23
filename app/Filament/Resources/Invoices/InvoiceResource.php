@@ -2,7 +2,6 @@
 
 namespace App\Filament\Resources\Invoices;
 
-use App\Filament\Resources\Invoices\Pages\CreateInvoice;
 use App\Filament\Resources\Invoices\Pages\EditInvoice;
 use App\Filament\Resources\Invoices\Pages\ListInvoices;
 use App\Models\Invoice;
@@ -28,6 +27,11 @@ use UnitEnum;
 class InvoiceResource extends Resource
 {
     protected static ?string $model = Invoice::class;
+
+    public static function canCreate(): bool
+    {
+        return false;
+    }
 
     protected static string|BackedEnum|null $navigationIcon = 'phosphor-receipt-duotone';
 
@@ -275,7 +279,6 @@ class InvoiceResource extends Resource
     {
         return [
             'index' => ListInvoices::route('/'),
-            'create' => CreateInvoice::route('/create'),
             'edit' => EditInvoice::route('/{record}/edit'),
         ];
     }

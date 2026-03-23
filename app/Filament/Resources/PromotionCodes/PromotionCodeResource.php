@@ -2,7 +2,6 @@
 
 namespace App\Filament\Resources\PromotionCodes;
 
-use App\Filament\Resources\PromotionCodes\Pages\CreatePromotionCode;
 use App\Filament\Resources\PromotionCodes\Pages\EditPromotionCode;
 use App\Filament\Resources\PromotionCodes\Pages\ListPromotionCodes;
 use App\Models\PromotionCode;
@@ -29,6 +28,11 @@ use Illuminate\Database\Eloquent\Model;
 class PromotionCodeResource extends Resource
 {
     protected static ?string $model = PromotionCode::class;
+
+    public static function canCreate(): bool
+    {
+        return false;
+    }
 
     protected static string|BackedEnum|null $navigationIcon = 'phosphor-barcode-duotone';
 
@@ -144,7 +148,6 @@ class PromotionCodeResource extends Resource
     {
         return [
             'index' => ListPromotionCodes::route('/'),
-            'create' => CreatePromotionCode::route('/create'),
             'edit' => EditPromotionCode::route('/{record}/edit'),
         ];
     }

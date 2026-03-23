@@ -2,7 +2,6 @@
 
 namespace App\Filament\Resources\Subscriptions;
 
-use App\Filament\Resources\Subscriptions\Pages\CreateSubscription;
 use App\Filament\Resources\Subscriptions\Pages\EditSubscription;
 use App\Filament\Resources\Subscriptions\Pages\ListSubscriptions;
 use App\Filament\Resources\Subscriptions\RelationManagers\InvoicesRelationManager;
@@ -35,6 +34,11 @@ use UnitEnum;
 class SubscriptionResource extends Resource
 {
     protected static ?string $model = Subscription::class;
+
+    public static function canCreate(): bool
+    {
+        return false;
+    }
 
     protected static string|BackedEnum|null $navigationIcon = 'phosphor-credit-card-duotone';
 
@@ -556,7 +560,6 @@ class SubscriptionResource extends Resource
     {
         return [
             'index' => ListSubscriptions::route('/'),
-            'create' => CreateSubscription::route('/create'),
             'edit' => EditSubscription::route('/{record}/edit'),
         ];
     }
