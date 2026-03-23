@@ -46,39 +46,19 @@ class SubscriptionResource extends Resource
             ->components([
                 Group::make()
                     ->schema([
-                        Section::make('Subscription')
-                            ->icon('heroicon-o-credit-card')
+                        Section::make('Subscriber')
+                            ->icon('heroicon-o-user')
                             ->schema([
                                 TextEntry::make('billable.name')
-                                    ->label('Subscriber'),
+                                    ->label('Name'),
                                 TextEntry::make('billable_type')
                                     ->label('Type')
                                     ->formatStateUsing(fn (string $state): string => ucfirst($state)),
-                                TextEntry::make('plan.name')
-                                    ->label('Plan'),
-                                TextEntry::make('cycle')
-                                    ->badge()
-                                    ->formatStateUsing(fn (string $state): string => match ($state) {
-                                        'month' => 'Monthly',
-                                        'year' => 'Yearly',
-                                        'onetime' => 'One-time',
-                                        default => $state,
-                                    }),
-                                TextEntry::make('quantity')
-                                    ->label('Seats'),
-                                TextEntry::make('stripe_id')
-                                    ->label('Stripe ID')
-                                    ->copyable()
-                                    ->placeholder('--'),
-                                TextEntry::make('stripe_price')
-                                    ->label('Price ID')
-                                    ->copyable()
-                                    ->placeholder('--'),
                             ])
                             ->columns(2)
                             ->columnSpanFull(),
 
-                        Section::make('Billing Dates')
+                        Section::make('Billing')
                             ->icon('heroicon-o-calendar-days')
                             ->schema([
                                 TextEntry::make('created_at')
@@ -99,10 +79,26 @@ class SubscriptionResource extends Resource
                                 TextEntry::make('ends_at')
                                     ->label('Ends At')
                                     ->dateTime('M j, Y H:i')
-                                    ->placeholder('Active'),
+                                    ->placeholder('--'),
                             ])
                             ->columns(2)
                             ->columnSpanFull(),
+
+                        Section::make('Stripe')
+                            ->icon('heroicon-o-link')
+                            ->schema([
+                                TextEntry::make('stripe_id')
+                                    ->label('Subscription ID')
+                                    ->copyable()
+                                    ->placeholder('--'),
+                                TextEntry::make('stripe_price')
+                                    ->label('Price ID')
+                                    ->copyable()
+                                    ->placeholder('--'),
+                            ])
+                            ->columns(2)
+                            ->columnSpanFull()
+                            ->collapsed(),
 
                         Section::make('Pending Plan Change')
                             ->icon('heroicon-o-clock')
@@ -134,6 +130,7 @@ class SubscriptionResource extends Resource
                                 TextEntry::make('stripe_status')
                                     ->label('Status')
                                     ->badge()
+                                    ->size(TextEntry\TextEntrySize::Large)
                                     ->color(fn (string $state): string => match ($state) {
                                         'active' => 'success',
                                         'trialing' => 'warning',
@@ -142,6 +139,22 @@ class SubscriptionResource extends Resource
                                         default => 'gray',
                                     })
                                     ->formatStateUsing(fn (string $state): string => ucfirst(str_replace('_', ' ', $state))),
+                            ]),
+                        Section::make('Plan')
+                            ->schema([
+                                TextEntry::make('plan.name')
+                                    ->label('Current Plan'),
+                                TextEntry::make('cycle')
+                                    ->label('Billing Cycle')
+                                    ->badge()
+                                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                                        'month' => 'Monthly',
+                                        'year' => 'Yearly',
+                                        'onetime' => 'One-time',
+                                        default => $state,
+                                    }),
+                                TextEntry::make('quantity')
+                                    ->label('Seats'),
                             ]),
                     ])
                     ->columnSpan(1),
